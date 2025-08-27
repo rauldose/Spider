@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Spider.Communication.Application.DTOs;
 
 namespace SpiderStudio.BlazorServer.Services;
 
@@ -48,7 +49,7 @@ public class CommunicationApiService
         }
     }
 
-    public async Task<bool> CreateLinkAsync(CreateLinkRequest request)
+    public async Task<bool> CreateLinkAsync(CreateLinkDto request)
     {
         try
         {
@@ -136,7 +137,7 @@ public class CommunicationApiService
         }
     }
 
-    public async Task<bool> CreateChannelAsync(CreateChannelRequest request)
+    public async Task<bool> CreateChannelAsync(CreateChannelDto request)
     {
         try
         {
@@ -196,52 +197,30 @@ public class CommunicationApiService
     }
 }
 
-// DTOs
-public record LinkDto(
-    Guid Id,
-    string Name,
-    string Description,
-    string Protocol,
-    string Status,
-    DateTime CreatedAt,
-    DateTime? LastConnectedAt,
-    bool IsHealthy);
-
-public record CreateLinkRequest(
-    string Name,
-    string Description,
-    string Protocol,
-    Dictionary<string, string> Configuration);
-
+// Request DTOs for methods that don't have corresponding DTOs in Application layer
 public record AttachDriverRequest(
     string DriverType,
-    Dictionary<string, string> Configuration);
+    Dictionary<string, object> Configuration);
 
-public record LinkHealthDto(
-    bool IsHealthy,
-    string Status,
-    double SuccessRate,
-    double AverageResponseTime,
-    DateTime LastCheckAt);
-
-public record ChannelDto(
-    Guid Id,
-    string Name,
-    string Description,
-    string Type,
-    Guid LinkId,
-    int DataPointCount);
-
-public record CreateChannelRequest(
-    string Name,
-    string Description,
-    string Type,
-    Guid LinkId);
-
-public record CommunicationStatisticsDto(
-    int TotalLinks,
-    int ConnectedLinks,
-    int FailedLinks,
-    int TotalChannels,
-    int TotalDataPoints,
-    double OverallHealthPercentage);
+// Form models for binding (since DTOs have init-only properties)
+public class CreateLinkFormModel
+{
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string ProtocolType { get; set; } = string.Empty;
+    public Dictionary<string, object> Configuration { get; set; } = new();
+    
+    public CreateLinkDto ToDto()
+    {
+        return new CreateLinkDto
+        {
+            Name = this.Name,
+            Description = this.Description,
+            ProtocolType = this.ProtocolType,
+            Configuration = new LinkConfigurationDto
+            {
+                Parameters = this.Configuration
+            }
+        };
+    }
+}

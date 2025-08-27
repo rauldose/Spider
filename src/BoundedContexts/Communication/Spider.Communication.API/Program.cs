@@ -13,7 +13,7 @@ builder.Services.AddCommunicationInfrastructure(builder.Configuration);
 builder.Services.AddCommunicationApplication();
 
 // Add Driver infrastructure
-builder.Services.AddDriverInfrastructure(builder.Configuration);
+builder.Services.AddDriverInfrastructure();
 
 // Add Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();

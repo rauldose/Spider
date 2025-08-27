@@ -1,5 +1,6 @@
 @page "/communication"
 @using SpiderStudio.BlazorServer.Services
+@using Spider.Communication.Application.DTOs
 @inject CommunicationApiService CommunicationApi
 @inject IJSRuntime JSRuntime
 @inject ILogger<CommunicationManagement> Logger
@@ -70,7 +71,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h4 class="mb-0">@(statistics?.OverallHealthPercentage.ToString("F1") ?? "0.0")%</h4>
+                            <h4 class="mb-0">@(statistics?.OverallSuccessRate.ToString("F1") ?? "0.0")%</h4>
                             <p class="mb-0">Health</p>
                         </div>
                         <div class="align-self-center">
@@ -161,7 +162,7 @@
                                                 <small class="text-muted">@link.Description</small>
                                             </td>
                                             <td>
-                                                <span class="badge bg-secondary">@link.Protocol</span>
+                                                <span class="badge bg-secondary">@link.ProtocolType</span>
                                             </td>
                                             <td>
                                                 @if (link.Status == "Connected")
@@ -178,7 +179,7 @@
                                                 }
                                             </td>
                                             <td>
-                                                @if (link.IsHealthy)
+                                                @if (link.Health.IsHealthy)
                                                 {
                                                     <i class="bi bi-check-circle text-success"></i>
                                                 }
@@ -188,9 +189,9 @@
                                                 }
                                             </td>
                                             <td>
-                                                @if (link.LastConnectedAt.HasValue)
+                                                @if (link.LastActivity != DateTime.MinValue)
                                                 {
-                                                    @link.LastConnectedAt.Value.ToString("MMM dd, yyyy HH:mm")
+                                                    @link.LastActivity.ToString("MMM dd, yyyy HH:mm")
                                                 }
                                                 else
                                                 {
@@ -250,7 +251,7 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label">Protocol *</label>
-                                    <select class="form-select" @bind="newLink.Protocol" required>
+                                    <select class="form-select" @bind="newLink.ProtocolType" required>
                                         <option value="">Select Protocol</option>
                                         @foreach (var protocol in protocolTypes)
                                         {
@@ -265,7 +266,7 @@
                             <textarea class="form-control" rows="2" @bind="newLink.Description"></textarea>
                         </div>
 
-                        @if (newLink.Protocol == "Mock")
+                        @if (newLink.ProtocolType == "Mock")
                         {
                             <div class="row">
                                 <div class="col-md-6">
@@ -334,7 +335,7 @@
     private bool showCreateModal = false;
     private bool isCreating = false;
 
-    private CreateLinkRequest newLink = new("", "", "", new Dictionary<string, string>());
+    private CreateLinkFormModel newLink = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -421,25 +422,28 @@
 
     private void ShowCreateLinkModal()
     {
-        newLink = new CreateLinkRequest("", "", "", new Dictionary<string, string>
-        {
-            ["DeviceId"] = "MockDevice01",
-            ["PollingInterval"] = "1000",
-            ["DataPointCount"] = "10",
-            ["EnableRandomValues"] = "true"
-        });
+        newLink = new CreateLinkFormModel 
+        { 
+            Configuration = new Dictionary<string, object>
+            {
+                ["DeviceId"] = "MockDevice01",
+                ["PollingInterval"] = 1000,
+                ["DataPointCount"] = 10,
+                ["EnableRandomValues"] = true
+            }
+        };
         showCreateModal = true;
     }
 
     private void HideCreateLinkModal()
     {
         showCreateModal = false;
-        newLink = new("", "", "", new Dictionary<string, string>());
+        newLink = new CreateLinkFormModel();
     }
 
     private async Task CreateLink()
     {
-        if (string.IsNullOrWhiteSpace(newLink.Name) || string.IsNullOrWhiteSpace(newLink.Protocol))
+        if (string.IsNullOrWhiteSpace(newLink.Name) || string.IsNullOrWhiteSpace(newLink.ProtocolType))
         {
             await JSRuntime.InvokeVoidAsync("alert", "Please fill in all required fields.");
             return;
@@ -450,7 +454,7 @@
 
         try
         {
-            var success = await CommunicationApi.CreateLinkAsync(newLink);
+            var success = await CommunicationApi.CreateLinkAsync(newLink.ToDto());
             if (success)
             {
                 await JSRuntime.InvokeVoidAsync("alert", "Link created successfully!");
@@ -526,10 +530,11 @@
             if (health != null)
             {
                 var message = $"Link Health Details:\n" +
-                             $"Status: {health.Status}\n" +
+                             $"Is Healthy: {health.IsHealthy}\n" +
                              $"Success Rate: {health.SuccessRate:F2}%\n" +
-                             $"Avg Response Time: {health.AverageResponseTime:F2}ms\n" +
-                             $"Last Check: {health.LastCheckAt:HH:mm:ss}";
+                             $"Avg Response Time: {health.AverageResponseTime.TotalMilliseconds:F2}ms\n" +
+                             $"Error Count: {health.ErrorCount}\n" +
+                             $"Last Error: {health.LastError:yyyy-MM-dd HH:mm:ss}";
                 await JSRuntime.InvokeVoidAsync("alert", message);
             }
         }
@@ -542,7 +547,7 @@
 
     private string GetConfigValue(string key)
     {
-        return newLink.Configuration.TryGetValue(key, out var value) ? value : "";
+        return newLink.Configuration.TryGetValue(key, out var value) ? value?.ToString() ?? "" : "";
     }
 
     private void SetConfigValue(string key, string value)

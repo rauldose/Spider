@@ -45,7 +45,7 @@ public class LinksController : ControllerBase
             Response.Headers.Append("X-Page-Size", result.Value.PageSize.ToString());
             Response.Headers.Append("X-Total-Pages", result.Value.TotalPages.ToString());
 
-            return Ok(result.Value.Items);
+            return Ok(result.Value);
         }
         catch (Exception ex)
         {
@@ -96,7 +96,7 @@ public class LinksController : ControllerBase
                 return BadRequest(result.Error);
 
             Response.Headers.Append("X-Total-Count", result.Value!.TotalCount.ToString());
-            return Ok(result.Value.Items);
+            return Ok(result.Value);
         }
         catch (Exception ex)
         {
