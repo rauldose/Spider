@@ -140,6 +140,7 @@ public class DriverFactory : IDriverFactory
 
     private void RegisterDefaultDrivers()
     {
+        RegisterDriver<MockDriver>("Mock");
         RegisterDriver<ModbusDriver>("Modbus");
         RegisterDriver<OpcUaDriver>("OpcUa");
         RegisterDriver<MqttDriver>("Mqtt");

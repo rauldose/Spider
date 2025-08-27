@@ -35,6 +35,12 @@ builder.Services.AddHttpClient<ProjectManagementApiService>(client =>
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
 
+builder.Services.AddHttpClient<CommunicationApiService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("ApiBaseUrls:Communication") ?? "http://localhost:5009");
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

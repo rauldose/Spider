@@ -9,6 +9,7 @@
 @inject DataAcquisitionApiService DataApi
 @inject ConnectionManagementApiService ConnectionApi
 @inject ProjectManagementApiService ProjectApi
+@inject CommunicationApiService CommunicationApi
 @inject ILogger<Home> Logger
 
 <PageTitle>Spider Studio - Modern IoT Platform</PageTitle>
@@ -46,7 +47,7 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <div class="card @(_deviceApiHealthy ? "border-success" : "border-danger")">
                                 <div class="card-body text-center">
                                     <i class="bi bi-device-hdd" style="font-size: 2rem; color: @(_deviceApiHealthy ? "#28a745" : "#dc3545");"></i>
@@ -60,7 +61,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <div class="card @(_dataApiHealthy ? "border-success" : "border-danger")">
                                 <div class="card-body text-center">
                                     <i class="bi bi-graph-up" style="font-size: 2rem; color: @(_dataApiHealthy ? "#28a745" : "#dc3545");"></i>
@@ -74,7 +75,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <div class="card @(_connectionApiHealthy ? "border-success" : "border-danger")">
                                 <div class="card-body text-center">
                                     <i class="bi bi-link-45deg" style="font-size: 2rem; color: @(_connectionApiHealthy ? "#28a745" : "#dc3545");"></i>
@@ -88,7 +89,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <div class="card @(_projectApiHealthy ? "border-success" : "border-danger")">
                                 <div class="card-body text-center">
                                     <i class="bi bi-folder2" style="font-size: 2rem; color: @(_projectApiHealthy ? "#28a745" : "#dc3545");"></i>
@@ -98,6 +99,20 @@
                                     </span>
                                     <div class="mt-2">
                                         <small class="text-muted">Active: <strong>@(_projectStats?.ActiveProjects ?? 0)</strong>/@(_projectStats?.TotalProjects ?? 0)</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="card @(_communicationApiHealthy ? "border-success" : "border-danger")">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-broadcast" style="font-size: 2rem; color: @(_communicationApiHealthy ? "#28a745" : "#dc3545");"></i>
+                                    <h6 class="mt-2">Communication</h6>
+                                    <span class="badge @(_communicationApiHealthy ? "bg-success" : "bg-danger")">
+                                        @(_communicationApiHealthy ? "Healthy" : "Unavailable")
+                                    </span>
+                                    <div class="mt-2">
+                                        <small class="text-muted">Links: <strong>@(_communicationStats?.ConnectedLinks ?? 0)</strong>/@(_communicationStats?.TotalLinks ?? 0)</small>
                                     </div>
                                 </div>
                             </div>
@@ -282,10 +297,12 @@
     private bool _dataApiHealthy = false;
     private bool _connectionApiHealthy = false;
     private bool _projectApiHealthy = false;
+    private bool _communicationApiHealthy = false;
     private int _deviceCount = 0;
     private int _dataPointCount = 0;
     private ConnectionStatisticsDto? _connectionStats;
     private ProjectStatisticsDto? _projectStats;
+    private CommunicationStatisticsDto? _communicationStats;
 
     protected override async Task OnInitializedAsync()
     {
@@ -351,6 +368,7 @@
             _dataApiHealthy = await DataApi.CheckHealthAsync();
             _connectionApiHealthy = await ConnectionApi.CheckHealthAsync();
             _projectApiHealthy = await ProjectApi.IsHealthyAsync();
+            _communicationApiHealthy = await CommunicationApi.IsHealthyAsync();
 
             // Get device count (using demo project ID)
             if (_deviceApiHealthy)
@@ -384,6 +402,12 @@
             if (_projectApiHealthy)
             {
                 _projectStats = await ProjectApi.GetProjectStatisticsAsync();
+            }
+
+            // Get communication statistics
+            if (_communicationApiHealthy)
+            {
+                _communicationStats = await CommunicationApi.GetStatisticsAsync();
             }
 
             StateHasChanged();
