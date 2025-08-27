@@ -46,6 +46,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.ConnectionManagement
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ProjectManagement", "ProjectManagement", "{F564E334-6451-50E5-BB05-1EB20EFC6DB6}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Communication", "Communication", "{C564F334-7451-60E5-CC05-2EC30FGD6EB6}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.ProjectManagement.Domain", "src\BoundedContexts\ProjectManagement\Spider.ProjectManagement.Domain\Spider.ProjectManagement.Domain.csproj", "{B80C876B-00C2-5EA8-C049-5D224C90B18E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.ProjectManagement.Application", "src\BoundedContexts\ProjectManagement\Spider.ProjectManagement.Application\Spider.ProjectManagement.Application.csproj", "{900DE14B-D63B-58D2-9624-G9065A933579}"
@@ -53,6 +55,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.ProjectManagement.Infrastructure", "src\BoundedContexts\ProjectManagement\Spider.ProjectManagement.Infrastructure\Spider.ProjectManagement.Infrastructure.csproj", "{509F9291-2568-57F9-91CD-FF42GAB1FCED}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.ProjectManagement.API", "src\BoundedContexts\ProjectManagement\Spider.ProjectManagement.API\Spider.ProjectManagement.API.csproj", "{7189F3E5-4BDC-55ED-C38B-EF68D3CD2B95}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.Communication.Domain", "src\BoundedContexts\Communication\Spider.Communication.Domain\Spider.Communication.Domain.csproj", "{8189G3F5-5BDC-66FE-D38C-FG69E3DE2C96}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -136,6 +140,10 @@ Global
 		{7189F3E5-4BDC-55ED-C38B-EF68D3CD2B95}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7189F3E5-4BDC-55ED-C38B-EF68D3CD2B95}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7189F3E5-4BDC-55ED-C38B-EF68D3CD2B95}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8189G3F5-5BDC-66FE-D38C-FG69E3DE2C96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8189G3F5-5BDC-66FE-D38C-FG69E3DE2C96}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8189G3F5-5BDC-66FE-D38C-FG69E3DE2C96}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8189G3F5-5BDC-66FE-D38C-FG69E3DE2C96}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -166,6 +174,8 @@ Global
 		{900DE14B-D63B-58D2-9624-G9065A933579} = {F564E334-6451-50E5-BB05-1EB20EFC6DB6}
 		{509F9291-2568-57F9-91CD-FF42GAB1FCED} = {F564E334-6451-50E5-BB05-1EB20EFC6DB6}
 		{7189F3E5-4BDC-55ED-C38B-EF68D3CD2B95} = {F564E334-6451-50E5-BB05-1EB20EFC6DB6}
+		{C564F334-7451-60E5-CC05-2EC30FGD6EB6} = {3F6E4D0F-9D1C-6F0F-1F7B-8E3F4C5D6E7F}
+		{8189G3F5-5BDC-66FE-D38C-FG69E3DE2C96} = {C564F334-7451-60E5-CC05-2EC30FGD6EB6}
 		{6189E3D5-3BDC-44ED-B38B-DE67C3BC2A85} = {B564F334-5451-40E5-AA05-0EB10EFB6CB6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
