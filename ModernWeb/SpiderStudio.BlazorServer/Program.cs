@@ -23,6 +23,12 @@ builder.Services.AddHttpClient<DataAcquisitionApiService>(client =>
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
 
+builder.Services.AddHttpClient<ConnectionManagementApiService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("ApiBaseUrls:ConnectionManagement") ?? "http://localhost:5005");
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

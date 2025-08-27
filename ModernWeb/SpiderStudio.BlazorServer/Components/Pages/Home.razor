@@ -1,7 +1,12 @@
 ﻿@page "/"
 @using SpiderDriver.UnifiedAPI.Interfaces
 @using SpiderStudio.BlazorServer.Services
+@using Spider.ConnectionManagement.Application.DTOs
+@using Spider.ConnectionManagement.Application.Queries
 @inject DriverManagerService DriverManager
+@inject DeviceManagementApiService DeviceApi
+@inject DataAcquisitionApiService DataApi
+@inject ConnectionManagementApiService ConnectionApi
 @inject ILogger<Home> Logger
 
 <PageTitle>Spider Studio - Modern IoT Platform</PageTitle>
@@ -25,6 +30,100 @@
                     <button class="btn btn-outline-secondary" @onclick="DisconnectAllDrivers">
                         Disconnect All
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modern DDD API Status Dashboard -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">🏗️ Modern DDD Architecture Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card @(_deviceApiHealthy ? "border-success" : "border-danger")">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-device-hdd" style="font-size: 2rem; color: @(_deviceApiHealthy ? "#28a745" : "#dc3545");"></i>
+                                    <h6 class="mt-2">Device Management</h6>
+                                    <span class="badge @(_deviceApiHealthy ? "bg-success" : "bg-danger")">
+                                        @(_deviceApiHealthy ? "Healthy" : "Unavailable")
+                                    </span>
+                                    <div class="mt-2">
+                                        <small class="text-muted">Devices: <strong>@_deviceCount</strong></small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card @(_dataApiHealthy ? "border-success" : "border-danger")">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-graph-up" style="font-size: 2rem; color: @(_dataApiHealthy ? "#28a745" : "#dc3545");"></i>
+                                    <h6 class="mt-2">Data Acquisition</h6>
+                                    <span class="badge @(_dataApiHealthy ? "bg-success" : "bg-danger")">
+                                        @(_dataApiHealthy ? "Healthy" : "Unavailable")
+                                    </span>
+                                    <div class="mt-2">
+                                        <small class="text-muted">Data Points: <strong>@_dataPointCount</strong></small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card @(_connectionApiHealthy ? "border-success" : "border-danger")">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-link-45deg" style="font-size: 2rem; color: @(_connectionApiHealthy ? "#28a745" : "#dc3545");"></i>
+                                    <h6 class="mt-2">Connection Management</h6>
+                                    <span class="badge @(_connectionApiHealthy ? "bg-success" : "bg-danger")">
+                                        @(_connectionApiHealthy ? "Healthy" : "Unavailable")
+                                    </span>
+                                    <div class="mt-2">
+                                        <small class="text-muted">Connected: <strong>@(_connectionStats?.ConnectedCount ?? 0)</strong>/@(_connectionStats?.TotalConnections ?? 0)</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    @if (_connectionStats != null && _connectionApiHealthy)
+                    {
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 text-success">@_connectionStats.HealthyCount</div>
+                                    <small class="text-muted">Healthy Connections</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 text-warning">@_connectionStats.UnhealthyCount</div>
+                                    <small class="text-muted">Unhealthy</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 text-danger">@_connectionStats.FailedCount</div>
+                                    <small class="text-muted">Failed</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 text-info">@_connectionStats.AverageResponseTime.ToString("F1")ms</div>
+                                    <small class="text-muted">Avg Response</small>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    
+                    <div class="d-flex justify-content-end mt-3">
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="RefreshApiStatus">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Refresh Status
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -161,11 +260,20 @@
     private int _connectedCount = 0;
     private Dictionary<string, int> _protocolStats = new();
     private List<KeyValuePair<string, bool>> _testResults = new();
+    
+    // Modern DDD API status
+    private bool _deviceApiHealthy = false;
+    private bool _dataApiHealthy = false;
+    private bool _connectionApiHealthy = false;
+    private int _deviceCount = 0;
+    private int _dataPointCount = 0;
+    private ConnectionStatisticsDto? _connectionStats;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         DriverManager.DriversChanged += OnDriversChanged;
         RefreshDriverList();
+        await RefreshApiStatus();
     }
 
     private void OnDriversChanged(object? sender, EventArgs e)
@@ -214,6 +322,51 @@
         await DriverManager.DisconnectAllAsync();
         RefreshDriverList();
         StateHasChanged();
+    }
+
+    private async Task RefreshApiStatus()
+    {
+        try
+        {
+            // Check API health
+            _deviceApiHealthy = await DeviceApi.CheckHealthAsync();
+            _dataApiHealthy = await DataApi.CheckHealthAsync();
+            _connectionApiHealthy = await ConnectionApi.CheckHealthAsync();
+
+            // Get device count (using demo project ID)
+            if (_deviceApiHealthy)
+            {
+                var projectId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+                var devices = await DeviceApi.GetDevicesByProjectAsync(projectId);
+                _deviceCount = devices.Count();
+            }
+
+            // Get data point count (sum across all devices)
+            if (_dataApiHealthy && _deviceCount > 0)
+            {
+                var projectId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+                var devices = await DeviceApi.GetDevicesByProjectAsync(projectId);
+                int totalDataPoints = 0;
+                foreach (var device in devices)
+                {
+                    var dataPoints = await DataApi.GetDataPointsByDeviceAsync(device.Id);
+                    totalDataPoints += dataPoints.Count();
+                }
+                _dataPointCount = totalDataPoints;
+            }
+
+            // Get connection statistics
+            if (_connectionApiHealthy)
+            {
+                _connectionStats = await ConnectionApi.GetConnectionStatisticsAsync();
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error refreshing API status");
+        }
     }
 
     private async Task TestDriver(IUnifiedDriver driver)

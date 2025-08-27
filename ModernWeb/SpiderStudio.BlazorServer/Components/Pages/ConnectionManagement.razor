@@ -1,0 +1,604 @@
+@page "/connections"
+@using Spider.ConnectionManagement.Application.DTOs
+@using Spider.ConnectionManagement.Application.Queries
+@using SpiderStudio.BlazorServer.Services
+@inject ConnectionManagementApiService ConnectionApi
+@inject DeviceManagementApiService DeviceApi
+@inject ILogger<ConnectionManagement> Logger
+
+<PageTitle>Connection Management - Spider Studio</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3">🔗 Connection Management</h1>
+                    <p class="text-muted">Manage protocol connections and monitor connection health</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary" @onclick="ShowCreateConnectionForm">
+                        <i class="bi bi-plus-circle me-2"></i>Create Connection
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Health Status Bar -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert @(_apiHealthy ? "alert-success" : "alert-warning") d-flex align-items-center">
+                <i class="bi @(_apiHealthy ? "bi-check-circle" : "bi-exclamation-triangle") me-2"></i>
+                <div>
+                    <strong>API Status:</strong>
+                    Connection Management API: <span class="@(_connectionApiHealthy ? "text-success" : "text-danger")">@(_connectionApiHealthy ? "Healthy" : "Unavailable")</span>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary ms-auto" @onclick="CheckApiHealth">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connection Statistics -->
+    @if (_statistics != null)
+    {
+        <div class="row mb-4">
+            <div class="col-md-2">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h3>@_statistics.TotalConnections</h3>
+                        <p class="mb-0">Total</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h3>@_statistics.ConnectedCount</h3>
+                        <p class="mb-0">Connected</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <h3>@_statistics.DisconnectedCount</h3>
+                        <p class="mb-0">Disconnected</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card bg-danger text-white">
+                    <div class="card-body">
+                        <h3>@_statistics.FailedCount</h3>
+                        <p class="mb-0">Failed</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <h3>@_statistics.HealthyCount</h3>
+                        <p class="mb-0">Healthy</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card bg-secondary text-white">
+                    <div class="card-body">
+                        <h3>@_statistics.AverageResponseTime.ToString("F1")ms</h3>
+                        <p class="mb-0">Avg Response</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Create Connection Form -->
+    @if (_showCreateForm)
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Create New Connection</h5>
+                    </div>
+                    <div class="card-body">
+                        <EditForm Model="_newConnection" OnValidSubmit="CreateConnection">
+                            <DataAnnotationsValidator />
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Connection Name</label>
+                                        <InputText @bind-Value="_newConnection.Name" class="form-control" placeholder="Enter connection name" />
+                                        <ValidationMessage For="() => _newConnection.Name" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Protocol</label>
+                                        <InputSelect @bind-Value="_newConnection.Protocol" class="form-select">
+                                            <option value="">Select Protocol</option>
+                                            @foreach (var protocol in _availableProtocols)
+                                            {
+                                                <option value="@protocol">@protocol</option>
+                                            }
+                                        </InputSelect>
+                                        <ValidationMessage For="() => _newConnection.Protocol" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Host</label>
+                                        <InputText @bind-Value="_newConnection.Host" class="form-control" placeholder="e.g., 192.168.1.100" />
+                                        <ValidationMessage For="() => _newConnection.Host" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Port</label>
+                                        <InputNumber @bind-Value="_newConnection.Port" class="form-control" placeholder="e.g., 502" />
+                                        <ValidationMessage For="() => _newConnection.Port" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Timeout (ms)</label>
+                                        <InputNumber @bind-Value="_newConnection.TimeoutMs" class="form-control" placeholder="5000" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Device ID</label>
+                                        <InputText @bind-Value="_newConnection.DeviceIdString" class="form-control" placeholder="Enter device GUID" />
+                                        <ValidationMessage For="() => _newConnection.DeviceIdString" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Retry Attempts</label>
+                                        <InputNumber @bind-Value="_newConnection.RetryAttempts" class="form-control" placeholder="3" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-info" @onclick="TestConnectionParameters" disabled="@_isTesting">
+                                    @if (_isTesting)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                    }
+                                    Test Connection
+                                </button>
+                                <button type="submit" class="btn btn-success" disabled="@_isCreating">
+                                    @if (_isCreating)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                    }
+                                    Create Connection
+                                </button>
+                                <button type="button" class="btn btn-secondary" @onclick="HideCreateConnectionForm">
+                                    Cancel
+                                </button>
+                            </div>
+                            
+                            @if (!string.IsNullOrEmpty(_testResult))
+                            {
+                                <div class="mt-3 alert @(_testSuccess ? "alert-success" : "alert-danger")">
+                                    <i class="bi @(_testSuccess ? "bi-check-circle" : "bi-x-circle") me-2"></i>
+                                    @_testResult
+                                </div>
+                            }
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Connections List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Connections (@_connections.Count)</h5>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshConnections">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-warning" @onclick="LoadUnhealthyConnections">
+                            <i class="bi bi-exclamation-triangle"></i> Unhealthy
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (_connections.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Protocol</th>
+                                        <th>Endpoint</th>
+                                        <th>Status</th>
+                                        <th>Health</th>
+                                        <th>Response Time</th>
+                                        <th>Last Connected</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var connection in _connections)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <strong>@connection.Name</strong>
+                                                    <br><small class="text-muted">@connection.Id.ToString("N")[..8]...</small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">@connection.Protocol</span>
+                                            </td>
+                                            <td>
+                                                <span class="text-muted">@connection.Host:@connection.Port</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge @GetStatusBadgeClass(connection.Status)">
+                                                    @connection.Status
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge @(connection.IsHealthy ? "bg-success" : "bg-danger")">
+                                                    @(connection.IsHealthy ? "Healthy" : "Unhealthy")
+                                                </span>
+                                                @if (connection.ConsecutiveFailures > 0)
+                                                {
+                                                    <br><small class="text-danger">@connection.ConsecutiveFailures failures</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="@(connection.ResponseTimeMs > 1000 ? "text-warning" : "text-success")">
+                                                    @connection.ResponseTimeMs.ToString("F1")ms
+                                                </span>
+                                            </td>
+                                            <td>
+                                                @if (connection.LastConnectedAt.HasValue)
+                                                {
+                                                    <span class="text-muted">@connection.LastConnectedAt.Value.ToString("MM/dd HH:mm")</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Never</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    @if (connection.Status == "Disconnected")
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-success" @onclick="() => ConnectAsync(connection.Id)">
+                                                            <i class="bi bi-play"></i>
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-warning" @onclick="() => DisconnectAsync(connection.Id)">
+                                                            <i class="bi bi-stop"></i>
+                                                        </button>
+                                                    }
+                                                    <button class="btn btn-sm btn-outline-info" @onclick="() => CheckConnectionHealth(connection.Id)">
+                                                        <i class="bi bi-heart-pulse"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteConnection(connection.Id)">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="bi bi-link-45deg" style="font-size: 3rem; color: #6c757d;"></i>
+                            <h5 class="mt-3 text-muted">No connections configured</h5>
+                            <p class="text-muted">Create your first connection to start communicating with devices</p>
+                            <button class="btn btn-primary" @onclick="ShowCreateConnectionForm">
+                                <i class="bi bi-plus-circle me-2"></i>Create Connection
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<ConnectionDto> _connections = new();
+    private ConnectionStatisticsDto? _statistics;
+    private List<string> _availableProtocols = new();
+    private bool _showCreateForm = false;
+    private bool _isCreating = false;
+    private bool _isTesting = false;
+    private bool _connectionApiHealthy = false;
+    private bool _apiHealthy => _connectionApiHealthy;
+    private string _testResult = string.Empty;
+    private bool _testSuccess = false;
+
+    private ConnectionFormModel _newConnection = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckApiHealth();
+        await LoadProtocols();
+        await LoadConnections();
+        await LoadStatistics();
+    }
+
+    private async Task CheckApiHealth()
+    {
+        _connectionApiHealthy = await ConnectionApi.CheckHealthAsync();
+        StateHasChanged();
+    }
+
+    private async Task LoadProtocols()
+    {
+        try
+        {
+            var protocols = await ConnectionApi.GetAvailableProtocolsAsync();
+            _availableProtocols = protocols.ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading protocols");
+        }
+    }
+
+    private async Task LoadConnections()
+    {
+        try
+        {
+            var connections = await ConnectionApi.GetAllConnectionsAsync();
+            _connections = connections.ToList();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading connections");
+        }
+    }
+
+    private async Task LoadStatistics()
+    {
+        try
+        {
+            _statistics = await ConnectionApi.GetConnectionStatisticsAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading connection statistics");
+        }
+    }
+
+    private async Task LoadUnhealthyConnections()
+    {
+        try
+        {
+            var connections = await ConnectionApi.GetAllConnectionsAsync();
+            _connections = connections.Where(c => !c.IsHealthy).ToList();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading unhealthy connections");
+        }
+    }
+
+    private async Task RefreshConnections()
+    {
+        await LoadConnections();
+        await LoadStatistics();
+    }
+
+    private async Task TestConnectionParameters()
+    {
+        if (string.IsNullOrEmpty(_newConnection.Protocol) || string.IsNullOrEmpty(_newConnection.Host) || _newConnection.Port <= 0)
+        {
+            _testResult = "Please fill in protocol, host, and port before testing";
+            _testSuccess = false;
+            return;
+        }
+
+        _isTesting = true;
+        _testResult = string.Empty;
+        
+        try
+        {
+            var success = await ConnectionApi.TestConnectionAsync(
+                _newConnection.Protocol,
+                _newConnection.Host,
+                _newConnection.Port,
+                _newConnection.TimeoutMs);
+
+            _testSuccess = success;
+            _testResult = success 
+                ? $"Connection test successful! Connected to {_newConnection.Host}:{_newConnection.Port}"
+                : $"Connection test failed. Unable to connect to {_newConnection.Host}:{_newConnection.Port}";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error testing connection");
+            _testSuccess = false;
+            _testResult = $"Connection test error: {ex.Message}";
+        }
+        finally
+        {
+            _isTesting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CreateConnection()
+    {
+        if (!Guid.TryParse(_newConnection.DeviceIdString, out var deviceId))
+        {
+            Logger.LogError("Invalid device ID format");
+            return;
+        }
+
+        _isCreating = true;
+        try
+        {
+            var dto = new CreateConnectionDto(
+                deviceId,
+                _newConnection.Name,
+                _newConnection.Protocol,
+                _newConnection.Host,
+                _newConnection.Port,
+                _newConnection.TimeoutMs,
+                _newConnection.RetryAttempts,
+                null);
+
+            var connection = await ConnectionApi.CreateConnectionAsync(dto);
+            
+            if (connection != null)
+            {
+                Logger.LogInformation("Connection created successfully: {ConnectionId}", connection.Id);
+                await LoadConnections();
+                await LoadStatistics();
+                HideCreateConnectionForm();
+            }
+            else
+            {
+                Logger.LogError("Failed to create connection");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating connection");
+        }
+        finally
+        {
+            _isCreating = false;
+        }
+    }
+
+    private async Task ConnectAsync(Guid connectionId)
+    {
+        try
+        {
+            var success = await ConnectionApi.ConnectAsync(connectionId);
+            if (success)
+            {
+                await LoadConnections();
+                await LoadStatistics();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error connecting connection {ConnectionId}", connectionId);
+        }
+    }
+
+    private async Task DisconnectAsync(Guid connectionId)
+    {
+        try
+        {
+            var success = await ConnectionApi.DisconnectAsync(connectionId, "Manual disconnect");
+            if (success)
+            {
+                await LoadConnections();
+                await LoadStatistics();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error disconnecting connection {ConnectionId}", connectionId);
+        }
+    }
+
+    private async Task CheckConnectionHealth(Guid connectionId)
+    {
+        try
+        {
+            var health = await ConnectionApi.GetConnectionHealthAsync(connectionId);
+            if (health != null)
+            {
+                var message = $"Health Check Results:\n" +
+                             $"Healthy: {health.IsHealthy}\n" +
+                             $"Response Time: {health.ResponseTimeMs:F1}ms\n" +
+                             $"Consecutive Failures: {health.ConsecutiveFailures}\n" +
+                             $"Critical: {health.IsCritical}\n" +
+                             $"Requires Attention: {health.RequiresAttention}";
+                
+                Logger.LogInformation("Connection health check completed for {ConnectionId}: {Message}", connectionId, message);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error checking connection health for {ConnectionId}", connectionId);
+        }
+    }
+
+    private async Task DeleteConnection(Guid connectionId)
+    {
+        try
+        {
+            var success = await ConnectionApi.DeleteConnectionAsync(connectionId);
+            if (success)
+            {
+                await LoadConnections();
+                await LoadStatistics();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error deleting connection {ConnectionId}", connectionId);
+        }
+    }
+
+    private void ShowCreateConnectionForm()
+    {
+        _newConnection = new ConnectionFormModel();
+        _showCreateForm = true;
+        _testResult = string.Empty;
+    }
+
+    private void HideCreateConnectionForm()
+    {
+        _showCreateForm = false;
+        _newConnection = new ConnectionFormModel();
+        _testResult = string.Empty;
+    }
+
+    private static string GetStatusBadgeClass(string status)
+    {
+        return status.ToLower() switch
+        {
+            "connected" => "bg-success",
+            "connecting" => "bg-warning",
+            "disconnected" => "bg-secondary",
+            "failed" => "bg-danger",
+            "error" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private class ConnectionFormModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Protocol { get; set; } = string.Empty;
+        public string Host { get; set; } = string.Empty;
+        public int Port { get; set; } = 502;
+        public int TimeoutMs { get; set; } = 5000;
+        public int RetryAttempts { get; set; } = 3;
+        public string DeviceIdString { get; set; } = string.Empty;
+    }
+}

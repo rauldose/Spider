@@ -12,6 +12,7 @@
     <ProjectReference Include="..\..\Common\Cdy.Spider.Common\Cdy.Spider.Common.csproj" />
     <ProjectReference Include="..\..\src\BoundedContexts\DeviceManagement\Spider.DeviceManagement.Application\Spider.DeviceManagement.Application.csproj" />
     <ProjectReference Include="..\..\src\BoundedContexts\DataAcquisition\Spider.DataAcquisition.Application\Spider.DataAcquisition.Application.csproj" />
+    <ProjectReference Include="..\..\src\BoundedContexts\ConnectionManagement\Spider.ConnectionManagement.Application\Spider.ConnectionManagement.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>
