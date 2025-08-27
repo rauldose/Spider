@@ -1,0 +1,69 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.0.0
+MinimumVisualStudioVersion = 10.0.40219.1
+
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{1F4E2C8D-7B9A-4F8E-9E5A-6C1D2E3F4A5B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{2F5E3C9E-8C0B-5F9F-0F6A-7D2E3F4B5C6D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BoundedContexts", "BoundedContexts", "{3F6E4D0F-9D1C-6F0F-1F7B-8E3F4C5D6E7F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DeviceManagement", "DeviceManagement", "{4F7E5E1F-0E2D-7F1F-2F8C-9F4F5D6E7F8F}"
+EndProject
+
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Spider.Core.SharedKernel", "src\Core\Spider.Core.SharedKernel\Spider.Core.SharedKernel.csproj", "{5F8E6F2F-1F3E-8F2F-3F9D-0F5F6E7F8F9F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Spider.Core.Application", "src\Core\Spider.Core.Application\Spider.Core.Application.csproj", "{6F9E7F3F-2F4F-9F3F-4F0E-1F6F7F8F9F0F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Spider.DeviceManagement.Domain", "src\BoundedContexts\DeviceManagement\Spider.DeviceManagement.Domain\Spider.DeviceManagement.Domain.csproj", "{7F0F8F4F-3F5F-0F4F-5F1F-2F7F8F9F0F1F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Spider.DeviceManagement.Application", "src\BoundedContexts\DeviceManagement\Spider.DeviceManagement.Application\Spider.DeviceManagement.Application.csproj", "{8F1F9F5F-4F6F-1F5F-6F2F-3F8F9F0F1F2F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Spider.DeviceManagement.Infrastructure", "src\BoundedContexts\DeviceManagement\Spider.DeviceManagement.Infrastructure\Spider.DeviceManagement.Infrastructure.csproj", "{9F2F0F6F-5F7F-2F6F-7F3F-4F9F0F1F2F3F}"
+EndProject
+
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5F8E6F2F-1F3E-8F2F-3F9D-0F5F6E7F8F9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F8E6F2F-1F3E-8F2F-3F9D-0F5F6E7F8F9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F8E6F2F-1F3E-8F2F-3F9D-0F5F6E7F8F9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F8E6F2F-1F3E-8F2F-3F9D-0F5F6E7F8F9F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F9E7F3F-2F4F-9F3F-4F0E-1F6F7F8F9F0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F9E7F3F-2F4F-9F3F-4F0E-1F6F7F8F9F0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F9E7F3F-2F4F-9F3F-4F0E-1F6F7F8F9F0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F9E7F3F-2F4F-9F3F-4F0E-1F6F7F8F9F0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F0F8F4F-3F5F-0F4F-5F1F-2F7F8F9F0F1F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F0F8F4F-3F5F-0F4F-5F1F-2F7F8F9F0F1F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F0F8F4F-3F5F-0F4F-5F1F-2F7F8F9F0F1F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F0F8F4F-3F5F-0F4F-5F1F-2F7F8F9F0F1F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F1F9F5F-4F6F-1F5F-6F2F-3F8F9F0F1F2F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F1F9F5F-4F6F-1F5F-6F2F-3F8F9F0F1F2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F1F9F5F-4F6F-1F5F-6F2F-3F8F9F0F1F2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F1F9F5F-4F6F-1F5F-6F2F-3F8F9F0F1F2F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F2F0F6F-5F7F-2F6F-7F3F-4F9F0F1F2F3F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F2F0F6F-5F7F-2F6F-7F3F-4F9F0F1F2F3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F2F0F6F-5F7F-2F6F-7F3F-4F9F0F1F2F3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F2F0F6F-5F7F-2F6F-7F3F-4F9F0F1F2F3F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2F5E3C9E-8C0B-5F9F-0F6A-7D2E3F4B5C6D} = {1F4E2C8D-7B9A-4F8E-9E5A-6C1D2E3F4A5B}
+		{3F6E4D0F-9D1C-6F0F-1F7B-8E3F4C5D6E7F} = {1F4E2C8D-7B9A-4F8E-9E5A-6C1D2E3F4A5B}
+		{4F7E5E1F-0E2D-7F1F-2F8C-9F4F5D6E7F8F} = {3F6E4D0F-9D1C-6F0F-1F7B-8E3F4C5D6E7F}
+		{5F8E6F2F-1F3E-8F2F-3F9D-0F5F6E7F8F9F} = {2F5E3C9E-8C0B-5F9F-0F6A-7D2E3F4B5C6D}
+		{6F9E7F3F-2F4F-9F3F-4F0E-1F6F7F8F9F0F} = {2F5E3C9E-8C0B-5F9F-0F6A-7D2E3F4B5C6D}
+		{7F0F8F4F-3F5F-0F4F-5F1F-2F7F8F9F0F1F} = {4F7E5E1F-0E2D-7F1F-2F8C-9F4F5D6E7F8F}
+		{8F1F9F5F-4F6F-1F5F-6F2F-3F8F9F0F1F2F} = {4F7E5E1F-0E2D-7F1F-2F8C-9F4F5D6E7F8F}
+		{9F2F0F6F-5F7F-2F6F-7F3F-4F9F0F1F2F3F} = {4F7E5E1F-0E2D-7F1F-2F8C-9F4F5D6E7F8F}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0F3F4C5D-6E7F-8F9F-0F1F-2F3F4C5D6E7F}
+	EndGlobalSection
+EndGlobal
