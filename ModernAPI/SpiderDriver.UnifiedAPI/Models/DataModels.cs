@@ -1,6 +1,35 @@
 namespace SpiderDriver.UnifiedAPI.Models;
 
 /// <summary>
+/// Connection status enumeration
+/// </summary>
+public enum ConnectionStatus
+{
+    Disconnected,
+    Connecting,
+    Connected,
+    Error,
+    Reconnecting
+}
+
+/// <summary>
+/// Driver capabilities flags
+/// </summary>
+[Flags]
+public enum DriverCapabilities
+{
+    None = 0,
+    Read = 1,
+    Write = 2,
+    Subscribe = 4,
+    BulkRead = 8,
+    BulkWrite = 16,
+    HistoricalData = 32,
+    Alarms = 64,
+    Events = 128
+}
+
+/// <summary>
 /// Connection parameters for driver configuration
 /// </summary>
 public class ConnectionParameters

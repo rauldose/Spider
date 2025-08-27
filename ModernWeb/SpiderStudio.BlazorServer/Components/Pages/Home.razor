@@ -1,7 +1,283 @@
 ﻿@page "/"
+@using SpiderDriver.UnifiedAPI.Interfaces
+@using SpiderStudio.BlazorServer.Services
+@inject DriverManagerService DriverManager
+@inject ILogger<Home> Logger
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Spider Studio - Modern IoT Platform</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-4 text-primary">🕷️ Spider Studio</h1>
+                    <p class="lead">Modern IoT Device Collection Platform</p>
+                </div>
+                <div>
+                    <button class="btn btn-success me-2" @onclick="ConnectAllDrivers" disabled="@_isConnecting">
+                        @if (_isConnecting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        }
+                        Connect All
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="DisconnectAllDrivers">
+                        Disconnect All
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-Welcome to your new app.
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Driver Overview</h5>
+                </div>
+                <div class="card-body">
+                    @if (_drivers.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Protocol</th>
+                                        <th>Status</th>
+                                        <th>Capabilities</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var driver in _drivers)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@driver.Name</strong><br>
+                                                <small class="text-muted">@driver.Id</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">@driver.ProtocolType</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge @GetStatusBadgeClass(driver.Status)">
+                                                    @driver.Status
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <small>@string.Join(", ", GetCapabilityNames(driver.Capabilities))</small>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => TestDriver(driver)">
+                                                    Test
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveDriver(driver.Id)">
+                                                    Remove
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="bi bi-inbox" style="font-size: 3rem; color: #6c757d;"></i>
+                            <h5 class="mt-3 text-muted">No drivers configured</h5>
+                            <p class="text-muted">Add drivers to start collecting IoT data</p>
+                            <button class="btn btn-primary" @onclick="AddDemoDriver">
+                                Add Demo Driver
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">System Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h2 text-primary">@_drivers.Count</div>
+                                <div class="text-muted">Total Drivers</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h2 text-success">@_connectedCount</div>
+                                <div class="text-muted">Connected</div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <hr>
+                            <h6>Protocol Distribution</h6>
+                            @foreach (var protocol in _protocolStats)
+                            {
+                                <div class="d-flex justify-content-between">
+                                    <span>@protocol.Key</span>
+                                    <span class="badge bg-secondary">@protocol.Value</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (_testResults.Any())
+            {
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">Recent Test Results</h6>
+                    </div>
+                    <div class="card-body">
+                        @foreach (var result in _testResults.TakeLast(5))
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <small>@result.Key</small>
+                                <span class="badge @(result.Value ? "bg-success" : "bg-danger")">
+                                    @(result.Value ? "✓" : "✗")
+                                </span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<IUnifiedDriver> _drivers = new();
+    private bool _isConnecting = false;
+    private int _connectedCount = 0;
+    private Dictionary<string, int> _protocolStats = new();
+    private List<KeyValuePair<string, bool>> _testResults = new();
+
+    protected override void OnInitialized()
+    {
+        DriverManager.DriversChanged += OnDriversChanged;
+        RefreshDriverList();
+    }
+
+    private void OnDriversChanged(object? sender, EventArgs e)
+    {
+        InvokeAsync(() =>
+        {
+            RefreshDriverList();
+            StateHasChanged();
+        });
+    }
+
+    private void RefreshDriverList()
+    {
+        _drivers = DriverManager.GetDrivers().ToList();
+        _connectedCount = _drivers.Count(d => d.Status == SpiderDriver.UnifiedAPI.Models.ConnectionStatus.Connected);
+        
+        _protocolStats = _drivers
+            .GroupBy(d => d.ProtocolType)
+            .ToDictionary(g => g.Key, g => g.Count());
+    }
+
+    private async Task ConnectAllDrivers()
+    {
+        _isConnecting = true;
+        StateHasChanged();
+
+        try
+        {
+            var results = await DriverManager.ConnectAllAsync();
+            Logger.LogInformation("Connected {Count} drivers", results.Count(r => r.Value));
+            RefreshDriverList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error connecting drivers");
+        }
+        finally
+        {
+            _isConnecting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DisconnectAllDrivers()
+    {
+        await DriverManager.DisconnectAllAsync();
+        RefreshDriverList();
+        StateHasChanged();
+    }
+
+    private async Task TestDriver(IUnifiedDriver driver)
+    {
+        try
+        {
+            var request = new SpiderDriver.UnifiedAPI.Models.ReadRequest
+            {
+                Addresses = new[] { "40001", "40002" },
+                RegisterType = "HoldingRegisters"
+            };
+            
+            var result = await driver.ReadAsync(request);
+            _testResults.Add(new KeyValuePair<string, bool>(driver.Name, result.IsSuccess));
+            
+            Logger.LogInformation("Test result for {Driver}: {Result}", driver.Name, result.IsSuccess);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error testing driver {Driver}", driver.Name);
+            _testResults.Add(new KeyValuePair<string, bool>(driver.Name, false));
+            StateHasChanged();
+        }
+    }
+
+    private void RemoveDriver(string driverId)
+    {
+        DriverManager.RemoveDriver(driverId);
+    }
+
+    private void AddDemoDriver()
+    {
+        var demoDriver = new SpiderStudio.BlazorServer.Drivers.DemoModbusDriver();
+        DriverManager.AddDriver(demoDriver);
+    }
+
+    private static string GetStatusBadgeClass(SpiderDriver.UnifiedAPI.Models.ConnectionStatus status)
+    {
+        return status switch
+        {
+            SpiderDriver.UnifiedAPI.Models.ConnectionStatus.Connected => "bg-success",
+            SpiderDriver.UnifiedAPI.Models.ConnectionStatus.Connecting => "bg-warning",
+            SpiderDriver.UnifiedAPI.Models.ConnectionStatus.Disconnected => "bg-secondary",
+            SpiderDriver.UnifiedAPI.Models.ConnectionStatus.Error => "bg-danger",
+            SpiderDriver.UnifiedAPI.Models.ConnectionStatus.Reconnecting => "bg-info",
+            _ => "bg-secondary"
+        };
+    }
+
+    private static IEnumerable<string> GetCapabilityNames(SpiderDriver.UnifiedAPI.Models.DriverCapabilities capabilities)
+    {
+        var names = new List<string>();
+        
+        if (capabilities.HasFlag(SpiderDriver.UnifiedAPI.Models.DriverCapabilities.Read)) names.Add("Read");
+        if (capabilities.HasFlag(SpiderDriver.UnifiedAPI.Models.DriverCapabilities.Write)) names.Add("Write");
+        if (capabilities.HasFlag(SpiderDriver.UnifiedAPI.Models.DriverCapabilities.Subscribe)) names.Add("Subscribe");
+        if (capabilities.HasFlag(SpiderDriver.UnifiedAPI.Models.DriverCapabilities.BulkRead)) names.Add("Bulk");
+        
+        return names;
+    }
+
+    public void Dispose()
+    {
+        DriverManager.DriversChanged -= OnDriversChanged;
+    }
+}

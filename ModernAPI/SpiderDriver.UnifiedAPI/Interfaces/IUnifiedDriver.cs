@@ -1,3 +1,5 @@
+using SpiderDriver.UnifiedAPI.Models;
+
 namespace SpiderDriver.UnifiedAPI.Interfaces;
 
 /// <summary>
@@ -95,33 +97,4 @@ public interface IUnifiedDriver
     /// Event for driver errors
     /// </summary>
     event EventHandler<DriverErrorEventArgs> DriverError;
-}
-
-/// <summary>
-/// Connection status enumeration
-/// </summary>
-public enum ConnectionStatus
-{
-    Disconnected,
-    Connecting,
-    Connected,
-    Error,
-    Reconnecting
-}
-
-/// <summary>
-/// Driver capabilities flags
-/// </summary>
-[Flags]
-public enum DriverCapabilities
-{
-    None = 0,
-    Read = 1,
-    Write = 2,
-    Subscribe = 4,
-    BulkRead = 8,
-    BulkWrite = 16,
-    HistoricalData = 32,
-    Alarms = 64,
-    Events = 128
 }

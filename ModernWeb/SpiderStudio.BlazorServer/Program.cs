@@ -1,10 +1,14 @@
 using SpiderStudio.BlazorServer.Components;
+using SpiderStudio.BlazorServer.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Add Spider Studio services
+builder.Services.AddSingleton<DriverManagerService>();
 
 var app = builder.Build();
 
