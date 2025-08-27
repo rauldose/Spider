@@ -48,6 +48,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ProjectManagement", "Projec
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Communication", "Communication", "{C564F334-7451-60E5-CC05-2EC30FGD6EB6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.Communication.Domain", "src\BoundedContexts\Communication\Spider.Communication.Domain\Spider.Communication.Domain.csproj", "{D564F334-8451-70E5-DD05-3FD40GHE6FC6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.Communication.Application", "src\BoundedContexts\Communication\Spider.Communication.Application\Spider.Communication.Application.csproj", "{E564F334-9451-80E5-EE05-4GE50HIE6GD6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.Communication.Infrastructure", "src\BoundedContexts\Communication\Spider.Communication.Infrastructure\Spider.Communication.Infrastructure.csproj", "{F564F334-A451-90E5-FF05-5HF60JIF6HE6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.Communication.API", "src\BoundedContexts\Communication\Spider.Communication.API\Spider.Communication.API.csproj", "{G564F334-B451-A0E5-GG05-6IG70KJG6IF6}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.ProjectManagement.Domain", "src\BoundedContexts\ProjectManagement\Spider.ProjectManagement.Domain\Spider.ProjectManagement.Domain.csproj", "{B80C876B-00C2-5EA8-C049-5D224C90B18E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.ProjectManagement.Application", "src\BoundedContexts\ProjectManagement\Spider.ProjectManagement.Application\Spider.ProjectManagement.Application.csproj", "{900DE14B-D63B-58D2-9624-G9065A933579}"
@@ -56,7 +64,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.ProjectManagement.In
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.ProjectManagement.API", "src\BoundedContexts\ProjectManagement\Spider.ProjectManagement.API\Spider.ProjectManagement.API.csproj", "{7189F3E5-4BDC-55ED-C38B-EF68D3CD2B95}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.Communication.Domain", "src\BoundedContexts\Communication\Spider.Communication.Domain\Spider.Communication.Domain.csproj", "{8189G3F5-5BDC-66FE-D38C-FG69E3DE2C96}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.Communication.Domain", "src\BoundedContexts\Communication\Spider.Communication.Domain\Spider.Communication.Domain.csproj", "{D564F334-8451-70E5-DD05-3FD40FHE6FC6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.Communication.Application", "src\BoundedContexts\Communication\Spider.Communication.Application\Spider.Communication.Application.csproj", "{E564F334-9451-80E5-EE05-4FE50HIF6GD6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.Communication.Infrastructure", "src\BoundedContexts\Communication\Spider.Communication.Infrastructure\Spider.Communication.Infrastructure.csproj", "{F564F334-A451-90E5-FF05-5GF60JIG6HE6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.Communication.API", "src\BoundedContexts\Communication\Spider.Communication.API\Spider.Communication.API.csproj", "{A564F334-B451-A0E5-AA05-6HG70KJH6IF6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -144,6 +158,22 @@ Global
 		{8189G3F5-5BDC-66FE-D38C-FG69E3DE2C96}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8189G3F5-5BDC-66FE-D38C-FG69E3DE2C96}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8189G3F5-5BDC-66FE-D38C-FG69E3DE2C96}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D564F334-8451-70E5-DD05-3FD40FHE6FC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D564F334-8451-70E5-DD05-3FD40FHE6FC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D564F334-8451-70E5-DD05-3FD40FHE6FC6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D564F334-8451-70E5-DD05-3FD40FHE6FC6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E564F334-9451-80E5-EE05-4FE50HIF6GD6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E564F334-9451-80E5-EE05-4FE50HIF6GD6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E564F334-9451-80E5-EE05-4FE50HIF6GD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E564F334-9451-80E5-EE05-4FE50HIF6GD6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F564F334-A451-90E5-FF05-5GF60JIG6HE6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F564F334-A451-90E5-FF05-5GF60JIG6HE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F564F334-A451-90E5-FF05-5GF60JIG6HE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F564F334-A451-90E5-FF05-5GF60JIG6HE6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A564F334-B451-A0E5-AA05-6HG70KJH6IF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A564F334-B451-A0E5-AA05-6HG70KJH6IF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A564F334-B451-A0E5-AA05-6HG70KJH6IF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A564F334-B451-A0E5-AA05-6HG70KJH6IF6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -176,6 +206,10 @@ Global
 		{7189F3E5-4BDC-55ED-C38B-EF68D3CD2B95} = {F564E334-6451-50E5-BB05-1EB20EFC6DB6}
 		{C564F334-7451-60E5-CC05-2EC30FGD6EB6} = {3F6E4D0F-9D1C-6F0F-1F7B-8E3F4C5D6E7F}
 		{8189G3F5-5BDC-66FE-D38C-FG69E3DE2C96} = {C564F334-7451-60E5-CC05-2EC30FGD6EB6}
+		{D564F334-8451-70E5-DD05-3FD40FHE6FC6} = {C564F334-7451-60E5-CC05-2EC30FGD6EB6}
+		{E564F334-9451-80E5-EE05-4FE50HIF6GD6} = {C564F334-7451-60E5-CC05-2EC30FGD6EB6}
+		{F564F334-A451-90E5-FF05-5GF60JIG6HE6} = {C564F334-7451-60E5-CC05-2EC30FGD6EB6}
+		{A564F334-B451-A0E5-AA05-6HG70KJH6IF6} = {C564F334-7451-60E5-CC05-2EC30FGD6EB6}
 		{6189E3D5-3BDC-44ED-B38B-DE67C3BC2A85} = {B564F334-5451-40E5-AA05-0EB10EFB6CB6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
