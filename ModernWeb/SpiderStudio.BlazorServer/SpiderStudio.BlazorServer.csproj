@@ -13,6 +13,7 @@
     <ProjectReference Include="..\..\src\BoundedContexts\DeviceManagement\Spider.DeviceManagement.Application\Spider.DeviceManagement.Application.csproj" />
     <ProjectReference Include="..\..\src\BoundedContexts\DataAcquisition\Spider.DataAcquisition.Application\Spider.DataAcquisition.Application.csproj" />
     <ProjectReference Include="..\..\src\BoundedContexts\ConnectionManagement\Spider.ConnectionManagement.Application\Spider.ConnectionManagement.Application.csproj" />
+    <ProjectReference Include="..\..\src\BoundedContexts\ProjectManagement\Spider.ProjectManagement.Application\Spider.ProjectManagement.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>
