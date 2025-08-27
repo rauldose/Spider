@@ -3,6 +3,7 @@ using Spider.Communication.Application.Interfaces;
 using Spider.Communication.Domain.Entities;
 using Spider.Communication.Infrastructure.Persistence;
 using Spider.Core.Application.Interfaces;
+using Spider.Core.Application.Common;
 using Spider.Core.SharedKernel.Abstractions;
 
 namespace Spider.Communication.Infrastructure.Repositories;

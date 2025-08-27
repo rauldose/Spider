@@ -6,6 +6,7 @@ using Spider.Communication.Application.Interfaces;
 using Spider.Communication.Domain.Entities;
 using Spider.Communication.Domain.ValueObjects;
 using Spider.Core.Application.Interfaces;
+using Spider.Core.Application.Common;
 using Spider.Core.SharedKernel.Abstractions;
 using Spider.Drivers.Core.Abstractions;
 
@@ -47,10 +48,11 @@ public class CreateLinkCommandHandler : IRequestHandler<CreateLinkCommand, IResu
                 request.LinkDto.Configuration.ConnectionString,
                 request.LinkDto.Configuration.Parameters,
                 request.LinkDto.Configuration.ConnectionTimeout,
-                request.LinkDto.Configuration.ReadTimeout,
-                request.LinkDto.Configuration.MaxRetries,
-                request.LinkDto.Configuration.EnableHeartbeat,
-                request.LinkDto.Configuration.HeartbeatInterval);
+                request.LinkDto.Configuration.ReadTimeout, // operationTimeout
+                request.LinkDto.Configuration.HeartbeatInterval, // healthCheckInterval
+                10, // maxChannels - default
+                request.LinkDto.Configuration.EnableHeartbeat, // autoReconnect
+                request.LinkDto.Configuration.MaxRetries); // maxRetryAttempts
 
             // Create link entity
             var link = new Link(metadata, configuration);
@@ -99,10 +101,11 @@ public class UpdateLinkCommandHandler : IRequestHandler<UpdateLinkCommand, IResu
                 request.LinkDto.Configuration.ConnectionString,
                 request.LinkDto.Configuration.Parameters,
                 request.LinkDto.Configuration.ConnectionTimeout,
-                request.LinkDto.Configuration.ReadTimeout,
-                request.LinkDto.Configuration.MaxRetries,
-                request.LinkDto.Configuration.EnableHeartbeat,
-                request.LinkDto.Configuration.HeartbeatInterval);
+                request.LinkDto.Configuration.ReadTimeout, // operationTimeout
+                request.LinkDto.Configuration.HeartbeatInterval, // healthCheckInterval
+                10, // maxChannels - default
+                request.LinkDto.Configuration.EnableHeartbeat, // autoReconnect
+                request.LinkDto.Configuration.MaxRetries); // maxRetryAttempts
 
             link.UpdateConfiguration(newConfiguration);
 

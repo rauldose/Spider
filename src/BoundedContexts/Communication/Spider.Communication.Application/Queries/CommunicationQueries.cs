@@ -1,6 +1,7 @@
 using MediatR;
 using Spider.Communication.Application.DTOs;
 using Spider.Core.Application.Interfaces;
+using Spider.Core.Application.Common;
 
 namespace Spider.Communication.Application.Queries;
 

@@ -4,6 +4,7 @@ using Spider.Communication.Application.Queries;
 using Spider.Communication.Application.DTOs;
 using Spider.Communication.Application.Interfaces;
 using Spider.Core.Application.Interfaces;
+using Spider.Core.Application.Common;
 
 namespace Spider.Communication.Application.Handlers;
 

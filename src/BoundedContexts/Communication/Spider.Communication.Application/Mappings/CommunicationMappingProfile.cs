@@ -2,6 +2,7 @@ using AutoMapper;
 using Spider.Communication.Application.DTOs;
 using Spider.Communication.Domain.Entities;
 using Spider.Communication.Domain.ValueObjects;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Spider.Communication.Application.Mappings;
 

@@ -1,6 +1,7 @@
 using Spider.Communication.Domain.Entities;
 using Spider.Core.SharedKernel.Abstractions;
 using Spider.Core.Application.Interfaces;
+using Spider.Core.Application.Common;
 
 namespace Spider.Communication.Application.Interfaces;
 
