@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Core\Spider.Core.SharedKernel\Spider.Core.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\..\Core\Spider.Drivers.Core\Spider.Drivers.Core.csproj" />
     <ProjectReference Include="..\Spider.ConnectionManagement.Domain\Spider.ConnectionManagement.Domain.csproj" />
     <ProjectReference Include="..\Spider.ConnectionManagement.Application\Spider.ConnectionManagement.Application.csproj" />
   </ItemGroup>
