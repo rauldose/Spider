@@ -1,0 +1,562 @@
+@using Spider.DataAcquisition.Application.DTOs
+@using Spider.DataAcquisition.Application.Commands
+@using SpiderStudio.BlazorServer.Services
+@inject DataAcquisitionApiService DataApi
+@inject IJSRuntime JSRuntime
+
+<div class="tags-tab">
+    <!-- Filter Panel -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="bi bi-funnel me-2"></i>Data Point Filters
+                </h6>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" @bind="_filtersEnabled" id="enableFilters">
+                    <label class="form-check-label" for="enableFilters">
+                        Enable Filters
+                    </label>
+                </div>
+            </div>
+        </div>
+        @if (_filtersEnabled)
+        {
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Keyword</label>
+                        <input type="text" class="form-control" @bind="_filterKeyword" @onkeypress="OnKeywordKeyPress" 
+                               placeholder="Search by name..." />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Data Type</label>
+                        <select class="form-select" @bind="_filterDataType">
+                            <option value="">All Types</option>
+                            <option value="Boolean">Boolean</option>
+                            <option value="Integer">Integer</option>
+                            <option value="Float">Float</option>
+                            <option value="String">String</option>
+                            <option value="DateTime">DateTime</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Quality</label>
+                        <select class="form-select" @bind="_filterQuality">
+                            <option value="">All Quality</option>
+                            <option value="Good">Good</option>
+                            <option value="Bad">Bad</option>
+                            <option value="Uncertain">Uncertain</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Address Filter</label>
+                        <input type="text" class="form-control" @bind="_filterAddress" 
+                               placeholder="Filter by address..." />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-primary" @onclick="ApplyFilters">
+                                <i class="bi bi-search"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary" @onclick="ClearFilters">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Toolbar -->
+    <div class="card mb-4">
+        <div class="card-body py-2">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success btn-sm" @onclick="AddDataPoint">
+                        <i class="bi bi-plus-circle me-1"></i>Add
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" @onclick="RemoveSelected" 
+                            disabled="@(!_selectedDataPoints.Any())">
+                        <i class="bi bi-trash me-1"></i>Remove (@_selectedDataPoints.Count)
+                    </button>
+                    <div class="vr"></div>
+                    <button class="btn btn-outline-primary btn-sm" @onclick="CopySelected" 
+                            disabled="@(!_selectedDataPoints.Any())">
+                        <i class="bi bi-copy me-1"></i>Copy
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm" @onclick="PasteDataPoints" 
+                            disabled="@(_clipboard.Count == 0)">
+                        <i class="bi bi-clipboard me-1"></i>Paste (@_clipboard.Count)
+                    </button>
+                    <div class="vr"></div>
+                    <button class="btn btn-outline-info btn-sm" @onclick="ImportDataPoints">
+                        <i class="bi bi-upload me-1"></i>Import
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" @onclick="ExportDataPoints" 
+                            disabled="@(!_filteredDataPoints.Any())">
+                        <i class="bi bi-download me-1"></i>Export
+                    </button>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="text-muted small">
+                        @_filteredDataPoints.Count() of @DataPoints.Count data points
+                    </span>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <input type="radio" class="btn-check" name="selectionMode" id="rowSelect" 
+                               checked="@(_selectionMode == "row")" @onchange="() => SetSelectionMode(\"row\")">
+                        <label class="btn btn-outline-secondary" for="rowSelect" title="Row Selection">
+                            <i class="bi bi-list"></i>
+                        </label>
+                        <input type="radio" class="btn-check" name="selectionMode" id="cellSelect" 
+                               checked="@(_selectionMode == "cell")" @onchange="() => SetSelectionMode(\"cell\")">
+                        <label class="btn btn-outline-secondary" for="cellSelect" title="Cell Selection">
+                            <i class="bi bi-grid"></i>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Points Grid -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 600px;">
+                <table class="table table-hover table-sm mb-0">
+                    <thead class="table-dark sticky-top">
+                        <tr>
+                            <th width="40">
+                                <input type="checkbox" class="form-check-input" 
+                                       @onchange="ToggleSelectAll" 
+                                       checked="@_selectAll" />
+                            </th>
+                            <th width="60">#</th>
+                            <th>Name</th>
+                            <th>Address</th>
+                            <th>Data Type</th>
+                            <th>Current Value</th>
+                            <th>Quality</th>
+                            <th>Last Updated</th>
+                            <th width="100">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (_filteredDataPoints.Any())
+                        {
+                            @foreach (var (dataPoint, index) in _filteredDataPoints.Select((dp, i) => (dp, i)))
+                            {
+                                <tr class="@(GetRowClass(dataPoint))" @onclick="() => ToggleSelection(dataPoint)" 
+                                    @ondblclick="() => EditDataPoint(dataPoint)">
+                                    <td>
+                                        <input type="checkbox" class="form-check-input" 
+                                               checked="@_selectedDataPoints.Contains(dataPoint)" 
+                                               @onchange="() => ToggleSelection(dataPoint)" />
+                                    </td>
+                                    <td>@(index + 1)</td>
+                                    <td>
+                                        @if (_editingDataPoint?.Id == dataPoint.Id)
+                                        {
+                                            <input type="text" class="form-control form-control-sm" 
+                                                   @bind="dataPoint.Name" @onblur="() => StopEditing()" 
+                                                   @onkeypress="@((e) => OnEditKeyPress(e, dataPoint))" />
+                                        }
+                                        else
+                                        {
+                                            <span @onclick="() => StartEditing(dataPoint)" style="cursor: pointer;">
+                                                @dataPoint.Name
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <code class="small">@dataPoint.Address</code>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">@dataPoint.DataType</span>
+                                    </td>
+                                    <td>
+                                        <span class="font-monospace">@FormatValue(dataPoint.Value)</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge @GetQualityBadgeClass(dataPoint.Quality)">
+                                            @dataPoint.Quality
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            @(dataPoint.Timestamp?.ToString("HH:mm:ss") ?? "Never")
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary btn-sm" 
+                                                    @onclick="() => EditDataPoint(dataPoint)" 
+                                                    @onclick:stopPropagation="true" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger btn-sm" 
+                                                    @onclick="() => DeleteDataPoint(dataPoint)" 
+                                                    @onclick:stopPropagation="true" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="9" class="text-center text-muted py-4">
+                                    @if (DataPoints.Any())
+                                    {
+                                        <div>
+                                            <i class="bi bi-funnel fs-1"></i>
+                                            <p class="mt-2">No data points match the current filters.</p>
+                                            <button class="btn btn-link" @onclick="ClearFilters">Clear Filters</button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div>
+                                            <i class="bi bi-tags fs-1"></i>
+                                            <p class="mt-2">No data points configured for this device.</p>
+                                            <button class="btn btn-primary" @onclick="AddDataPoint">Add First Data Point</button>
+                                        </div>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Modal -->
+@if (_showEditModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        @(_editingDataPoint?.Id == Guid.Empty ? "Add New Data Point" : "Edit Data Point")
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseEditModal"></button>
+                </div>
+                <div class="modal-body">
+                    <DataPointEditForm DataPoint="_editingDataPoint" OnSave="SaveDataPoint" OnCancel="CloseEditModal" />
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid DeviceId { get; set; }
+    [Parameter] public List<DataPointDto> DataPoints { get; set; } = new();
+    [Parameter] public EventCallback<List<DataPointDto>> OnDataPointsChanged { get; set; }
+
+    private bool _filtersEnabled = false;
+    private string _filterKeyword = "";
+    private string _filterDataType = "";
+    private string _filterQuality = "";
+    private string _filterAddress = "";
+    private string _selectionMode = "row";
+    
+    private HashSet<DataPointDto> _selectedDataPoints = new();
+    private List<DataPointDto> _clipboard = new();
+    private bool _selectAll = false;
+    
+    private bool _showEditModal = false;
+    private DataPointDto? _editingDataPoint;
+
+    private IEnumerable<DataPointDto> _filteredDataPoints => FilterDataPoints();
+
+    private IEnumerable<DataPointDto> FilterDataPoints()
+    {
+        var filtered = DataPoints.AsEnumerable();
+
+        if (_filtersEnabled)
+        {
+            if (!string.IsNullOrWhiteSpace(_filterKeyword))
+                filtered = filtered.Where(dp => dp.Name.Contains(_filterKeyword, StringComparison.OrdinalIgnoreCase));
+            
+            if (!string.IsNullOrWhiteSpace(_filterDataType))
+                filtered = filtered.Where(dp => dp.DataType.Equals(_filterDataType, StringComparison.OrdinalIgnoreCase));
+            
+            if (!string.IsNullOrWhiteSpace(_filterQuality))
+                filtered = filtered.Where(dp => dp.Quality.Equals(_filterQuality, StringComparison.OrdinalIgnoreCase));
+            
+            if (!string.IsNullOrWhiteSpace(_filterAddress))
+                filtered = filtered.Where(dp => dp.Address.Contains(_filterAddress, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return filtered;
+    }
+
+    private void ApplyFilters()
+    {
+        StateHasChanged();
+    }
+
+    private void ClearFilters()
+    {
+        _filterKeyword = "";
+        _filterDataType = "";
+        _filterQuality = "";
+        _filterAddress = "";
+        StateHasChanged();
+    }
+
+    private async Task OnKeywordKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            ApplyFilters();
+        }
+    }
+
+    private void SetSelectionMode(string mode)
+    {
+        _selectionMode = mode;
+        _selectedDataPoints.Clear();
+        _selectAll = false;
+        StateHasChanged();
+    }
+
+    private void ToggleSelection(DataPointDto dataPoint)
+    {
+        if (_selectedDataPoints.Contains(dataPoint))
+            _selectedDataPoints.Remove(dataPoint);
+        else
+            _selectedDataPoints.Add(dataPoint);
+        
+        _selectAll = _selectedDataPoints.Count == _filteredDataPoints.Count();
+        StateHasChanged();
+    }
+
+    private void ToggleSelectAll(ChangeEventArgs e)
+    {
+        _selectAll = (bool)(e.Value ?? false);
+        
+        if (_selectAll)
+            _selectedDataPoints.UnionWith(_filteredDataPoints);
+        else
+            _selectedDataPoints.Clear();
+        
+        StateHasChanged();
+    }
+
+    private void AddDataPoint()
+    {
+        _editingDataPoint = new DataPointDto
+        {
+            Id = Guid.Empty,
+            DeviceId = DeviceId,
+            Name = "",
+            Address = "",
+            DataType = "Float",
+            Quality = "Good"
+        };
+        _showEditModal = true;
+        StateHasChanged();
+    }
+
+    private void EditDataPoint(DataPointDto dataPoint)
+    {
+        _editingDataPoint = new DataPointDto
+        {
+            Id = dataPoint.Id,
+            DeviceId = dataPoint.DeviceId,
+            Name = dataPoint.Name,
+            Address = dataPoint.Address,
+            DataType = dataPoint.DataType,
+            Quality = dataPoint.Quality,
+            Value = dataPoint.Value,
+            Timestamp = dataPoint.Timestamp
+        };
+        _showEditModal = true;
+        StateHasChanged();
+    }
+
+    private async Task SaveDataPoint(DataPointDto dataPoint)
+    {
+        try
+        {
+            if (dataPoint.Id == Guid.Empty)
+            {
+                // Add new data point
+                var newDataPoint = await DataApi.CreateDataPointAsync(new CreateDataPointCommand
+                {
+                    DeviceId = dataPoint.DeviceId,
+                    Name = dataPoint.Name,
+                    Address = dataPoint.Address,
+                    DataType = dataPoint.DataType
+                });
+                
+                DataPoints.Add(newDataPoint);
+            }
+            else
+            {
+                // Update existing data point
+                var existingIndex = DataPoints.FindIndex(dp => dp.Id == dataPoint.Id);
+                if (existingIndex >= 0)
+                {
+                    DataPoints[existingIndex] = dataPoint;
+                }
+            }
+
+            await OnDataPointsChanged.InvokeAsync(DataPoints);
+            CloseEditModal();
+        }
+        catch (Exception ex)
+        {
+            // Handle error
+        }
+    }
+
+    private async Task DeleteDataPoint(DataPointDto dataPoint)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete '{dataPoint.Name}'?"))
+        {
+            try
+            {
+                await DataApi.DeleteDataPointAsync(dataPoint.Id);
+                DataPoints.Remove(dataPoint);
+                _selectedDataPoints.Remove(dataPoint);
+                await OnDataPointsChanged.InvokeAsync(DataPoints);
+            }
+            catch (Exception ex)
+            {
+                // Handle error
+            }
+        }
+    }
+
+    private async Task RemoveSelected()
+    {
+        if (_selectedDataPoints.Any() && 
+            await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete {_selectedDataPoints.Count} data points?"))
+        {
+            try
+            {
+                foreach (var dataPoint in _selectedDataPoints.ToList())
+                {
+                    await DataApi.DeleteDataPointAsync(dataPoint.Id);
+                    DataPoints.Remove(dataPoint);
+                }
+                
+                _selectedDataPoints.Clear();
+                await OnDataPointsChanged.InvokeAsync(DataPoints);
+            }
+            catch (Exception ex)
+            {
+                // Handle error
+            }
+        }
+    }
+
+    private void CopySelected()
+    {
+        _clipboard = _selectedDataPoints.ToList();
+        StateHasChanged();
+    }
+
+    private void PasteDataPoints()
+    {
+        foreach (var item in _clipboard)
+        {
+            var newDataPoint = new DataPointDto
+            {
+                Id = Guid.Empty,
+                DeviceId = DeviceId,
+                Name = $"{item.Name}_Copy",
+                Address = item.Address,
+                DataType = item.DataType,
+                Quality = item.Quality
+            };
+            DataPoints.Add(newDataPoint);
+        }
+        StateHasChanged();
+    }
+
+    private async Task ImportDataPoints()
+    {
+        // TODO: Implement import functionality
+        await JSRuntime.InvokeVoidAsync("alert", "Import functionality coming soon!");
+    }
+
+    private async Task ExportDataPoints()
+    {
+        // TODO: Implement export functionality
+        await JSRuntime.InvokeVoidAsync("alert", "Export functionality coming soon!");
+    }
+
+    private void CloseEditModal()
+    {
+        _showEditModal = false;
+        _editingDataPoint = null;
+        StateHasChanged();
+    }
+
+    private void StartEditing(DataPointDto dataPoint)
+    {
+        _editingDataPoint = dataPoint;
+        StateHasChanged();
+    }
+
+    private void StopEditing()
+    {
+        _editingDataPoint = null;
+        StateHasChanged();
+    }
+
+    private async Task OnEditKeyPress(KeyboardEventArgs e, DataPointDto dataPoint)
+    {
+        if (e.Key == "Enter")
+        {
+            await SaveDataPoint(dataPoint);
+            StopEditing();
+        }
+        else if (e.Key == "Escape")
+        {
+            StopEditing();
+        }
+    }
+
+    private string GetRowClass(DataPointDto dataPoint)
+    {
+        var classes = new List<string>();
+        
+        if (_selectedDataPoints.Contains(dataPoint))
+            classes.Add("table-active");
+            
+        if (dataPoint.Quality == "Bad")
+            classes.Add("table-danger");
+        else if (dataPoint.Quality == "Uncertain")
+            classes.Add("table-warning");
+            
+        return string.Join(" ", classes);
+    }
+
+    private string GetQualityBadgeClass(string quality)
+    {
+        return quality switch
+        {
+            "Good" => "bg-success",
+            "Bad" => "bg-danger",
+            "Uncertain" => "bg-warning",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string FormatValue(object? value)
+    {
+        return value?.ToString() ?? "null";
+    }
+}

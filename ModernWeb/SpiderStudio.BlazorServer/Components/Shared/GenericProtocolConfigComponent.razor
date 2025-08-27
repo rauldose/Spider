@@ -1,0 +1,52 @@
+@using Spider.DeviceManagement.Application.DTOs
+
+<div class="protocol-config generic-config">
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Generic Protocol Configuration</strong><br/>
+                This protocol uses custom connection parameters. Please refer to the protocol documentation for specific parameter formats.
+            </div>
+        </div>
+        
+        <div class="col-12">
+            <label class="form-label">Connection Parameters</label>
+            <InputTextArea @bind-Value="Device.ConnectionString" class="form-control" rows="4" 
+                           placeholder="Enter protocol-specific connection parameters...&#10;Example:&#10;Parameter1=Value1;Parameter2=Value2" />
+            <div class="form-text">
+                Enter connection parameters in key=value pairs separated by semicolons
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Connection Timeout (ms)</label>
+            <InputNumber @bind-Value="_timeout" class="form-control" min="1000" step="100" />
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Retry Attempts</label>
+            <InputNumber @bind-Value="_retryCount" class="form-control" min="0" max="10" />
+        </div>
+        
+        <div class="col-12">
+            <div class="form-check">
+                <InputCheckbox @bind-Value="_enableLogging" class="form-check-input" id="enableLogging" />
+                <label class="form-check-label" for="enableLogging">
+                    Enable protocol logging
+                </label>
+                <div class="form-text">
+                    Enable detailed logging for troubleshooting protocol communication
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public DeviceDto Device { get; set; } = new();
+
+    private int _timeout = 5000;
+    private int _retryCount = 3;
+    private bool _enableLogging = false;
+}

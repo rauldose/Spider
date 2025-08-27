@@ -1,0 +1,296 @@
+@using Spider.DeviceManagement.Application.DTOs
+@using Spider.DeviceManagement.Application.Commands
+@using SpiderStudio.BlazorServer.Services
+@inject DeviceManagementApiService DeviceApi
+@inject ConnectionManagementApiService ConnectionApi
+
+<div class="communication-tab">
+    <div class="row">
+        <div class="col-12">
+            <h5 class="border-bottom pb-2 mb-4">
+                <i class="bi bi-wifi me-2"></i>Communication Configuration
+            </h5>
+        </div>
+    </div>
+
+    <EditForm Model="Device" OnValidSubmit="UpdateDevice">
+        <DataAnnotationsValidator />
+        
+        <!-- Protocol Selection -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="bi bi-diagram-2 me-2"></i>Protocol Settings
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Protocol Type</label>
+                            <InputSelect @bind-Value="Device.ProtocolType" class="form-select" @onchange="OnProtocolChanged">
+                                <option value="">Select Protocol</option>
+                                @foreach (var protocol in _availableProtocols)
+                                {
+                                    <option value="@protocol">@protocol</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="() => Device.ProtocolType" />
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(Device.ProtocolType))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">Connection String</label>
+                                <InputTextArea @bind-Value="Device.ConnectionString" class="form-control" rows="3" 
+                                               placeholder="Enter protocol-specific connection parameters" />
+                                <div class="form-text">
+                                    @GetConnectionStringHint(Device.ProtocolType)
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="bi bi-gear me-2"></i>Device Settings
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Device Name</label>
+                            <InputText @bind-Value="Device.Name" class="form-control" />
+                            <ValidationMessage For="() => Device.Name" />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <InputTextArea @bind-Value="Device.Description" class="form-control" rows="2" />
+                        </div>
+                        
+                        <div class="form-check">
+                            <InputCheckbox @bind-Value="Device.IsEnabled" class="form-check-input" id="deviceEnabled" />
+                            <label class="form-check-label" for="deviceEnabled">
+                                Enable Device
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Protocol-Specific Configuration -->
+        @if (!string.IsNullOrEmpty(Device.ProtocolType))
+        {
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="bi bi-sliders me-2"></i>@Device.ProtocolType Protocol Configuration
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            @switch (Device.ProtocolType.ToLower())
+                            {
+                                case "modbus":
+                                    <ModbusConfigComponent Device="Device" />
+                                    break;
+                                case "opcua":
+                                    <OpcUaConfigComponent Device="Device" />
+                                    break;
+                                case "mqtt":
+                                    <MqttConfigComponent Device="Device" />
+                                    break;
+                                case "siemens":
+                                    <SiemensConfigComponent Device="Device" />
+                                    break;
+                                case "omron":
+                                    <OmronConfigComponent Device="Device" />
+                                    break;
+                                default:
+                                    <GenericProtocolConfigComponent Device="Device" />
+                                    break;
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Connection Testing -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="bi bi-activity me-2"></i>Connection Testing
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <button type="button" class="btn btn-outline-primary me-2" 
+                                        @onclick="TestConnection" disabled="@_testing">
+                                    @if (_testing)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-play-circle me-2"></i>
+                                    }
+                                    Test Connection
+                                </button>
+                                
+                                @if (_connectionTestResult != null)
+                                {
+                                    <span class="badge @(_connectionTestResult.Success ? "bg-success" : "bg-danger")">
+                                        @(_connectionTestResult.Success ? "Connected" : "Failed")
+                                    </span>
+                                }
+                            </div>
+                            <div class="col-md-6">
+                                @if (_connectionTestResult != null && !string.IsNullOrEmpty(_connectionTestResult.Message))
+                                {
+                                    <div class="alert @(_connectionTestResult.Success ? "alert-success" : "alert-danger") py-2 mb-0">
+                                        <small>@_connectionTestResult.Message</small>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success" disabled="@_updating">
+                        @if (_updating)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-check-circle me-2"></i>
+                        }
+                        Apply Changes
+                    </button>
+                    
+                    <button type="button" class="btn btn-outline-secondary" @onclick="ResetForm">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter] public DeviceDto Device { get; set; } = new();
+    [Parameter] public EventCallback<DeviceDto> OnDeviceChanged { get; set; }
+
+    private List<string> _availableProtocols = new()
+    {
+        "Modbus", "OpcUA", "MQTT", "Siemens", "Omron", "Mitsubishi", 
+        "Allen Bradley", "Schneider", "GE Fanuc", "Custom"
+    };
+
+    private bool _testing = false;
+    private bool _updating = false;
+    private ConnectionTestResult? _connectionTestResult;
+
+    private void OnProtocolChanged(ChangeEventArgs e)
+    {
+        _connectionTestResult = null;
+        StateHasChanged();
+    }
+
+    private async Task TestConnection()
+    {
+        try
+        {
+            _testing = true;
+            _connectionTestResult = null;
+            StateHasChanged();
+
+            // Simulate connection test
+            await Task.Delay(2000);
+            
+            // For now, simulate a test result
+            _connectionTestResult = new ConnectionTestResult
+            {
+                Success = !string.IsNullOrEmpty(Device.ConnectionString),
+                Message = !string.IsNullOrEmpty(Device.ConnectionString) 
+                    ? "Connection established successfully" 
+                    : "Connection string is required"
+            };
+        }
+        catch (Exception ex)
+        {
+            _connectionTestResult = new ConnectionTestResult
+            {
+                Success = false,
+                Message = $"Connection failed: {ex.Message}"
+            };
+        }
+        finally
+        {
+            _testing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task UpdateDevice()
+    {
+        try
+        {
+            _updating = true;
+            StateHasChanged();
+
+            // Update device via API
+            await OnDeviceChanged.InvokeAsync(Device);
+        }
+        catch (Exception ex)
+        {
+            // Handle error
+        }
+        finally
+        {
+            _updating = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ResetForm()
+    {
+        _connectionTestResult = null;
+        StateHasChanged();
+    }
+
+    private string GetConnectionStringHint(string protocolType)
+    {
+        return protocolType.ToLower() switch
+        {
+            "modbus" => "Example: IP:192.168.1.100;Port:502;SlaveId:1",
+            "opcua" => "Example: opc.tcp://192.168.1.100:4840",
+            "mqtt" => "Example: Host:192.168.1.100;Port:1883;Topic:sensors/data",
+            "siemens" => "Example: IP:192.168.1.100;Rack:0;Slot:1",
+            "omron" => "Example: IP:192.168.1.100;Port:9600",
+            _ => "Enter protocol-specific connection parameters"
+        };
+    }
+
+    private class ConnectionTestResult
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+    }
+}

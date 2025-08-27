@@ -1,0 +1,243 @@
+@using Spider.DataAcquisition.Application.DTOs
+
+<EditForm Model="DataPoint" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Name *</label>
+            <InputText @bind-Value="DataPoint.Name" class="form-control" placeholder="Enter data point name" />
+            <ValidationMessage For="() => DataPoint.Name" />
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Address *</label>
+            <InputText @bind-Value="DataPoint.Address" class="form-control" placeholder="e.g., 40001, DB1.DBX0.0" />
+            <ValidationMessage For="() => DataPoint.Address" />
+            <div class="form-text">
+                Specify the protocol-specific address for this data point
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <label class="form-label">Data Type *</label>
+            <InputSelect @bind-Value="DataPoint.DataType" class="form-select">
+                <option value="Boolean">Boolean</option>
+                <option value="Integer">Integer</option>
+                <option value="Float">Float</option>
+                <option value="String">String</option>
+                <option value="DateTime">DateTime</option>
+            </InputSelect>
+            <ValidationMessage For="() => DataPoint.DataType" />
+        </div>
+        
+        <div class="col-md-4">
+            <label class="form-label">Quality</label>
+            <InputSelect @bind-Value="DataPoint.Quality" class="form-select">
+                <option value="Good">Good</option>
+                <option value="Uncertain">Uncertain</option>
+                <option value="Bad">Bad</option>
+            </InputSelect>
+        </div>
+        
+        <div class="col-md-4">
+            <label class="form-label">Initial Value</label>
+            <InputText @bind-Value="_initialValueString" class="form-control" placeholder="Optional initial value" />
+            <div class="form-text">
+                Leave empty to read from device
+            </div>
+        </div>
+        
+        @if (DataPoint.DataType == "Float" || DataPoint.DataType == "Integer")
+        {
+            <div class="col-md-6">
+                <label class="form-label">Scale Factor</label>
+                <InputNumber @bind-Value="_scaleFactor" class="form-control" step="0.001" />
+                <div class="form-text">
+                    Multiply raw value by this factor (default: 1.0)
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <label class="form-label">Offset</label>
+                <InputNumber @bind-Value="_offset" class="form-control" step="0.001" />
+                <div class="form-text">
+                    Add this value after scaling (default: 0.0)
+                </div>
+            </div>
+        }
+        
+        @if (DataPoint.DataType == "String")
+        {
+            <div class="col-md-6">
+                <label class="form-label">Max Length</label>
+                <InputNumber @bind-Value="_maxLength" class="form-control" min="1" max="1000" />
+                <div class="form-text">
+                    Maximum string length (default: 100)
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <label class="form-label">Encoding</label>
+                <InputSelect @bind-Value="_encoding" class="form-select">
+                    <option value="UTF8">UTF-8</option>
+                    <option value="ASCII">ASCII</option>
+                    <option value="Unicode">Unicode</option>
+                </InputSelect>
+            </div>
+        }
+        
+        <div class="col-12">
+            <label class="form-label">Description</label>
+            <InputTextArea @bind-Value="_description" class="form-control" rows="2" 
+                           placeholder="Optional description for this data point" />
+        </div>
+        
+        <!-- Advanced Settings -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Advanced Settings</h6>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                @onclick="ToggleAdvancedSettings">
+                            @(_showAdvanced ? "Hide" : "Show")
+                        </button>
+                    </div>
+                </div>
+                @if (_showAdvanced)
+                {
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Scan Rate (ms)</label>
+                                <InputNumber @bind-Value="_scanRate" class="form-control" min="100" step="100" />
+                                <div class="form-text">How often to read this data point</div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label">Deadband</label>
+                                <InputNumber @bind-Value="_deadband" class="form-control" step="0.01" />
+                                <div class="form-text">Minimum change to trigger update</div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-check mt-4">
+                                    <InputCheckbox @bind-Value="_logValues" class="form-check-input" id="logValues" />
+                                    <label class="form-check-label" for="logValues">
+                                        Log value changes
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Min Value</label>
+                                <InputNumber @bind-Value="_minValue" class="form-control" />
+                                <div class="form-text">Minimum expected value</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Max Value</label>
+                                <InputNumber @bind-Value="_maxValue" class="form-control" />
+                                <div class="form-text">Maximum expected value</div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    
+    <div class="d-flex justify-content-end gap-2 mt-4">
+        <button type="button" class="btn btn-outline-secondary" @onclick="OnCancel.InvokeAsync">
+            Cancel
+        </button>
+        <button type="submit" class="btn btn-primary" disabled="@_isSaving">
+            @if (_isSaving)
+            {
+                <span class="spinner-border spinner-border-sm me-2"></span>
+            }
+            Save Data Point
+        </button>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter] public DataPointDto? DataPoint { get; set; }
+    [Parameter] public EventCallback<DataPointDto> OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private bool _isSaving = false;
+    private bool _showAdvanced = false;
+    
+    // Additional properties for advanced configuration
+    private string _initialValueString = "";
+    private string _description = "";
+    private double _scaleFactor = 1.0;
+    private double _offset = 0.0;
+    private int _maxLength = 100;
+    private string _encoding = "UTF8";
+    private int _scanRate = 1000;
+    private double _deadband = 0.0;
+    private bool _logValues = false;
+    private double? _minValue;
+    private double? _maxValue;
+
+    protected override void OnParametersSet()
+    {
+        if (DataPoint != null)
+        {
+            _initialValueString = DataPoint.Value?.ToString() ?? "";
+            // Initialize other advanced properties if needed
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (DataPoint == null) return;
+        
+        try
+        {
+            _isSaving = true;
+            StateHasChanged();
+
+            // Set initial value if provided
+            if (!string.IsNullOrWhiteSpace(_initialValueString))
+            {
+                DataPoint.Value = ConvertToDataType(_initialValueString, DataPoint.DataType);
+            }
+
+            await OnSave.InvokeAsync(DataPoint);
+        }
+        catch (Exception ex)
+        {
+            // Handle validation or save errors
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleAdvancedSettings()
+    {
+        _showAdvanced = !_showAdvanced;
+        StateHasChanged();
+    }
+
+    private object? ConvertToDataType(string value, string dataType)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        
+        return dataType switch
+        {
+            "Boolean" => bool.TryParse(value, out var boolResult) ? boolResult : null,
+            "Integer" => int.TryParse(value, out var intResult) ? intResult : null,
+            "Float" => double.TryParse(value, out var doubleResult) ? doubleResult : null,
+            "DateTime" => DateTime.TryParse(value, out var dateResult) ? dateResult : null,
+            "String" => value,
+            _ => value
+        };
+    }
+}

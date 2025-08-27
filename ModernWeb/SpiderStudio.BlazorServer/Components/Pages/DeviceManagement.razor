@@ -167,10 +167,13 @@
                                             </td>
                                             <td>
                                                 <div class="btn-group" role="group">
+                                                    <a href="/devices/@device.Id" class="btn btn-sm btn-outline-primary" title="Configure Device">
+                                                        <i class="bi bi-gear"></i>
+                                                    </a>
                                                     <button class="btn btn-sm btn-outline-success" @onclick="() => TestConnection(device)">
                                                         Test
                                                     </button>
-                                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => AddDataPoint(device)">
+                                                    <button class="btn btn-sm btn-outline-info" @onclick="() => AddDataPoint(device)">
                                                         Add Point
                                                     </button>
                                                 </div>
