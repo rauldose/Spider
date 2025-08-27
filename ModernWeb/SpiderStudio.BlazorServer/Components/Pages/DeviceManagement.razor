@@ -1,0 +1,427 @@
+@page "/devices"
+@using Spider.DeviceManagement.Application.Commands
+@using Spider.DeviceManagement.Application.DTOs
+@using SpiderStudio.BlazorServer.Services
+@inject DeviceManagementApiService DeviceApi
+@inject DataAcquisitionApiService DataApi
+@inject ILogger<DeviceManagement> Logger
+
+<PageTitle>Device Management - Spider Studio</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3">🔧 Device Management</h1>
+                    <p class="text-muted">Manage IoT devices and their configurations</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary" @onclick="ShowCreateDeviceForm">
+                        <i class="bi bi-plus-circle me-2"></i>Add Device
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Health Status Bar -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert @(_apiHealthy ? "alert-success" : "alert-warning") d-flex align-items-center">
+                <i class="bi @(_apiHealthy ? "bi-check-circle" : "bi-exclamation-triangle") me-2"></i>
+                <div>
+                    <strong>API Status:</strong>
+                    Device Management API: <span class="@(_deviceApiHealthy ? "text-success" : "text-danger")">@(_deviceApiHealthy ? "Healthy" : "Unavailable")</span> |
+                    Data Acquisition API: <span class="@(_dataApiHealthy ? "text-success" : "text-danger")">@(_dataApiHealthy ? "Healthy" : "Unavailable")</span>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary ms-auto" @onclick="CheckApiHealth">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Device Form -->
+    @if (_showCreateForm)
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Create New Device</h5>
+                    </div>
+                    <div class="card-body">
+                        <EditForm Model="_newDevice" OnValidSubmit="CreateDevice">
+                            <DataAnnotationsValidator />
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Device Name</label>
+                                        <InputText @bind-Value="_newDevice.Name" class="form-control" placeholder="Enter device name" />
+                                        <ValidationMessage For="() => _newDevice.Name" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Protocol Type</label>
+                                        <InputSelect @bind-Value="_newDevice.ProtocolType" class="form-select">
+                                            <option value="">Select Protocol</option>
+                                            @foreach (var protocol in _availableProtocols)
+                                            {
+                                                <option value="@protocol">@protocol</option>
+                                            }
+                                        </InputSelect>
+                                        <ValidationMessage For="() => _newDevice.ProtocolType" />
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="mb-3">
+                                        <label class="form-label">Description</label>
+                                        <InputTextArea @bind-Value="_newDevice.Description" class="form-control" rows="3" placeholder="Enter device description" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Connection String</label>
+                                        <InputText @bind-Value="_newDevice.ConnectionString" class="form-control" placeholder="e.g., IP:192.168.1.100;Port:502" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Project ID</label>
+                                        <InputText @bind-Value="_newDevice.ProjectIdString" class="form-control" placeholder="Enter project GUID" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-success" disabled="@_isCreating">
+                                    @if (_isCreating)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                    }
+                                    Create Device
+                                </button>
+                                <button type="button" class="btn btn-secondary" @onclick="HideCreateDeviceForm">
+                                    Cancel
+                                </button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Devices List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Devices (@_devices.Count)</h5>
+                </div>
+                <div class="card-body">
+                    @if (_devices.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Protocol</th>
+                                        <th>Status</th>
+                                        <th>Connection</th>
+                                        <th>Data Points</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var device in _devices)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <strong>@device.Name</strong>
+                                                    @if (!string.IsNullOrEmpty(device.Description))
+                                                    {
+                                                        <br><small class="text-muted">@device.Description</small>
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">@device.Protocol</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge @GetStatusBadgeClass(device.Status)">
+                                                    @device.Status
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">@GetConnectionDisplay(device.ConnectionString)</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">@GetDataPointCount(device.Id)</span>
+                                                <button class="btn btn-sm btn-outline-primary ms-2" @onclick="() => LoadDataPoints(device.Id)">
+                                                    <i class="bi bi-list"></i>
+                                                </button>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-success" @onclick="() => TestConnection(device)">
+                                                        Test
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => AddDataPoint(device)">
+                                                        Add Point
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="bi bi-device-hdd" style="font-size: 3rem; color: #6c757d;"></i>
+                            <h5 class="mt-3 text-muted">No devices configured</h5>
+                            <p class="text-muted">Create your first device to start collecting IoT data</p>
+                            <button class="btn btn-primary" @onclick="ShowCreateDeviceForm">
+                                <i class="bi bi-plus-circle me-2"></i>Create Device
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<DeviceDto> _devices = new();
+    private Dictionary<Guid, int> _dataPointCounts = new();
+    private List<string> _availableProtocols = new();
+    private bool _showCreateForm = false;
+    private bool _isCreating = false;
+    private bool _deviceApiHealthy = false;
+    private bool _dataApiHealthy = false;
+    private bool _apiHealthy => _deviceApiHealthy && _dataApiHealthy;
+
+    private DeviceFormModel _newDevice = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckApiHealth();
+        await LoadProtocols();
+        await LoadDevices();
+    }
+
+    private async Task CheckApiHealth()
+    {
+        _deviceApiHealthy = await DeviceApi.CheckHealthAsync();
+        _dataApiHealthy = await DataApi.CheckHealthAsync();
+        StateHasChanged();
+    }
+
+    private async Task LoadProtocols()
+    {
+        try
+        {
+            var protocols = await DeviceApi.GetProtocolTypesAsync();
+            _availableProtocols = protocols.ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading protocols");
+        }
+    }
+
+    private async Task LoadDevices()
+    {
+        try
+        {
+            // For demo purposes, use a fixed project ID
+            var projectId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+            var devices = await DeviceApi.GetDevicesByProjectAsync(projectId);
+            _devices = devices.ToList();
+
+            // Load data point counts for each device
+            foreach (var device in _devices)
+            {
+                await LoadDataPointCount(device.Id);
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading devices");
+        }
+    }
+
+    private async Task LoadDataPointCount(Guid deviceId)
+    {
+        try
+        {
+            var dataPoints = await DataApi.GetDataPointsByDeviceAsync(deviceId);
+            _dataPointCounts[deviceId] = dataPoints.Count();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading data point count for device {DeviceId}", deviceId);
+            _dataPointCounts[deviceId] = 0;
+        }
+    }
+
+    private async Task CreateDevice()
+    {
+        if (!Guid.TryParse(_newDevice.ProjectIdString, out var projectId))
+        {
+            projectId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        }
+
+        _isCreating = true;
+        try
+        {
+            var command = new CreateDeviceCommand
+            {
+                Name = _newDevice.Name,
+                Description = _newDevice.Description ?? string.Empty,
+                Protocol = _newDevice.ProtocolType,
+                Host = ParseHost(_newDevice.ConnectionString ?? string.Empty),
+                Port = ParsePort(_newDevice.ConnectionString ?? string.Empty),
+                ProjectId = projectId
+            };
+
+            var deviceId = await DeviceApi.CreateDeviceAsync(command);
+            
+            if (deviceId.HasValue)
+            {
+                Logger.LogInformation("Device created successfully: {DeviceId}", deviceId.Value);
+                await LoadDevices();
+                HideCreateDeviceForm();
+            }
+            else
+            {
+                Logger.LogError("Failed to create device");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating device");
+        }
+        finally
+        {
+            _isCreating = false;
+        }
+    }
+
+    private void ShowCreateDeviceForm()
+    {
+        _newDevice = new DeviceFormModel();
+        _showCreateForm = true;
+    }
+
+    private void HideCreateDeviceForm()
+    {
+        _showCreateForm = false;
+        _newDevice = new DeviceFormModel();
+    }
+
+    private async Task LoadDataPoints(Guid deviceId)
+    {
+        // This would navigate to a data points page or show a modal
+        Logger.LogInformation("Loading data points for device {DeviceId}", deviceId);
+    }
+
+    private async Task TestConnection(DeviceDto device)
+    {
+        Logger.LogInformation("Testing connection for device {DeviceId}", device.Id);
+        // Add connection test logic here
+    }
+
+    private async Task AddDataPoint(DeviceDto device)
+    {
+        Logger.LogInformation("Adding data point for device {DeviceId}", device.Id);
+        // This would show a form to add data points
+    }
+
+    private static string GetStatusBadgeClass(string status)
+    {
+        return status.ToLower() switch
+        {
+            "connected" => "bg-success",
+            "connecting" => "bg-warning",
+            "disconnected" => "bg-secondary",
+            "error" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private static string GetConnectionDisplay(string connectionParams)
+    {
+        if (string.IsNullOrEmpty(connectionParams)) return "Not configured";
+        
+        // Parse connection parameters for display
+        if (connectionParams.Contains("IP:"))
+        {
+            var parts = connectionParams.Split(';');
+            var ip = parts.FirstOrDefault(p => p.StartsWith("IP:"))?.Split(':')[1];
+            var port = parts.FirstOrDefault(p => p.StartsWith("Port:"))?.Split(':')[1];
+            return $"{ip}:{port}";
+        }
+        
+        return connectionParams;
+    }
+
+    private int GetDataPointCount(Guid deviceId)
+    {
+        return _dataPointCounts.GetValueOrDefault(deviceId, 0);
+    }
+
+    private static string ParseHost(string connectionString)
+    {
+        if (string.IsNullOrEmpty(connectionString)) return "localhost";
+        
+        if (connectionString.Contains("IP:"))
+        {
+            var parts = connectionString.Split(';');
+            var ipPart = parts.FirstOrDefault(p => p.StartsWith("IP:"));
+            return ipPart?.Split(':')[1] ?? "localhost";
+        }
+        
+        return connectionString.Split(':')[0] ?? "localhost";
+    }
+
+    private static int ParsePort(string connectionString)
+    {
+        if (string.IsNullOrEmpty(connectionString)) return 502;
+        
+        if (connectionString.Contains("Port:"))
+        {
+            var parts = connectionString.Split(';');
+            var portPart = parts.FirstOrDefault(p => p.StartsWith("Port:"));
+            if (portPart != null && int.TryParse(portPart.Split(':')[1], out var port))
+            {
+                return port;
+            }
+        }
+        
+        if (connectionString.Contains(":") && int.TryParse(connectionString.Split(':')[1], out var simplePort))
+        {
+            return simplePort;
+        }
+        
+        return 502; // Default Modbus port
+    }
+
+    private class DeviceFormModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string ProtocolType { get; set; } = string.Empty;
+        public string? ConnectionString { get; set; }
+        public string ProjectIdString { get; set; } = "00000000-0000-0000-0000-000000000001";
+    }
+}

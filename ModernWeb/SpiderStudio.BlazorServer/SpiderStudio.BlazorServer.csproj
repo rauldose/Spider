@@ -10,6 +10,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\ModernAPI\SpiderDriver.UnifiedAPI\SpiderDriver.UnifiedAPI.csproj" />
     <ProjectReference Include="..\..\Common\Cdy.Spider.Common\Cdy.Spider.Common.csproj" />
+    <ProjectReference Include="..\..\src\BoundedContexts\DeviceManagement\Spider.DeviceManagement.Application\Spider.DeviceManagement.Application.csproj" />
+    <ProjectReference Include="..\..\src\BoundedContexts\DataAcquisition\Spider.DataAcquisition.Application\Spider.DataAcquisition.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

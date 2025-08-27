@@ -10,6 +10,19 @@ builder.Services.AddRazorComponents()
 // Add Spider Studio services
 builder.Services.AddSingleton<DriverManagerService>();
 
+// Add HTTP clients for DDD APIs
+builder.Services.AddHttpClient<DeviceManagementApiService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("ApiBaseUrls:DeviceManagement") ?? "http://localhost:5001");
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+
+builder.Services.AddHttpClient<DataAcquisitionApiService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("ApiBaseUrls:DataAcquisition") ?? "http://localhost:5003");
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
