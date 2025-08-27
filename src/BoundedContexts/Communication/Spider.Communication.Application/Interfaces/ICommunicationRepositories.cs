@@ -47,7 +47,7 @@ public interface IDataPointRepository : IRepository<DataPoint, Guid>
     Task<List<DataPoint>> GetActiveDataPointsAsync(CancellationToken cancellationToken = default);
     Task<List<DataPoint>> GetByAddressAsync(string address, CancellationToken cancellationToken = default);
     Task<List<DataPoint>> GetByDataTypeAsync(string dataType, CancellationToken cancellationToken = default);
-    Task<List<DataPoint>> GetByAccessModeAsync(string accessMode, CancellationToken cancellationToken = default);
+    Task<List<DataPoint>> GetByWritableAsync(bool isWritable, CancellationToken cancellationToken = default);
     Task<int> CountActiveAsync(CancellationToken cancellationToken = default);
     Task<int> CountByChannelIdAsync(Guid channelId, CancellationToken cancellationToken = default);
     Task<Channel?> GetChannelByDataPointIdAsync(Guid dataPointId, CancellationToken cancellationToken = default);

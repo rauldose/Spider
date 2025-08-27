@@ -53,19 +53,21 @@ public class LinkConfiguration : IEntityTypeConfiguration<Link>
                     v => v.TotalMilliseconds,
                     v => TimeSpan.FromMilliseconds(v));
 
-            config.Property(c => c.ReadTimeout)
+            config.Property(c => c.OperationTimeout)
                 .HasConversion(
                     v => v.TotalMilliseconds,
                     v => TimeSpan.FromMilliseconds(v));
 
-            config.Property(c => c.MaxRetries);
-
-            config.Property(c => c.EnableHeartbeat);
-
-            config.Property(c => c.HeartbeatInterval)
+            config.Property(c => c.HealthCheckInterval)
                 .HasConversion(
                     v => v.TotalMilliseconds,
                     v => TimeSpan.FromMilliseconds(v));
+
+            config.Property(c => c.MaxChannels);
+
+            config.Property(c => c.AutoReconnect);
+
+            config.Property(c => c.MaxRetryAttempts);
         });
 
         // Configure LinkHealth as owned type
@@ -73,20 +75,13 @@ public class LinkConfiguration : IEntityTypeConfiguration<Link>
         {
             health.Property(h => h.IsHealthy);
 
-            health.Property(h => h.SuccessRate)
-                .HasPrecision(5, 2);
+            health.Property(h => h.Status)
+                .HasMaxLength(50);
 
-            health.Property(h => h.AverageResponseTime)
-                .HasConversion(
-                    v => v.TotalMilliseconds,
-                    v => TimeSpan.FromMilliseconds(v));
-
-            health.Property(h => h.ErrorCount);
-
-            health.Property(h => h.LastError);
-
-            health.Property(h => h.LastErrorMessage)
+            health.Property(h => h.ErrorMessage)
                 .HasMaxLength(1000);
+
+            health.Property(h => h.LastChecked);
         });
 
         // Configure LinkStatus as enum
@@ -143,12 +138,14 @@ public class ChannelConfiguration : IEntityTypeConfiguration<Channel>
         builder.Property(c => c.Description)
             .HasMaxLength(500);
 
-        builder.Property(c => c.ChannelType)
+        builder.Property(c => c.Type)
             .HasConversion<string>()
             .HasMaxLength(50)
             .IsRequired();
 
-        builder.Property(c => c.IsEnabled)
+        builder.Property(c => c.Status)
+            .HasConversion<string>()
+            .HasMaxLength(50)
             .IsRequired();
 
         builder.Property(c => c.CreatedAt)
@@ -166,9 +163,9 @@ public class ChannelConfiguration : IEntityTypeConfiguration<Channel>
         builder.HasIndex(c => new { c.LinkId, c.Name })
             .IsUnique();
 
-        builder.HasIndex(c => c.ChannelType);
+        builder.HasIndex(c => c.Type);
 
-        builder.HasIndex(c => c.IsEnabled);
+        builder.HasIndex(c => c.Status);
     }
 }
 
@@ -196,53 +193,33 @@ public class DataPointConfiguration : IEntityTypeConfiguration<DataPoint>
         builder.Property(dp => dp.Description)
             .HasMaxLength(500);
 
-        // Configure DataAddress as owned type
-        builder.OwnsOne(dp => dp.Address, address =>
-        {
-            address.Property(a => a.Value)
-                .HasMaxLength(200)
-                .IsRequired()
-                .HasColumnName("Address");
-        });
+        builder.Property(dp => dp.Address)
+            .HasMaxLength(200)
+            .IsRequired();
 
         builder.Property(dp => dp.DataType)
             .HasConversion<string>()
             .HasMaxLength(50)
             .IsRequired();
 
-        builder.Property(dp => dp.AccessMode)
-            .HasConversion<string>()
-            .HasMaxLength(50)
+        builder.Property(dp => dp.Length);
+
+        builder.Property(dp => dp.IsWritable)
             .IsRequired();
 
-        builder.Property(dp => dp.IsEnabled)
-            .IsRequired();
+        builder.Property(dp => dp.CurrentValue)
+            .HasConversion(
+                v => v != null ? JsonSerializer.Serialize(v, (JsonSerializerOptions?)null) : null,
+                v => v != null ? JsonSerializer.Deserialize<object>(v, (JsonSerializerOptions?)null) : null)
+            .HasColumnType("nvarchar(max)");
+
+        builder.Property(dp => dp.DataQuality)
+            .HasMaxLength(50);
+
+        builder.Property(dp => dp.LastUpdated);
 
         builder.Property(dp => dp.CreatedAt)
             .IsRequired();
-
-        // Configure CurrentValue as owned type
-        builder.OwnsOne(dp => dp.CurrentValue, value =>
-        {
-            value.Property(v => v.Value)
-                .HasConversion(
-                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                    v => JsonSerializer.Deserialize<object>(v, (JsonSerializerOptions?)null))
-                .HasColumnType("nvarchar(max)")
-                .HasColumnName("CurrentValue");
-
-            value.Property(v => v.Quality)
-                .HasConversion<string>()
-                .HasMaxLength(50)
-                .HasColumnName("Quality");
-
-            value.Property(v => v.Timestamp)
-                .HasColumnName("ValueTimestamp");
-
-            value.Property(v => v.Source)
-                .HasMaxLength(100)
-                .HasColumnName("ValueSource");
-        });
 
         // Configure indexes
         builder.HasIndex(dp => dp.ChannelId);
@@ -250,12 +227,8 @@ public class DataPointConfiguration : IEntityTypeConfiguration<DataPoint>
         builder.HasIndex(dp => new { dp.ChannelId, dp.Name })
             .IsUnique();
 
-        builder.HasIndex(dp => dp.Address.Value);
+        builder.HasIndex(dp => dp.Address);
 
         builder.HasIndex(dp => dp.DataType);
-
-        builder.HasIndex(dp => dp.AccessMode);
-
-        builder.HasIndex(dp => dp.IsEnabled);
     }
 }

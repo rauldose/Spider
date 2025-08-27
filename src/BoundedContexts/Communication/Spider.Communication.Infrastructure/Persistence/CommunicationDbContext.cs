@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Spider.Communication.Domain.Entities;
 using Spider.Communication.Infrastructure.Persistence.Configurations;
 using Spider.Core.SharedKernel.Abstractions;
+using Spider.Core.SharedKernel.Base;
 
 namespace Spider.Communication.Infrastructure.Persistence;
 
