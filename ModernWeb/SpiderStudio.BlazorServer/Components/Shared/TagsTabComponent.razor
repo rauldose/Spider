@@ -177,16 +177,16 @@
                                         <span class="badge bg-info">@dataPoint.DataType</span>
                                     </td>
                                     <td>
-                                        <span class="font-monospace">@FormatValue(dataPoint.Value)</span>
+                                        <span class="font-monospace">@FormatValue(dataPoint.LastValue)</span>
                                     </td>
                                     <td>
-                                        <span class="badge @GetQualityBadgeClass(dataPoint.Quality)">
-                                            @dataPoint.Quality
+                                        <span class="badge @GetQualityBadgeClass(dataPoint.LastValueQuality ?? "Unknown")">
+                                            @(dataPoint.LastValueQuality ?? "Unknown")
                                         </span>
                                     </td>
                                     <td>
                                         <small class="text-muted">
-                                            @(dataPoint.Timestamp?.ToString("HH:mm:ss") ?? "Never")
+                                            @(dataPoint.LastScanTime?.ToString("HH:mm:ss") ?? "Never")
                                         </small>
                                     </td>
                                     <td>
@@ -290,7 +290,7 @@
                 filtered = filtered.Where(dp => dp.DataType.Equals(_filterDataType, StringComparison.OrdinalIgnoreCase));
             
             if (!string.IsNullOrWhiteSpace(_filterQuality))
-                filtered = filtered.Where(dp => dp.Quality.Equals(_filterQuality, StringComparison.OrdinalIgnoreCase));
+                filtered = filtered.Where(dp => (dp.LastValueQuality ?? "Unknown").Equals(_filterQuality, StringComparison.OrdinalIgnoreCase));
             
             if (!string.IsNullOrWhiteSpace(_filterAddress))
                 filtered = filtered.Where(dp => dp.Address.Contains(_filterAddress, StringComparison.OrdinalIgnoreCase));
@@ -354,32 +354,36 @@
 
     private void AddDataPoint()
     {
-        _editingDataPoint = new DataPointDto
-        {
-            Id = Guid.Empty,
-            DeviceId = DeviceId,
-            Name = "",
-            Address = "",
-            DataType = "Float",
-            Quality = "Good"
-        };
+        _editingDataPoint = new DataPointDto(
+            Guid.Empty,
+            "",
+            null,
+            "",
+            "Float",
+            DeviceId,
+            true,
+            1000,
+            null,
+            "Good",
+            null);
         _showEditModal = true;
         StateHasChanged();
     }
 
     private void EditDataPoint(DataPointDto dataPoint)
     {
-        _editingDataPoint = new DataPointDto
-        {
-            Id = dataPoint.Id,
-            DeviceId = dataPoint.DeviceId,
-            Name = dataPoint.Name,
-            Address = dataPoint.Address,
-            DataType = dataPoint.DataType,
-            Quality = dataPoint.Quality,
-            Value = dataPoint.Value,
-            Timestamp = dataPoint.Timestamp
-        };
+        _editingDataPoint = new DataPointDto(
+            dataPoint.Id,
+            dataPoint.Name,
+            dataPoint.Description,
+            dataPoint.Address,
+            dataPoint.DataType,
+            dataPoint.DeviceId,
+            dataPoint.IsEnabled,
+            dataPoint.ScanInterval,
+            dataPoint.LastValue,
+            dataPoint.LastValueQuality,
+            dataPoint.LastScanTime);
         _showEditModal = true;
         StateHasChanged();
     }
@@ -391,15 +395,29 @@
             if (dataPoint.Id == Guid.Empty)
             {
                 // Add new data point
-                var newDataPoint = await DataApi.CreateDataPointAsync(new CreateDataPointCommand
-                {
-                    DeviceId = dataPoint.DeviceId,
-                    Name = dataPoint.Name,
-                    Address = dataPoint.Address,
-                    DataType = dataPoint.DataType
-                });
+                var newId = await DataApi.CreateDataPointAsync(new CreateDataPointCommand(
+                    dataPoint.Name,
+                    dataPoint.Address,
+                    dataPoint.DataType,
+                    dataPoint.DeviceId));
                 
-                DataPoints.Add(newDataPoint);
+                if (newId.HasValue)
+                {
+                    var newDataPoint = new DataPointDto(
+                        newId.Value,
+                        dataPoint.Name,
+                        dataPoint.Description,
+                        dataPoint.Address,
+                        dataPoint.DataType,
+                        dataPoint.DeviceId,
+                        dataPoint.IsEnabled,
+                        dataPoint.ScanInterval,
+                        dataPoint.LastValue,
+                        dataPoint.LastValueQuality,
+                        dataPoint.LastScanTime);
+                    
+                    DataPoints.Add(newDataPoint);
+                }
             }
             else
             {
@@ -426,7 +444,8 @@
         {
             try
             {
-                await DataApi.DeleteDataPointAsync(dataPoint.Id);
+                // TODO: Implement delete API method
+                //await DataApi.DeleteDataPointAsync(dataPoint.Id);
                 DataPoints.Remove(dataPoint);
                 _selectedDataPoints.Remove(dataPoint);
                 await OnDataPointsChanged.InvokeAsync(DataPoints);
@@ -447,7 +466,8 @@
             {
                 foreach (var dataPoint in _selectedDataPoints.ToList())
                 {
-                    await DataApi.DeleteDataPointAsync(dataPoint.Id);
+                    // TODO: Implement delete API method
+                    //await DataApi.DeleteDataPointAsync(dataPoint.Id);
                     DataPoints.Remove(dataPoint);
                 }
                 
@@ -471,15 +491,18 @@
     {
         foreach (var item in _clipboard)
         {
-            var newDataPoint = new DataPointDto
-            {
-                Id = Guid.Empty,
-                DeviceId = DeviceId,
-                Name = $"{item.Name}_Copy",
-                Address = item.Address,
-                DataType = item.DataType,
-                Quality = item.Quality
-            };
+            var newDataPoint = new DataPointDto(
+                Guid.Empty,
+                $"{item.Name}_Copy",
+                item.Description,
+                item.Address,
+                item.DataType,
+                DeviceId,
+                item.IsEnabled,
+                item.ScanInterval,
+                null,
+                "Good",
+                null);
             DataPoints.Add(newDataPoint);
         }
         StateHasChanged();
@@ -536,9 +559,10 @@
         if (_selectedDataPoints.Contains(dataPoint))
             classes.Add("table-active");
             
-        if (dataPoint.Quality == "Bad")
+        var quality = dataPoint.LastValueQuality ?? "Unknown";
+        if (quality == "Bad")
             classes.Add("table-danger");
-        else if (dataPoint.Quality == "Uncertain")
+        else if (quality == "Uncertain")
             classes.Add("table-warning");
             
         return string.Join(" ", classes);
