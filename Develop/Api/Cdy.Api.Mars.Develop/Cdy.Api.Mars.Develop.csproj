@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Image\文件夹.png" />
+    <None Remove="Image\folder.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -46,7 +46,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Image\文件夹.png" />
+    <Resource Include="Image\folder.png" />
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">

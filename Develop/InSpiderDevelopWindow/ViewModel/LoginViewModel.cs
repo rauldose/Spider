@@ -2,9 +2,9 @@
 //  Copyright (C) 2022  Inc. All rights reserved.
 //
 //==============================================================
-//  Create by 种道洋 at 2022/2/12 11:05:41.
+//  Create by Spider Developer at 2022/2/12 11:05:41.
 //  Version 1.0
-//  种道洋
+//  Spider Developer
 //==============================================================
 
 using InSpiderDevelopServerClientAPI;

@@ -2,9 +2,9 @@
 //  Copyright (C) 2020  Inc. All rights reserved.
 //
 //==============================================================
-//  Create by 种道洋 at 2021/6/12 0:23:02.
+//  Create by Spider Developer at 2021/6/12 0:23:02.
 //  Version 1.0
-//  种道洋
+//  Spider Developer
 //==============================================================
 
 using Cdy.Spider;
