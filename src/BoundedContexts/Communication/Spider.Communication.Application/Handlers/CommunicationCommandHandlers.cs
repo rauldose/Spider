@@ -8,6 +8,7 @@ using Spider.Communication.Domain.ValueObjects;
 using Spider.Core.Application.Interfaces;
 using Spider.Core.Application.Common;
 using Spider.Core.SharedKernel.Abstractions;
+using Spider.Drivers.Core.Models;
 using Spider.Drivers.Core.Abstractions;
 
 namespace Spider.Communication.Application.Handlers;
@@ -20,18 +21,18 @@ public class CreateLinkCommandHandler : IRequestHandler<CreateLinkCommand, IResu
     private readonly ILinkRepository _linkRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
-    private readonly IDriverFactory _driverFactory;
+    private readonly IDriverManager _driverManager;
 
     public CreateLinkCommandHandler(
         ILinkRepository linkRepository,
         IUnitOfWork unitOfWork,
         IMapper mapper,
-        IDriverFactory driverFactory)
+        IDriverManager driverManager)
     {
         _linkRepository = linkRepository;
         _unitOfWork = unitOfWork;
         _mapper = mapper;
-        _driverFactory = driverFactory;
+        _driverManager = driverManager;
     }
 
     public async Task<IResult<LinkDto>> Handle(CreateLinkCommand request, CancellationToken cancellationToken)
@@ -151,7 +152,7 @@ public class ConnectLinkCommandHandler : IRequestHandler<ConnectLinkCommand, IRe
                 return Result<bool>.Success(true);
             }
 
-            return Result<bool>.Failure(result.ErrorMessage);
+            return Result<bool>.Failure(result.Message ?? "Unknown error");
         }
         catch (Exception ex)
         {
@@ -164,16 +165,16 @@ public class AttachDriverToLinkCommandHandler : IRequestHandler<AttachDriverToLi
 {
     private readonly ILinkRepository _linkRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IDriverFactory _driverFactory;
+    private readonly IDriverManager _driverManager;
 
     public AttachDriverToLinkCommandHandler(
         ILinkRepository linkRepository,
         IUnitOfWork unitOfWork,
-        IDriverFactory driverFactory)
+        IDriverManager driverManager)
     {
         _linkRepository = linkRepository;
         _unitOfWork = unitOfWork;
-        _driverFactory = driverFactory;
+        _driverManager = driverManager;
     }
 
     public async Task<IResult<bool>> Handle(AttachDriverToLinkCommand request, CancellationToken cancellationToken)
@@ -190,10 +191,15 @@ public class AttachDriverToLinkCommandHandler : IRequestHandler<AttachDriverToLi
                 parameters: request.DriverConfiguration,
                 connectionTimeout: TimeSpan.FromSeconds(30));
 
-            // Create driver
-            var driver = await _driverFactory.CreateDriverAsync(request.DriverType, driverConfig, cancellationToken);
-            if (driver == null)
+            // Create driver using manager
+            var driverId = await _driverManager.CreateDriverAsync(request.DriverType, driverConfig, cancellationToken);
+            if (string.IsNullOrEmpty(driverId))
                 return Result<bool>.Failure($"Failed to create driver of type {request.DriverType}");
+
+            // Get the created driver
+            var driver = await _driverManager.GetDriverAsync(driverId, cancellationToken);
+            if (driver == null)
+                return Result<bool>.Failure($"Failed to retrieve created driver");
 
             // Attach driver to link
             link.AttachDriver(driver);
@@ -240,10 +246,27 @@ public class CreateChannelCommandHandler : IRequestHandler<CreateChannelCommand,
             if (link == null)
                 return Result<ChannelDto>.Failure("Link not found");
 
-            var channel = link.AddChannel(
+            // Create channel type enum
+            var channelType = request.ChannelDto.ChannelType switch
+            {
+                "Input" => ChannelType.Input,
+                "Output" => ChannelType.Output,
+                "Bidirectional" => ChannelType.Bidirectional,
+                _ => ChannelType.Bidirectional
+            };
+
+            // Create channel configuration with defaults
+            var channelConfig = new ChannelConfiguration();
+
+            // Create new channel
+            var channel = new Channel(
                 request.ChannelDto.Name,
                 request.ChannelDto.Description,
-                request.ChannelDto.ChannelType);
+                channelType,
+                channelConfig);
+
+            // Add channel to link
+            link.AddChannel(channel);
 
             await _linkRepository.UpdateAsync(link, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -285,12 +308,34 @@ public class CreateDataPointCommandHandler : IRequestHandler<CreateDataPointComm
             if (channel == null)
                 return Result<DataPointDto>.Failure("Channel not found");
 
-            var dataPoint = channel.AddDataPoint(
+            // Create data type enum
+            var dataType = request.DataPointDto.DataType switch
+            {
+                "Boolean" => DataPointType.Boolean,
+                "Byte" => DataPointType.Byte,
+                "Int16" => DataPointType.Int16,
+                "Int32" => DataPointType.Int32,
+                "Int64" => DataPointType.Int64,
+                "Float" => DataPointType.Float,
+                "Double" => DataPointType.Double,
+                "String" => DataPointType.String,
+                "DateTime" => DataPointType.DateTime,
+                _ => DataPointType.String
+            };
+
+            // Determine if writable based on access mode
+            var isWritable = request.DataPointDto.AccessMode == "ReadWrite";
+
+            // Create new data point
+            var dataPoint = new DataPoint(
+                request.DataPointDto.Address,
                 request.DataPointDto.Name,
                 request.DataPointDto.Description,
-                request.DataPointDto.Address,
-                request.DataPointDto.DataType,
-                request.DataPointDto.AccessMode);
+                dataType,
+                isWritable);
+
+            // Add data point to channel
+            channel.AddDataPoint(dataPoint);
 
             await _channelRepository.UpdateAsync(channel, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -331,18 +376,22 @@ public class ReadDataPointCommandHandler : IRequestHandler<ReadDataPointCommand,
             if (channel == null)
                 return Result<object>.Failure("Channel not found");
 
-            var link = await _linkRepository.GetByIdAsync(channel.LinkId, cancellationToken);
-            if (link == null)
+            var link = await _linkRepository.GetByIdAsync(channel.LinkId ?? Guid.Empty, cancellationToken);
+            if (link == null || channel.LinkId == null)
                 return Result<object>.Failure("Link not found");
 
-            // Perform read operation through the driver
-            var readResult = await link.ReadDataPointAsync(dataPoint, cancellationToken);
+            // Check if link has a driver attached
+            if (link.Driver == null)
+                return Result<object>.Failure("Link has no driver attached");
+
+            // Perform read operation through the channel
+            var readResult = await channel.ReadDataPointAsync(dataPoint.Address, link.Driver, cancellationToken);
             if (readResult.Success)
             {
-                return Result<object>.Success(readResult.Value);
+                return Result<object>.Success(readResult.Value ?? "No data");
             }
 
-            return Result<object>.Failure(readResult.ErrorMessage);
+            return Result<object>.Failure(readResult.ErrorMessage ?? "Read operation failed");
         }
         catch (Exception ex)
         {

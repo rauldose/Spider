@@ -12,6 +12,7 @@ public interface ILinkRepository : IRepository<Link, Guid>
 {
     Task<Link?> GetByIdWithChannelsAsync(Guid id, CancellationToken cancellationToken = default);
     Task<Link?> GetByNameAsync(string name, CancellationToken cancellationToken = default);
+    Task<IPagedResult<Link>> GetPagedAsync(int page, int pageSize, CancellationToken cancellationToken = default);
     Task<IPagedResult<Link>> GetByStatusPagedAsync(string status, int page, int pageSize, CancellationToken cancellationToken = default);
     Task<IPagedResult<Link>> GetByProtocolPagedAsync(string protocolType, int page, int pageSize, CancellationToken cancellationToken = default);
     Task<List<Link>> GetByStatusAsync(string status, CancellationToken cancellationToken = default);

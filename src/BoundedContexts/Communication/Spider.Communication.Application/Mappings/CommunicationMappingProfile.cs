@@ -23,61 +23,49 @@ public class CommunicationMappingProfile : Profile
             .ForMember(dest => dest.Channels, opt => opt.MapFrom(src => src.Channels));
 
         CreateMap<LinkHealth, LinkHealthDto>()
-            .ForMember(dest => dest.LastErrorMessage, opt => opt.MapFrom(src => src.LastErrorMessage ?? string.Empty));
+            .ForMember(dest => dest.LastErrorMessage, opt => opt.MapFrom(src => src.ErrorMessage ?? string.Empty));
 
         CreateMap<LinkConfiguration, LinkConfigurationDto>();
 
         CreateMap<Channel, ChannelDto>()
-            .ForMember(dest => dest.ChannelType, opt => opt.MapFrom(src => src.ChannelType.ToString()))
+            .ForMember(dest => dest.ChannelType, opt => opt.MapFrom(src => src.Type.Name))
+            .ForMember(dest => dest.IsEnabled, opt => opt.MapFrom(src => src.Status.Name == "Active"))
             .ForMember(dest => dest.DataPoints, opt => opt.MapFrom(src => src.DataPoints));
 
         CreateMap<DataPoint, DataPointDto>()
-            .ForMember(dest => dest.Address, opt => opt.MapFrom(src => src.Address.Value))
-            .ForMember(dest => dest.DataType, opt => opt.MapFrom(src => src.DataType.ToString()))
-            .ForMember(dest => dest.AccessMode, opt => opt.MapFrom(src => src.AccessMode.ToString()))
-            .ForMember(dest => dest.Quality, opt => opt.MapFrom(src => src.CurrentValue != null ? src.CurrentValue.Quality.ToString() : "Unknown"))
-            .ForMember(dest => dest.CurrentValue, opt => opt.MapFrom(src => src.CurrentValue != null ? src.CurrentValue.Value : null))
-            .ForMember(dest => dest.LastUpdated, opt => opt.MapFrom(src => src.CurrentValue != null ? src.CurrentValue.Timestamp : (DateTime?)null));
+            .ForMember(dest => dest.Address, opt => opt.MapFrom(src => src.Address))
+            .ForMember(dest => dest.DataType, opt => opt.MapFrom(src => src.DataType.Name))
+            .ForMember(dest => dest.AccessMode, opt => opt.MapFrom(src => src.IsWritable ? "ReadWrite" : "ReadOnly"))
+            .ForMember(dest => dest.Quality, opt => opt.MapFrom(src => src.DataQuality ?? "Unknown"))
+            .ForMember(dest => dest.CurrentValue, opt => opt.MapFrom(src => src.CurrentValue))
+            .ForMember(dest => dest.LastUpdated, opt => opt.MapFrom(src => src.LastUpdated))
+            .ForMember(dest => dest.IsEnabled, opt => opt.MapFrom(src => src.ChannelId.HasValue));
 
         // Reverse mappings for creation DTOs
         CreateMap<CreateLinkDto, LinkMetadata>()
-            .ConstructUsing(src => new LinkMetadata(src.Name, src.Description, src.ProtocolType));
+            .ConstructUsing(src => new LinkMetadata(src.Name, src.Description, src.ProtocolType, "1.0.0", null));
 
         CreateMap<CreateLinkDto, LinkConfiguration>()
             .ConstructUsing(src => new LinkConfiguration(
                 src.Configuration.ConnectionString,
                 src.Configuration.Parameters,
                 src.Configuration.ConnectionTimeout,
-                src.Configuration.ReadTimeout,
-                src.Configuration.MaxRetries,
-                src.Configuration.EnableHeartbeat,
-                src.Configuration.HeartbeatInterval));
+                src.Configuration.ReadTimeout, // This maps to OperationTimeout
+                src.Configuration.HeartbeatInterval, // This maps to HealthCheckInterval
+                10, // maxChannels default
+                true, // autoReconnect default  
+                src.Configuration.MaxRetries));
 
         CreateMap<LinkConfigurationDto, LinkConfiguration>()
             .ConstructUsing(src => new LinkConfiguration(
                 src.ConnectionString,
                 src.Parameters,
                 src.ConnectionTimeout,
-                src.ReadTimeout,
-                src.MaxRetries,
-                src.EnableHeartbeat,
-                src.HeartbeatInterval));
-
-        CreateMap<CreateChannelDto, Channel>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid()))
-            .ForMember(dest => dest.LinkId, opt => opt.MapFrom(src => src.LinkId))
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
-            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
-            .ForMember(dest => dest.IsEnabled, opt => opt.MapFrom(src => true))
-            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
-
-        CreateMap<CreateDataPointDto, DataPoint>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid()))
-            .ForMember(dest => dest.ChannelId, opt => opt.MapFrom(src => src.ChannelId))
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
-            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
-            .ForMember(dest => dest.IsEnabled, opt => opt.MapFrom(src => true))
-            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
+                src.ReadTimeout, // This maps to OperationTimeout
+                src.HeartbeatInterval, // This maps to HealthCheckInterval
+                10, // maxChannels default
+                true, // autoReconnect default
+                src.MaxRetries));
     }
 }
 

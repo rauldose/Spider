@@ -56,13 +56,13 @@ public class GetAllLinksQueryHandler : IRequestHandler<GetAllLinksQuery, IResult
         try
         {
             var pagedLinks = await _linkRepository.GetPagedAsync(request.Page, request.PageSize, cancellationToken);
-            var linkDtos = _mapper.Map<List<LinkDto>>(pagedLinks.Items);
+            var linkDtos = _mapper.Map<List<LinkDto>>(pagedLinks.Value);
 
-            var pagedResult = new PagedResult<LinkDto>(
+            var pagedResult = PagedResult<LinkDto>.Success(
                 linkDtos,
-                pagedLinks.TotalCount,
                 request.Page,
-                request.PageSize);
+                request.PageSize,
+                pagedLinks.TotalCount);
 
             return Result<IPagedResult<LinkDto>>.Success(pagedResult);
         }
@@ -89,13 +89,13 @@ public class GetLinksByStatusQueryHandler : IRequestHandler<GetLinksByStatusQuer
         try
         {
             var pagedLinks = await _linkRepository.GetByStatusPagedAsync(request.Status, request.Page, request.PageSize, cancellationToken);
-            var linkDtos = _mapper.Map<List<LinkDto>>(pagedLinks.Items);
+            var linkDtos = _mapper.Map<List<LinkDto>>(pagedLinks.Value);
 
-            var pagedResult = new PagedResult<LinkDto>(
+            var pagedResult = PagedResult<LinkDto>.Success(
                 linkDtos,
-                pagedLinks.TotalCount,
                 request.Page,
-                request.PageSize);
+                request.PageSize,
+                pagedLinks.TotalCount);
 
             return Result<IPagedResult<LinkDto>>.Success(pagedResult);
         }
@@ -245,15 +245,15 @@ public class GetCommunicationStatisticsQueryHandler : IRequestHandler<GetCommuni
     {
         try
         {
-            var totalLinks = await _linkRepository.CountAsync(cancellationToken);
+            var totalLinks = await _linkRepository.CountAsync(null, cancellationToken);
             var connectedLinks = await _linkRepository.CountByStatusAsync("Connected", cancellationToken);
             var disconnectedLinks = await _linkRepository.CountByStatusAsync("Disconnected", cancellationToken);
             var healthyLinks = await _linkRepository.CountHealthyAsync(cancellationToken);
 
-            var totalChannels = await _channelRepository.CountAsync(cancellationToken);
+            var totalChannels = await _channelRepository.CountAsync(null, cancellationToken);
             var activeChannels = await _channelRepository.CountActiveAsync(cancellationToken);
 
-            var totalDataPoints = await _dataPointRepository.CountAsync(cancellationToken);
+            var totalDataPoints = await _dataPointRepository.CountAsync(null, cancellationToken);
             var activeDataPoints = await _dataPointRepository.CountActiveAsync(cancellationToken);
 
             // Calculate overall statistics

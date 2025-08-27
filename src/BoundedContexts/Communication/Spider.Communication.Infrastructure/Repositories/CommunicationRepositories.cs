@@ -57,7 +57,7 @@ public class LinkRepository : ILinkRepository
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        return new PagedResult<Link>(items, totalCount, page, pageSize);
+        return PagedResult<Link>.Success(items, page, pageSize, totalCount);
     }
 
     public async Task<IPagedResult<Link>> GetByStatusPagedAsync(string status, int page, int pageSize, CancellationToken cancellationToken = default)
@@ -71,7 +71,7 @@ public class LinkRepository : ILinkRepository
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        return new PagedResult<Link>(items, totalCount, page, pageSize);
+        return PagedResult<Link>.Success(items, page, pageSize, totalCount);
     }
 
     public async Task<IPagedResult<Link>> GetByProtocolPagedAsync(string protocolType, int page, int pageSize, CancellationToken cancellationToken = default)
@@ -85,7 +85,7 @@ public class LinkRepository : ILinkRepository
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        return new PagedResult<Link>(items, totalCount, page, pageSize);
+        return PagedResult<Link>.Success(items, page, pageSize, totalCount);
     }
 
     public async Task<List<Link>> GetByStatusAsync(string status, CancellationToken cancellationToken = default)
@@ -150,7 +150,7 @@ public class LinkRepository : ILinkRepository
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        return new PagedResult<Link>(items, totalCount, page, pageSize);
+        return PagedResult<Link>.Success(items, page, pageSize, totalCount);
     }
 
     public async Task AddAsync(Link entity, CancellationToken cancellationToken = default)
@@ -234,7 +234,7 @@ public class ChannelRepository : IChannelRepository
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        return new PagedResult<Channel>(items, totalCount, page, pageSize);
+        return PagedResult<Channel>.Success(items, page, pageSize, totalCount);
     }
 
     public async Task<List<Channel>> GetActiveChannelsAsync(CancellationToken cancellationToken = default)
@@ -275,7 +275,7 @@ public class ChannelRepository : IChannelRepository
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        return new PagedResult<Channel>(items, totalCount, page, pageSize);
+        return PagedResult<Channel>.Success(items, page, pageSize, totalCount);
     }
 
     public async Task AddAsync(Channel entity, CancellationToken cancellationToken = default)
@@ -357,7 +357,7 @@ public class DataPointRepository : IDataPointRepository
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        return new PagedResult<DataPoint>(items, totalCount, page, pageSize);
+        return PagedResult<DataPoint>.Success(items, page, pageSize, totalCount);
     }
 
     public async Task<List<DataPoint>> GetActiveDataPointsAsync(CancellationToken cancellationToken = default)
@@ -426,7 +426,7 @@ public class DataPointRepository : IDataPointRepository
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        return new PagedResult<DataPoint>(items, totalCount, page, pageSize);
+        return PagedResult<DataPoint>.Success(items, page, pageSize, totalCount);
     }
 
     public async Task AddAsync(DataPoint entity, CancellationToken cancellationToken = default)
