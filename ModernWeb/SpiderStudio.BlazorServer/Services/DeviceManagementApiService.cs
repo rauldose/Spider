@@ -120,4 +120,29 @@ public class DeviceManagementApiService
             return false;
         }
     }
+
+    /// <summary>
+    /// Gets a device by ID
+    /// </summary>
+    public async Task<DeviceDto?> GetDeviceByIdAsync(Guid deviceId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"/api/devices/{deviceId}", cancellationToken);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                return JsonSerializer.Deserialize<DeviceDto>(json, _jsonOptions);
+            }
+            
+            _logger.LogError("Failed to get device {DeviceId}. Status: {StatusCode}", deviceId, response.StatusCode);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting device {DeviceId}", deviceId);
+            return null;
+        }
+    }
 }

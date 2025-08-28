@@ -91,13 +91,13 @@
                             <div class="col-md-3">
                                 <div>
                                     <h6 class="mb-0">Protocol</h6>
-                                    <small class="text-muted">@_device.ProtocolType</small>
+                                    <small class="text-muted">@_device.Protocol</small>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div>
                                     <h6 class="mb-0">Last Activity</h6>
-                                    <small class="text-muted">@(_device.LastActivity?.ToString("yyyy-MM-dd HH:mm:ss") ?? "Never")</small>
+                                    <small class="text-muted">@(_device.LastConnectedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "Never")</small>
                                 </div>
                             </div>
                             <div class="col-md-3">
@@ -120,21 +120,21 @@
                         <ul class="nav nav-tabs card-header-tabs" role="tablist">
                             <li class="nav-item">
                                 <button class="nav-link @(_activeTab == "communication" ? "active" : "")" 
-                                        @onclick="() => SetActiveTab(\"communication\")" 
+                                        @onclick="@(() => SetActiveTab("communication"))" 
                                         type="button">
                                     <i class="bi bi-wifi me-2"></i>Communication
                                 </button>
                             </li>
                             <li class="nav-item">
                                 <button class="nav-link @(_activeTab == "tags" ? "active" : "")" 
-                                        @onclick="() => SetActiveTab(\"tags\")" 
+                                        @onclick="@(() => SetActiveTab("tags"))" 
                                         type="button">
                                     <i class="bi bi-tags me-2"></i>Data Points
                                 </button>
                             </li>
                             <li class="nav-item">
                                 <button class="nav-link @(_activeTab == "monitoring" ? "active" : "")" 
-                                        @onclick="() => SetActiveTab(\"monitoring\")" 
+                                        @onclick="@(() => SetActiveTab("monitoring"))" 
                                         type="button">
                                     <i class="bi bi-graph-up me-2"></i>Monitoring
                                 </button>

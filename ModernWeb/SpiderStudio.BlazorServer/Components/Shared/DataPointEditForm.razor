@@ -92,7 +92,7 @@
     </div>
     
     <div class="d-flex justify-content-end gap-2 mt-4">
-        <button type="button" class="btn btn-outline-secondary" @onclick="OnCancel.InvokeAsync">
+        <button type="button" class="btn btn-outline-secondary" @onclick="@(() => OnCancel.InvokeAsync())">
             Cancel
         </button>
         <button type="submit" class="btn btn-primary" disabled="@_isSaving">

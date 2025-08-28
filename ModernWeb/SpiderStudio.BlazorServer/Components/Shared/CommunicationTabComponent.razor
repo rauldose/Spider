@@ -28,24 +28,24 @@
                     <div class="card-body">
                         <div class="mb-3">
                             <label class="form-label">Protocol Type</label>
-                            <InputSelect @bind-Value="Device.ProtocolType" class="form-select" @onchange="OnProtocolChanged">
+                            <InputSelect @bind-Value="Device.Protocol" class="form-select" @onchange="OnProtocolChanged">
                                 <option value="">Select Protocol</option>
                                 @foreach (var protocol in _availableProtocols)
                                 {
                                     <option value="@protocol">@protocol</option>
                                 }
                             </InputSelect>
-                            <ValidationMessage For="() => Device.ProtocolType" />
+                            <ValidationMessage For="() => Device.Protocol" />
                         </div>
                         
-                        @if (!string.IsNullOrEmpty(Device.ProtocolType))
+                        @if (!string.IsNullOrEmpty(Device.Protocol))
                         {
                             <div class="mb-3">
                                 <label class="form-label">Connection String</label>
                                 <InputTextArea @bind-Value="Device.ConnectionString" class="form-control" rows="3" 
                                                placeholder="Enter protocol-specific connection parameters" />
                                 <div class="form-text">
-                                    @GetConnectionStringHint(Device.ProtocolType)
+                                    @GetConnectionStringHint(Device.Protocol)
                                 </div>
                             </div>
                         }
@@ -84,18 +84,18 @@
         </div>
 
         <!-- Protocol-Specific Configuration -->
-        @if (!string.IsNullOrEmpty(Device.ProtocolType))
+        @if (!string.IsNullOrEmpty(Device.Protocol))
         {
             <div class="row mb-4">
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
                             <h6 class="mb-0">
-                                <i class="bi bi-sliders me-2"></i>@Device.ProtocolType Protocol Configuration
+                                <i class="bi bi-sliders me-2"></i>@Device.Protocol Protocol Configuration
                             </h6>
                         </div>
                         <div class="card-body">
-                            @switch (Device.ProtocolType.ToLower())
+                            @switch (Device.Protocol.ToLower())
                             {
                                 case "modbus":
                                     <ModbusConfigComponent Device="Device" />

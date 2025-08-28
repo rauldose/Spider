@@ -106,12 +106,12 @@
                     </span>
                     <div class="btn-group btn-group-sm" role="group">
                         <input type="radio" class="btn-check" name="selectionMode" id="rowSelect" 
-                               checked="@(_selectionMode == "row")" @onchange="() => SetSelectionMode(\"row\")">
+                               checked="@(_selectionMode == "row")" @onchange="@(() => SetSelectionMode("row"))">>
                         <label class="btn btn-outline-secondary" for="rowSelect" title="Row Selection">
                             <i class="bi bi-list"></i>
                         </label>
                         <input type="radio" class="btn-check" name="selectionMode" id="cellSelect" 
-                               checked="@(_selectionMode == "cell")" @onchange="() => SetSelectionMode(\"cell\")">
+                               checked="@(_selectionMode == "cell")" @onchange="@(() => SetSelectionMode("cell"))">>
                         <label class="btn btn-outline-secondary" for="cellSelect" title="Cell Selection">
                             <i class="bi bi-grid"></i>
                         </label>
@@ -157,18 +157,9 @@
                                     </td>
                                     <td>@(index + 1)</td>
                                     <td>
-                                        @if (_editingDataPoint?.Id == dataPoint.Id)
-                                        {
-                                            <input type="text" class="form-control form-control-sm" 
-                                                   @bind="dataPoint.Name" @onblur="() => StopEditing()" 
-                                                   @onkeypress="@((e) => OnEditKeyPress(e, dataPoint))" />
-                                        }
-                                        else
-                                        {
-                                            <span @onclick="() => StartEditing(dataPoint)" style="cursor: pointer;">
-                                                @dataPoint.Name
-                                            </span>
-                                        }
+                                        <span @onclick="() => EditDataPoint(dataPoint)" style="cursor: pointer;" title="Click to edit">
+                                            @dataPoint.Name
+                                        </span>
                                     </td>
                                     <td>
                                         <code class="small">@dataPoint.Address</code>
@@ -525,31 +516,6 @@
         _showEditModal = false;
         _editingDataPoint = null;
         StateHasChanged();
-    }
-
-    private void StartEditing(DataPointDto dataPoint)
-    {
-        _editingDataPoint = dataPoint;
-        StateHasChanged();
-    }
-
-    private void StopEditing()
-    {
-        _editingDataPoint = null;
-        StateHasChanged();
-    }
-
-    private async Task OnEditKeyPress(KeyboardEventArgs e, DataPointDto dataPoint)
-    {
-        if (e.Key == "Enter")
-        {
-            await SaveDataPoint(dataPoint);
-            StopEditing();
-        }
-        else if (e.Key == "Escape")
-        {
-            StopEditing();
-        }
     }
 
     private string GetRowClass(DataPointDto dataPoint)
