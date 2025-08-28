@@ -231,3 +231,9 @@ System.MissingMethodException: Constructor on type 'Spider.ConnectionManagement.
 2025-08-28 17:40:35.653 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 8.9762ms
 2025-08-28 17:40:45.669 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
 2025-08-28 17:40:45.676 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 6.8832ms
+2025-08-28 17:40:55.670 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
+2025-08-28 17:40:55.674 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 3.552ms
+2025-08-28 17:41:05.673 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
+2025-08-28 17:41:05.676 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 2.9842ms
+2025-08-28 17:41:15.668 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
+2025-08-28 17:41:15.670 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 2.483ms
