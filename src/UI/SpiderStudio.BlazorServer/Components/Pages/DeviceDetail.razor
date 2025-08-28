@@ -441,7 +441,8 @@
     animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
+/* Keyframes for spinning animation */
+@@keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
@@ -695,19 +696,20 @@
         try
         {
             // Create driver configuration
-            var config = new Spider.Drivers.Core.Models.DriverConfiguration
+            var parameters = new Dictionary<string, object>
             {
-                Name = _device.Name,
-                Protocol = _device.Protocol,
-                ConnectionString = BuildConnectionString(),
-                IsEnabled = true,
-                Parameters = new Dictionary<string, object>
-                {
-                    { "Transport", _selectedTransport },
-                    { "Timeout", 5000 },
-                    { "Retries", 3 }
-                }
+                { "Transport", _selectedTransport },
+                { "Timeout", 5000 },
+                { "Retries", 3 }
             };
+
+            var config = new Spider.Drivers.Core.Models.DriverConfiguration(
+                BuildConnectionString(),
+                parameters,
+                TimeSpan.FromSeconds(30),
+                TimeSpan.FromSeconds(10),
+                3,
+                true);
 
             // Create driver instance
             var driver = await DriverManager.CreateDriverAsync(_device.Protocol);
@@ -718,8 +720,8 @@
             if (result.Success)
             {
                 // Test health
-                var healthResult = await driver.PerformHealthCheckAsync(CancellationToken.None);
-                _connectionStatus = healthResult.IsHealthy ? "Connected" : $"Error: {healthResult.Message}";
+                var healthResult = await driver.HealthCheckAsync(CancellationToken.None);
+                _connectionStatus = healthResult.IsHealthy ? "Connected" : $"Error: {healthResult.ErrorMessage}";
                 
                 // Register driver for later use
                 await DriverManager.RegisterDriverInstanceAsync(_device.Name, driver);
@@ -879,7 +881,7 @@
                     var index = _tags.IndexOf(tag);
                     if (index >= 0)
                     {
-                        _tags[index] = tag with { Value = result.Value?.ToString() ?? "null", Quality = result.Quality };
+                        _tags[index] = tag with { Value = result.Value?.ToString() ?? "null", Quality = result.DataQuality };
                         StateHasChanged();
                     }
                 }
@@ -894,6 +896,8 @@
                 _tags[index] = tag with { Quality = "Bad" };
                 StateHasChanged();
             }
+            // Log the exception if needed
+            Console.WriteLine($"Error testing tag read: {ex.Message}");
         }
     }
 
