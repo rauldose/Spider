@@ -1,8 +1,11 @@
 ﻿@page "/"
 @using Spider.DeviceManagement.Application.DTOs
+@using Spider.DeviceManagement.Application.Commands
 @using SpiderStudio.BlazorServer.Services
 @inject DeviceManagementApiService DeviceApi
 @inject NavigationManager Navigation
+@inject IServiceProvider ServiceProvider
+@inject ILogger<Home> Logger
 
 <PageTitle>Spider Studio</PageTitle>
 
@@ -412,37 +415,198 @@
 
     private async Task TestConnection()
     {
-        // TODO: Implement actual connection test
+        if (_selectedDevice == null) return;
+
+        try
+        {
+            Logger.LogInformation("Testing connection for device {DeviceName}", _selectedDevice.Name);
+            
+            // Create test driver instance using DriverManager
+            var driverManager = ServiceProvider.GetService<SpiderStudio.BlazorServer.Services.DriverManagerService>();
+            if (driverManager != null)
+            {
+                using var testDriver = await driverManager.CreateDriverAsync(_selectedDevice.Protocol);
+                
+                var config = new Spider.Drivers.Core.Models.DriverConfiguration(
+                    _selectedDevice.ConnectionString,
+                    new Dictionary<string, object>
+                    {
+                        { "Host", ParseHost(_selectedDevice.ConnectionString) },
+                        { "Port", ParsePort(_selectedDevice.ConnectionString) },
+                        { "Timeout", 5000 }
+                    });
+
+                var initResult = await testDriver.InitializeAsync(config);
+                
+                if (initResult.Success)
+                {
+                    var healthResult = await testDriver.HealthCheckAsync();
+                    Logger.LogInformation("Connection test result: {IsHealthy}, Message: {Message}", 
+                        healthResult.IsHealthy, healthResult.ErrorMessage);
+                }
+                else
+                {
+                    Logger.LogError("Failed to initialize driver: {Error}", initResult.ErrorMessage);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error testing connection");
+        }
     }
 
     private async Task SaveDevice()
     {
-        // TODO: Implement device save
+        if (_selectedDevice == null) return;
+
+        try
+        {
+            Logger.LogInformation("Saving device {DeviceName}", _selectedDevice.Name);
+            
+            var command = new Spider.DeviceManagement.Application.Commands.UpdateDeviceCommand
+            {
+                Id = _selectedDevice.Id,
+                Name = _selectedDevice.Name,
+                Description = _selectedDevice.Description ?? string.Empty,
+                Protocol = _selectedDevice.Protocol,
+                Host = ParseHost(_selectedDevice.ConnectionString),
+                Port = ParsePort(_selectedDevice.ConnectionString)
+            };
+
+            await DeviceApi.UpdateDeviceAsync(command);
+            Logger.LogInformation("Device {DeviceName} saved successfully", _selectedDevice.Name);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error saving device");
+        }
     }
 
     private void AddTag()
     {
-        // TODO: Implement add tag
+        Logger.LogInformation("Adding new tag");
+        var newTag = new TagData($"NewTag_{DateTime.Now:HHmmss}", "Int16", "40001", "0", "Good");
+        _tags.Add(newTag);
+        StateHasChanged();
     }
 
     private void RemoveTag()
     {
-        // TODO: Implement remove tag
+        Logger.LogInformation("Removing selected tag");
+        if (_tags.Any())
+        {
+            _tags.RemoveAt(_tags.Count - 1);
+            StateHasChanged();
+        }
     }
 
     private void ImportTags()
     {
-        // TODO: Implement import tags
+        Logger.LogInformation("Importing tags");
+        
+        try
+        {
+            // Simulate importing tags from a configuration file
+            var importedTags = new List<TagData>
+            {
+                new("ImportedTemp", "Single", "40101", "22.5", "Good"),
+                new("ImportedPress", "Single", "40102", "1.5", "Good"),
+                new("ImportedFlow", "Single", "40103", "18.2", "Good")
+            };
+
+            foreach (var tag in importedTags)
+            {
+                if (!_tags.Any(t => t.Name == tag.Name))
+                {
+                    _tags.Add(tag);
+                }
+            }
+            
+            Logger.LogInformation("Successfully imported {Count} tags", importedTags.Count);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error importing tags");
+        }
     }
 
     private void ExportTags()
     {
-        // TODO: Implement export tags
+        Logger.LogInformation("Exporting tags");
+        
+        try
+        {
+            // Create export data structure
+            var exportData = new
+            {
+                ExportDate = DateTime.UtcNow,
+                DeviceName = _selectedDevice?.Name ?? "Unknown",
+                Tags = _tags.Select(t => new
+                {
+                    t.Name,
+                    t.DataType,
+                    t.Address,
+                    t.Value,
+                    t.Quality
+                })
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(exportData, new System.Text.Json.JsonSerializerOptions 
+            { 
+                WriteIndented = true 
+            });
+
+            Logger.LogInformation("Tag export data generated: {Count} tags", _tags.Count);
+            // In a real implementation, this would trigger a file download
+            Logger.LogInformation("Export JSON: {Json}", json);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error exporting tags");
+        }
     }
 
     private void CreateSampleDevice()
     {
         Navigation.NavigateTo("/devices");
+    }
+
+    private static string ParseHost(string connectionString)
+    {
+        if (string.IsNullOrEmpty(connectionString)) return "localhost";
+        
+        if (connectionString.Contains("IP:"))
+        {
+            var parts = connectionString.Split(';');
+            var ipPart = parts.FirstOrDefault(p => p.StartsWith("IP:"));
+            return ipPart?.Split(':')[1] ?? "localhost";
+        }
+        
+        return connectionString.Split(':')[0] ?? "localhost";
+    }
+
+    private static int ParsePort(string connectionString)
+    {
+        if (string.IsNullOrEmpty(connectionString)) return 502;
+        
+        if (connectionString.Contains("Port:"))
+        {
+            var parts = connectionString.Split(';');
+            var portPart = parts.FirstOrDefault(p => p.StartsWith("Port:"));
+            if (portPart != null && int.TryParse(portPart.Split(':')[1], out var port))
+            {
+                return port;
+            }
+        }
+        
+        if (connectionString.Contains(":") && int.TryParse(connectionString.Split(':')[1], out var simplePort))
+        {
+            return simplePort;
+        }
+        
+        return 502; // Default Modbus port
     }
 
     public record TagData(string Name, string DataType, string Address, string Value, string Quality);

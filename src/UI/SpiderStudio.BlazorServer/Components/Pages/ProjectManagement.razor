@@ -251,7 +251,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Create New Project</h5>
+                    <h5 class="modal-title">@(_editingProjectId.HasValue ? "Edit Project" : "Create New Project")</h5>
                     <button type="button" class="btn-close" @onclick="HideCreateProjectForm"></button>
                 </div>
                 <div class="modal-body">
@@ -338,7 +338,7 @@
                         {
                             <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                         }
-                        Create Project
+                        @(_editingProjectId.HasValue ? "Update Project" : "Create Project")
                     </button>
                 </div>
             </div>
@@ -355,6 +355,7 @@
     private bool _showCreateForm = false;
     private bool _creating = false;
     private int _retentionDays = 30;
+    private Guid? _editingProjectId = null;
 
     private CreateProjectFormModel _newProject = new();
 
@@ -404,6 +405,7 @@
     {
         _newProject = new CreateProjectFormModel();
         _retentionDays = 30;
+        _editingProjectId = null;
         _showCreateForm = true;
     }
 
@@ -411,6 +413,7 @@
     {
         _showCreateForm = false;
         _newProject = new CreateProjectFormModel();
+        _editingProjectId = null;
     }
 
     private async Task CreateProject()
@@ -428,36 +431,65 @@
             // Set retention period from days
             _newProject.Configuration.DataRetentionPeriod = TimeSpan.FromDays(_retentionDays);
 
-            // Convert form model to DTO
-            var configurationDto = new ProjectConfigurationDto(
-                _newProject.Configuration.MaxDevices,
-                _newProject.Configuration.MaxConnections,
-                _newProject.Configuration.DataRetentionPeriod,
-                _newProject.Configuration.EnableRealTimeMonitoring,
-                _newProject.Configuration.EnableDataArchiving,
-                _newProject.Configuration.EnableAlerting,
-                _newProject.Configuration.CustomSettings
-            );
-
-            var createDto = new CreateProjectDto(
-                _newProject.Name,
-                _newProject.Description,
-                configurationDto,
-                _newProject.ParentProjectId,
-                _newProject.CreatedBy
-            );
-
-            var result = await ProjectApi.CreateProjectAsync(createDto);
-            
-            if (result != null)
+            if (_editingProjectId.HasValue)
             {
-                await LoadData();
-                HideCreateProjectForm();
+                // Update existing project
+                var updateDto = new UpdateProjectDto(
+                    _newProject.Name,
+                    _newProject.Description,
+                    _newProject.CreatedBy);
+
+                var updateResult = await ProjectApi.UpdateProjectAsync(_editingProjectId.Value, updateDto);
+                
+                if (updateResult)
+                {
+                    // Update configuration separately
+                    var configDto = new ProjectConfigurationDto(
+                        _newProject.Configuration.MaxDevices,
+                        _newProject.Configuration.MaxConnections,
+                        _newProject.Configuration.DataRetentionPeriod,
+                        _newProject.Configuration.EnableRealTimeMonitoring,
+                        _newProject.Configuration.EnableDataArchiving,
+                        _newProject.Configuration.EnableAlerting,
+                        _newProject.Configuration.CustomSettings);
+
+                    var configUpdateDto = new ProjectConfigurationUpdateDto(
+                        configDto,
+                        _newProject.CreatedBy);
+
+                    await ProjectApi.UpdateProjectConfigurationAsync(_editingProjectId.Value, configUpdateDto);
+                }
             }
+            else
+            {
+                // Create new project
+                var configurationDto = new ProjectConfigurationDto(
+                    _newProject.Configuration.MaxDevices,
+                    _newProject.Configuration.MaxConnections,
+                    _newProject.Configuration.DataRetentionPeriod,
+                    _newProject.Configuration.EnableRealTimeMonitoring,
+                    _newProject.Configuration.EnableDataArchiving,
+                    _newProject.Configuration.EnableAlerting,
+                    _newProject.Configuration.CustomSettings
+                );
+
+                var createDto = new CreateProjectDto(
+                    _newProject.Name,
+                    _newProject.Description,
+                    configurationDto,
+                    _newProject.ParentProjectId,
+                    _newProject.CreatedBy
+                );
+
+                await ProjectApi.CreateProjectAsync(createDto);
+            }
+            
+            await LoadData();
+            HideCreateProjectForm();
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error creating project");
+            Logger.LogError(ex, "Error creating/updating project");
         }
         finally
         {
@@ -510,8 +542,31 @@
 
     private void EditProject(ProjectDto project)
     {
-        // TODO: Implement edit functionality
         Logger.LogInformation("Edit project {ProjectId} requested", project.Id);
+        
+        // Load project for editing
+        _newProject = new CreateProjectFormModel
+        {
+            Name = project.Name,
+            Description = project.Description,
+            ParentProjectId = project.ParentProjectId,
+            CreatedBy = project.CreatedBy,
+            Configuration = new ProjectConfigurationFormModel
+            {
+                MaxDevices = project.Configuration.MaxDevices,
+                MaxConnections = project.Configuration.MaxConnections,
+                DataRetentionPeriod = project.Configuration.DataRetentionPeriod,
+                EnableRealTimeMonitoring = project.Configuration.EnableRealTimeMonitoring,
+                EnableDataArchiving = project.Configuration.EnableDataArchiving,
+                EnableAlerting = project.Configuration.EnableAlerting,
+                CustomSettings = project.Configuration.CustomSettings
+            }
+        };
+        
+        _retentionDays = (int)project.Configuration.DataRetentionPeriod.TotalDays;
+        _editingProjectId = project.Id;
+        _showCreateForm = true;
+        StateHasChanged();
     }
 
     private string GetStatusBadgeClass(string status) => status switch
