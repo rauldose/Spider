@@ -7,23 +7,17 @@ using Spider.ProjectManagement.Domain.Specifications;
 
 namespace Spider.ProjectManagement.Application.Handlers;
 
-public class GetProjectByIdQueryHandler : IRequestHandler<GetProjectByIdQuery, ProjectDto?>
+public static class ProjectMappingHelper
 {
-    private readonly IRepository<Project, Guid> _projectRepository;
-
-    public GetProjectByIdQueryHandler(IRepository<Project, Guid> projectRepository)
+    public static ProjectDto MapToDto(Project project)
     {
-        _projectRepository = projectRepository;
-    }
+        // Handle DateTime to DateTimeOffset conversion safely
+        DateTimeOffset? updatedAt = null;
+        if (project.LastModifiedAt != default(DateTime) && project.LastModifiedAt > DateTime.MinValue && project.LastModifiedAt < DateTime.MaxValue)
+        {
+            updatedAt = new DateTimeOffset(project.LastModifiedAt, TimeSpan.Zero);
+        }
 
-    public async Task<ProjectDto?> Handle(GetProjectByIdQuery request, CancellationToken cancellationToken)
-    {
-        var project = await _projectRepository.GetByIdAsync(request.Id);
-        return project != null ? MapToDto(project) : null;
-    }
-
-    private static ProjectDto MapToDto(Project project)
-    {
         return new ProjectDto(
             project.Id,
             project.Name,
@@ -41,9 +35,25 @@ public class GetProjectByIdQueryHandler : IRequestHandler<GetProjectByIdQuery, P
             project.ParentProject?.Name,
             project.ChildProjects.Select(MapToDto).ToList(),
             project.CreatedAt,
-            project.LastModifiedAt,
+            updatedAt,
             project.CreatedBy,
             project.LastModifiedBy);
+    }
+}
+
+public class GetProjectByIdQueryHandler : IRequestHandler<GetProjectByIdQuery, ProjectDto?>
+{
+    private readonly IRepository<Project, Guid> _projectRepository;
+
+    public GetProjectByIdQueryHandler(IRepository<Project, Guid> projectRepository)
+    {
+        _projectRepository = projectRepository;
+    }
+
+    public async Task<ProjectDto?> Handle(GetProjectByIdQuery request, CancellationToken cancellationToken)
+    {
+        var project = await _projectRepository.GetByIdAsync(request.Id);
+        return project != null ? ProjectMappingHelper.MapToDto(project) : null;
     }
 }
 
@@ -60,31 +70,7 @@ public class GetProjectsByParentQueryHandler : IRequestHandler<GetProjectsByPare
     {
         var specification = new ProjectsByParentSpecification(request.ParentProjectId);
         var projects = await _projectRepository.FindAsync(specification);
-        return projects.Select(MapToDto).ToList();
-    }
-
-    private static ProjectDto MapToDto(Project project)
-    {
-        return new ProjectDto(
-            project.Id,
-            project.Name,
-            project.Description,
-            project.Status.Name,
-            new ProjectConfigurationDto(
-                project.Configuration.MaxDevices,
-                project.Configuration.MaxConnections,
-                project.Configuration.DataRetentionPeriod,
-                project.Configuration.EnableRealTimeMonitoring,
-                project.Configuration.EnableDataArchiving,
-                project.Configuration.EnableAlerting,
-                project.Configuration.CustomSettings),
-            project.ParentProjectId,
-            project.ParentProject?.Name,
-            project.ChildProjects.Select(MapToDto).ToList(),
-            project.CreatedAt,
-            project.LastModifiedAt,
-            project.CreatedBy,
-            project.LastModifiedBy);
+        return projects.Select(ProjectMappingHelper.MapToDto).ToList();
     }
 }
 
@@ -100,31 +86,7 @@ public class GetAllProjectsQueryHandler : IRequestHandler<GetAllProjectsQuery, L
     public async Task<List<ProjectDto>> Handle(GetAllProjectsQuery request, CancellationToken cancellationToken)
     {
         var projects = await _projectRepository.GetAllAsync();
-        return projects.Select(MapToDto).ToList();
-    }
-
-    private static ProjectDto MapToDto(Project project)
-    {
-        return new ProjectDto(
-            project.Id,
-            project.Name,
-            project.Description,
-            project.Status.Name,
-            new ProjectConfigurationDto(
-                project.Configuration.MaxDevices,
-                project.Configuration.MaxConnections,
-                project.Configuration.DataRetentionPeriod,
-                project.Configuration.EnableRealTimeMonitoring,
-                project.Configuration.EnableDataArchiving,
-                project.Configuration.EnableAlerting,
-                project.Configuration.CustomSettings),
-            project.ParentProjectId,
-            project.ParentProject?.Name,
-            project.ChildProjects.Select(MapToDto).ToList(),
-            project.CreatedAt,
-            project.LastModifiedAt,
-            project.CreatedBy,
-            project.LastModifiedBy);
+        return projects.Select(ProjectMappingHelper.MapToDto).ToList();
     }
 }
 
@@ -172,30 +134,6 @@ public class GetRootProjectsQueryHandler : IRequestHandler<GetRootProjectsQuery,
     {
         var specification = new RootProjectsSpecification();
         var projects = await _projectRepository.FindAsync(specification);
-        return projects.Select(MapToDto).ToList();
-    }
-
-    private static ProjectDto MapToDto(Project project)
-    {
-        return new ProjectDto(
-            project.Id,
-            project.Name,
-            project.Description,
-            project.Status.Name,
-            new ProjectConfigurationDto(
-                project.Configuration.MaxDevices,
-                project.Configuration.MaxConnections,
-                project.Configuration.DataRetentionPeriod,
-                project.Configuration.EnableRealTimeMonitoring,
-                project.Configuration.EnableDataArchiving,
-                project.Configuration.EnableAlerting,
-                project.Configuration.CustomSettings),
-            project.ParentProjectId,
-            project.ParentProject?.Name,
-            project.ChildProjects.Select(MapToDto).ToList(),
-            project.CreatedAt,
-            project.LastModifiedAt,
-            project.CreatedBy,
-            project.LastModifiedBy);
+        return projects.Select(ProjectMappingHelper.MapToDto).ToList();
     }
 }

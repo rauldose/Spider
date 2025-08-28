@@ -44,32 +44,7 @@ public class CreateProjectCommandHandler : IRequestHandler<CreateProjectCommand,
         await _projectRepository.AddAsync(project);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return MapToDto(project);
-    }
-
-    private static ProjectDto MapToDto(Project project)
-    {
-        return new ProjectDto(
-            project.Id,
-            project.Name,
-            project.Description,
-            project.Status.Name,
-            new ProjectConfigurationDto(
-                project.Configuration.MaxDevices,
-                project.Configuration.MaxConnections,
-                project.Configuration.DataRetentionPeriod,
-                project.Configuration.EnableRealTimeMonitoring,
-                project.Configuration.EnableDataArchiving,
-                project.Configuration.EnableAlerting,
-                project.Configuration.CustomSettings),
-            project.ParentProjectId,
-            project.ParentProject?.Name,
-            project.ChildProjects.Select(MapToDto).ToList(),
-            project.CreatedAt,
-            project.UpdatedAt,
-            project.CreatedBy,
-            project.UpdatedBy);
-    }
+        return ProjectMappingHelper.MapToDto(project);
 }
 
 public class UpdateProjectCommandHandler : IRequestHandler<UpdateProjectCommand, ProjectDto>
@@ -96,31 +71,7 @@ public class UpdateProjectCommandHandler : IRequestHandler<UpdateProjectCommand,
         await _projectRepository.UpdateAsync(project);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return MapToDto(project);
-    }
-
-    private static ProjectDto MapToDto(Project project)
-    {
-        return new ProjectDto(
-            project.Id,
-            project.Name,
-            project.Description,
-            project.Status.Name,
-            new ProjectConfigurationDto(
-                project.Configuration.MaxDevices,
-                project.Configuration.MaxConnections,
-                project.Configuration.DataRetentionPeriod,
-                project.Configuration.EnableRealTimeMonitoring,
-                project.Configuration.EnableDataArchiving,
-                project.Configuration.EnableAlerting,
-                project.Configuration.CustomSettings),
-            project.ParentProjectId,
-            project.ParentProject?.Name,
-            project.ChildProjects.Select(MapToDto).ToList(),
-            project.CreatedAt,
-            project.LastModifiedAt,
-            project.CreatedBy,
-            project.LastModifiedBy);
+        return ProjectMappingHelper.MapToDto(project);
     }
 }
 
@@ -149,31 +100,7 @@ public class ChangeProjectStatusCommandHandler : IRequestHandler<ChangeProjectSt
         await _projectRepository.UpdateAsync(project);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return MapToDto(project);
-    }
-
-    private static ProjectDto MapToDto(Project project)
-    {
-        return new ProjectDto(
-            project.Id,
-            project.Name,
-            project.Description,
-            project.Status.Name,
-            new ProjectConfigurationDto(
-                project.Configuration.MaxDevices,
-                project.Configuration.MaxConnections,
-                project.Configuration.DataRetentionPeriod,
-                project.Configuration.EnableRealTimeMonitoring,
-                project.Configuration.EnableDataArchiving,
-                project.Configuration.EnableAlerting,
-                project.Configuration.CustomSettings),
-            project.ParentProjectId,
-            project.ParentProject?.Name,
-            project.ChildProjects.Select(MapToDto).ToList(),
-            project.CreatedAt,
-            project.LastModifiedAt,
-            project.CreatedBy,
-            project.LastModifiedBy);
+        return ProjectMappingHelper.MapToDto(project);
     }
 }
 
@@ -201,31 +128,7 @@ public class ActivateProjectCommandHandler : IRequestHandler<ActivateProjectComm
         await _projectRepository.UpdateAsync(project);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return MapToDto(project);
-    }
-
-    private static ProjectDto MapToDto(Project project)
-    {
-        return new ProjectDto(
-            project.Id,
-            project.Name,
-            project.Description,
-            project.Status.Name,
-            new ProjectConfigurationDto(
-                project.Configuration.MaxDevices,
-                project.Configuration.MaxConnections,
-                project.Configuration.DataRetentionPeriod,
-                project.Configuration.EnableRealTimeMonitoring,
-                project.Configuration.EnableDataArchiving,
-                project.Configuration.EnableAlerting,
-                project.Configuration.CustomSettings),
-            project.ParentProjectId,
-            project.ParentProject?.Name,
-            project.ChildProjects.Select(MapToDto).ToList(),
-            project.CreatedAt,
-            project.LastModifiedAt,
-            project.CreatedBy,
-            project.LastModifiedBy);
+        return ProjectMappingHelper.MapToDto(project);
     }
 }
 
@@ -253,31 +156,7 @@ public class DeactivateProjectCommandHandler : IRequestHandler<DeactivateProject
         await _projectRepository.UpdateAsync(project);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return MapToDto(project);
-    }
-
-    private static ProjectDto MapToDto(Project project)
-    {
-        return new ProjectDto(
-            project.Id,
-            project.Name,
-            project.Description,
-            project.Status.Name,
-            new ProjectConfigurationDto(
-                project.Configuration.MaxDevices,
-                project.Configuration.MaxConnections,
-                project.Configuration.DataRetentionPeriod,
-                project.Configuration.EnableRealTimeMonitoring,
-                project.Configuration.EnableDataArchiving,
-                project.Configuration.EnableAlerting,
-                project.Configuration.CustomSettings),
-            project.ParentProjectId,
-            project.ParentProject?.Name,
-            project.ChildProjects.Select(MapToDto).ToList(),
-            project.CreatedAt,
-            project.LastModifiedAt,
-            project.CreatedBy,
-            project.LastModifiedBy);
+        return ProjectMappingHelper.MapToDto(project);
     }
 }
 
@@ -305,31 +184,7 @@ public class ArchiveProjectCommandHandler : IRequestHandler<ArchiveProjectComman
         await _projectRepository.UpdateAsync(project);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return MapToDto(project);
-    }
-
-    private static ProjectDto MapToDto(Project project)
-    {
-        return new ProjectDto(
-            project.Id,
-            project.Name,
-            project.Description,
-            project.Status.Name,
-            new ProjectConfigurationDto(
-                project.Configuration.MaxDevices,
-                project.Configuration.MaxConnections,
-                project.Configuration.DataRetentionPeriod,
-                project.Configuration.EnableRealTimeMonitoring,
-                project.Configuration.EnableDataArchiving,
-                project.Configuration.EnableAlerting,
-                project.Configuration.CustomSettings),
-            project.ParentProjectId,
-            project.ParentProject?.Name,
-            project.ChildProjects.Select(MapToDto).ToList(),
-            project.CreatedAt,
-            project.LastModifiedAt,
-            project.CreatedBy,
-            project.LastModifiedBy);
+        return ProjectMappingHelper.MapToDto(project);
     }
 }
 
@@ -358,4 +213,5 @@ public class DeleteProjectCommandHandler : IRequestHandler<DeleteProjectCommand>
         await _projectRepository.RemoveAsync(project);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
+}
 }

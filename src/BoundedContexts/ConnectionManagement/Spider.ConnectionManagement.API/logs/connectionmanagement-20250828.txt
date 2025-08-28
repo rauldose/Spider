@@ -237,3 +237,13 @@ System.MissingMethodException: Constructor on type 'Spider.ConnectionManagement.
 2025-08-28 17:41:05.676 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 2.9842ms
 2025-08-28 17:41:15.668 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
 2025-08-28 17:41:15.670 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 2.483ms
+2025-08-28 17:54:22.522 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 17:54:22.666 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 17:54:22.675 +00:00 [INF] Saved 0 entities to in-memory store.
+2025-08-28 17:54:22.776 +00:00 [INF] Starting Spider ConnectionManagement API
+2025-08-28 17:54:22.792 +00:00 [INF] Started connection health monitoring service
+2025-08-28 17:54:22.837 +00:00 [INF] Now listening on: http://localhost:5005
+2025-08-28 17:54:22.837 +00:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-08-28 17:54:22.838 +00:00 [INF] Hosting environment: Development
+2025-08-28 17:54:22.838 +00:00 [INF] Content root path: /home/runner/work/Spider/Spider/src/BoundedContexts/ConnectionManagement/Spider.ConnectionManagement.API
+2025-08-28 17:54:24.720 +00:00 [INF] Application is shutting down...
