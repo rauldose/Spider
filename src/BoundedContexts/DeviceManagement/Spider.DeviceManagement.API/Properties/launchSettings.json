@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Spider.DeviceManagement.API": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:56513;http://localhost:56514"
+    }
+  }
+}
