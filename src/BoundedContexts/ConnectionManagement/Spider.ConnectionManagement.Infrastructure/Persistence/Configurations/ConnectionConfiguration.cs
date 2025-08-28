@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Spider.ConnectionManagement.Domain.Entities;
 using Spider.ConnectionManagement.Domain.Enumerations;
 using System.Text.Json;

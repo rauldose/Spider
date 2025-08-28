@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using Spider.Drivers.Core.Abstractions;
 using Spider.Drivers.Core.Base;
 using Spider.Drivers.Core.Models;
@@ -38,12 +39,10 @@ public class DriverFactory : IDriverFactory
 
         try
         {
-            var loggerFactory = _serviceProvider.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
-            var driverLogger = loggerFactory?.CreateLogger(driverType) ?? 
-                               _serviceProvider.GetService(typeof(ILogger)) as ILogger ??
-                               throw new InvalidOperationException("No logger service available");
-
-            var driver = (IDriver)Activator.CreateInstance(driverType, driverLogger)!;
+            // Use Microsoft.Extensions.DependencyInjection to resolve the driver with proper logger
+            var driver = ActivatorUtilities.CreateInstance(_serviceProvider, driverType) as IDriver;
+            if (driver == null)
+                throw new InvalidOperationException($"Failed to create driver instance for type {driverType.Name}");
             
             _logger.LogDebug("Created driver for protocol {ProtocolType}", protocolType);
             return driver;
@@ -97,13 +96,10 @@ public class DriverFactory : IDriverFactory
             throw new ArgumentException($"Unsupported protocol type: {protocolType}", nameof(protocolType));
         }
 
-        // Create a temporary instance to get capabilities
-        var loggerFactory = _serviceProvider.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
-        var tempLogger = loggerFactory?.CreateLogger(driverType) ?? 
-                        _serviceProvider.GetService(typeof(ILogger)) as ILogger ??
-                        throw new InvalidOperationException("No logger service available");
-
-        using var tempDriver = (IDriver)Activator.CreateInstance(driverType, tempLogger)!;
+        // Create a temporary instance to get capabilities  
+        using var tempDriver = ActivatorUtilities.CreateInstance(_serviceProvider, driverType) as IDriver;
+        if (tempDriver == null)
+            throw new InvalidOperationException($"Failed to create driver instance for type {driverType.Name}");
         return tempDriver.Capabilities;
     }
 

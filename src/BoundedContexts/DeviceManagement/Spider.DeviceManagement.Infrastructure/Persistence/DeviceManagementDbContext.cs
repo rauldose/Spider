@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Spider.DeviceManagement.Domain.Entities;
 using Spider.DeviceManagement.Domain.Enums;
 using Spider.DeviceManagement.Domain.ValueObjects;
