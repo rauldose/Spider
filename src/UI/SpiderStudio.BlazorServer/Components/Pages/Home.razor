@@ -1,5 +1,6 @@
 ﻿@page "/"
-@using SpiderDriver.UnifiedAPI.Interfaces
+@using Spider.Drivers.Core.Abstractions
+@using Spider.Drivers.Core.Models
 @using SpiderStudio.BlazorServer.Services
 @using Spider.ConnectionManagement.Application.DTOs
 @using Spider.ConnectionManagement.Application.Queries
@@ -186,15 +187,15 @@
                                     {
                                         <tr>
                                             <td>
-                                                <strong>@driver.Name</strong><br>
-                                                <small class="text-muted">@driver.Id</small>
+                                                <strong>@driver.Metadata.Name</strong><br>
+                                                <small class="text-muted">@driver.Metadata.Version</small>
                                             </td>
                                             <td>
-                                                <span class="badge bg-info">@driver.ProtocolType</span>
+                                                <span class="badge bg-info">@string.Join(", ", driver.Metadata.SupportedProtocols)</span>
                                             </td>
                                             <td>
                                                 <span class="badge @GetStatusBadgeClass(driver.Status)">
-                                                    @driver.Status
+                                                    @driver.Status.Name
                                                 </span>
                                             </td>
                                             <td>
@@ -204,7 +205,7 @@
                                                 <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => TestDriver(driver)">
                                                     Test
                                                 </button>
-                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveDriver(driver.Id)">
+                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveDriver(driver.Metadata.Name)">
                                                     Remove
                                                 </button>
                                             </td>
@@ -287,7 +288,7 @@
 </div>
 
 @code {
-    private List<IUnifiedDriver> _drivers = new();
+    private List<IDriver> _drivers = new();
     private bool _isConnecting = false;
     private int _connectedCount = 0;
     private Dictionary<string, int> _protocolStats = new();
@@ -324,10 +325,11 @@
     private void RefreshDriverList()
     {
         _drivers = DriverManager.GetDrivers().ToList();
-        _connectedCount = _drivers.Count(d => d.Status == SpiderDriver.UnifiedAPI.Models.ConnectionStatus.Connected);
+        _connectedCount = _drivers.Count(d => d.Status == DriverStatus.Connected);
         
         _protocolStats = _drivers
-            .GroupBy(d => d.ProtocolType)
+            .SelectMany(d => d.Metadata.SupportedProtocols, (driver, protocol) => protocol)
+            .GroupBy(protocol => protocol)
             .ToDictionary(g => g.Key, g => g.Count());
     }
 
@@ -355,7 +357,7 @@
 
     private async Task DisconnectAllDrivers()
     {
-        await DriverManager.DisconnectAllAsync();
+        await DriverManager.ShutdownAllAsync();
         RefreshDriverList();
         StateHasChanged();
     }
@@ -419,62 +421,65 @@
         }
     }
 
-    private async Task TestDriver(IUnifiedDriver driver)
+    private async Task TestDriver(IDriver driver)
     {
         try
         {
-            var request = new SpiderDriver.UnifiedAPI.Models.ReadRequest
+            if (driver is IReadableDriver readableDriver)
             {
-                Addresses = new[] { "40001", "40002" },
-                RegisterType = "HoldingRegisters"
-            };
-            
-            var result = await driver.ReadAsync(request);
-            _testResults.Add(new KeyValuePair<string, bool>(driver.Name, result.IsSuccess));
-            
-            Logger.LogInformation("Test result for {Driver}: {Result}", driver.Name, result.IsSuccess);
+                var request = new ReadRequest("40001", "Int16");
+                var result = await readableDriver.ReadAsync(request);
+                _testResults.Add(new KeyValuePair<string, bool>(driver.Metadata.Name, result.Success));
+                
+                Logger.LogInformation("Test result for {Driver}: {Result}", driver.Metadata.Name, result.Success);
+            }
+            else
+            {
+                _testResults.Add(new KeyValuePair<string, bool>(driver.Metadata.Name, false));
+                Logger.LogWarning("Driver {Driver} does not support reading", driver.Metadata.Name);
+            }
             StateHasChanged();
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error testing driver {Driver}", driver.Name);
-            _testResults.Add(new KeyValuePair<string, bool>(driver.Name, false));
+            Logger.LogError(ex, "Error testing driver {Driver}", driver.Metadata.Name);
+            _testResults.Add(new KeyValuePair<string, bool>(driver.Metadata.Name, false));
             StateHasChanged();
         }
     }
 
-    private void RemoveDriver(string driverId)
+    private void RemoveDriver(string driverName)
     {
-        DriverManager.RemoveDriver(driverId);
+        DriverManager.RemoveDriver(driverName);
     }
 
     private void AddDemoDriver()
     {
-        var demoDriver = new SpiderStudio.BlazorServer.Drivers.DemoModbusDriver();
+        var demoDriver = new SpiderStudio.BlazorServer.Drivers.DemoModbusDriver(Logger as ILogger<SpiderStudio.BlazorServer.Drivers.DemoModbusDriver>);
         DriverManager.AddDriver(demoDriver);
     }
 
-    private static string GetStatusBadgeClass(SpiderDriver.UnifiedAPI.Models.ConnectionStatus status)
+    private static string GetStatusBadgeClass(DriverStatus status)
     {
-        return status switch
+        return status.Name switch
         {
-            SpiderDriver.UnifiedAPI.Models.ConnectionStatus.Connected => "bg-success",
-            SpiderDriver.UnifiedAPI.Models.ConnectionStatus.Connecting => "bg-warning",
-            SpiderDriver.UnifiedAPI.Models.ConnectionStatus.Disconnected => "bg-secondary",
-            SpiderDriver.UnifiedAPI.Models.ConnectionStatus.Error => "bg-danger",
-            SpiderDriver.UnifiedAPI.Models.ConnectionStatus.Reconnecting => "bg-info",
+            "Connected" => "bg-success",
+            "Connecting" or "Initializing" => "bg-warning", 
+            "Disconnected" or "Uninitialized" => "bg-secondary",
+            "Error" => "bg-danger",
+            "Ready" => "bg-info",
             _ => "bg-secondary"
         };
     }
 
-    private static IEnumerable<string> GetCapabilityNames(SpiderDriver.UnifiedAPI.Models.DriverCapabilities capabilities)
+    private static IEnumerable<string> GetCapabilityNames(DriverCapabilities capabilities)
     {
         var names = new List<string>();
         
-        if (capabilities.HasFlag(SpiderDriver.UnifiedAPI.Models.DriverCapabilities.Read)) names.Add("Read");
-        if (capabilities.HasFlag(SpiderDriver.UnifiedAPI.Models.DriverCapabilities.Write)) names.Add("Write");
-        if (capabilities.HasFlag(SpiderDriver.UnifiedAPI.Models.DriverCapabilities.Subscribe)) names.Add("Subscribe");
-        if (capabilities.HasFlag(SpiderDriver.UnifiedAPI.Models.DriverCapabilities.BulkRead)) names.Add("Bulk");
+        if (capabilities.SupportsReading) names.Add("Read");
+        if (capabilities.SupportsWriting) names.Add("Write");
+        if (capabilities.SupportsSubscriptions) names.Add("Subscribe");
+        if (capabilities.SupportsRealTime) names.Add("Real-time");
         
         return names;
     }

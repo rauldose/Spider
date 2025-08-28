@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>SpiderStudio.BlazorServer</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Spider.Core.SharedKernel\Spider.Core.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\Core\Spider.Core.Application\Spider.Core.Application.csproj" />
+    <ProjectReference Include="..\..\Core\Spider.Drivers.Core\Spider.Drivers.Core.csproj" />
+    <ProjectReference Include="..\..\BoundedContexts\DeviceManagement\Spider.DeviceManagement.Application\Spider.DeviceManagement.Application.csproj" />
+    <ProjectReference Include="..\..\BoundedContexts\DataAcquisition\Spider.DataAcquisition.Application\Spider.DataAcquisition.Application.csproj" />
+    <ProjectReference Include="..\..\BoundedContexts\ConnectionManagement\Spider.ConnectionManagement.Application\Spider.ConnectionManagement.Application.csproj" />
+    <ProjectReference Include="..\..\BoundedContexts\ProjectManagement\Spider.ProjectManagement.Application\Spider.ProjectManagement.Application.csproj" />
+    <ProjectReference Include="..\..\BoundedContexts\Communication\Spider.Communication.Application\Spider.Communication.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>
