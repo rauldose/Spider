@@ -1,9 +1,11 @@
 @page "/devices"
 @using Spider.DeviceManagement.Application.Commands
 @using Spider.DeviceManagement.Application.DTOs
+@using Spider.DataAcquisition.Application.Commands
 @using SpiderStudio.BlazorServer.Services
 @inject DeviceManagementApiService DeviceApi
 @inject DataAcquisitionApiService DataApi
+@inject IServiceProvider _serviceProvider
 @inject ILogger<DeviceManagement> Logger
 
 <PageTitle>Device Management - Spider Studio</PageTitle>
@@ -113,6 +115,110 @@
         </div>
     }
 
+    <!-- Add Data Point Form -->
+    @if (_showAddDataPointForm && _selectedDevice != null)
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Add Data Point to @_selectedDevice.Name</h5>
+                    </div>
+                    <div class="card-body">
+                        <EditForm Model="_newDataPoint" OnValidSubmit="CreateDataPoint">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="text-danger" />
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Name *</label>
+                                        <InputText @bind-Value="_newDataPoint.Name" class="form-control" placeholder="Enter data point name" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Address *</label>
+                                        <InputText @bind-Value="_newDataPoint.Address" class="form-control" placeholder="e.g., 40001, DB1.DBX0.0" />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Data Type</label>
+                                        <InputSelect @bind-Value="_newDataPoint.DataType" class="form-select">
+                                            <option value="Boolean">Boolean</option>
+                                            <option value="Int16">Int16</option>
+                                            <option value="Int32">Int32</option>
+                                            <option value="Float">Float</option>
+                                            <option value="String">String</option>
+                                        </InputSelect>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Scan Rate (ms)</label>
+                                        <InputNumber @bind-Value="_newDataPoint.ScanRate" class="form-control" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Unit</label>
+                                        <InputText @bind-Value="_newDataPoint.Unit" class="form-control" placeholder="e.g., °C, bar, RPM" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Scale Factor</label>
+                                        <InputNumber @bind-Value="_newDataPoint.ScaleFactor" class="form-control" step="0.01" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Offset</label>
+                                        <InputNumber @bind-Value="_newDataPoint.Offset" class="form-control" step="0.01" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <InputTextArea @bind-Value="_newDataPoint.Description" class="form-control" rows="2" placeholder="Optional description" />
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <InputCheckbox @bind-Value="_newDataPoint.IsEnabled" class="form-check-input" id="enabledCheck" />
+                                    <label class="form-check-label" for="enabledCheck">
+                                        Enable data acquisition for this point
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary" disabled="@_isCreatingDataPoint">
+                                    @if (_isCreatingDataPoint)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                    }
+                                    Add Data Point
+                                </button>
+                                <button type="button" class="btn btn-secondary" @onclick="HideAddDataPointForm">
+                                    Cancel
+                                </button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
     <!-- Devices List -->
     <div class="row">
         <div class="col-12">
@@ -210,6 +316,12 @@
     private bool _deviceApiHealthy = false;
     private bool _dataApiHealthy = false;
     private bool _apiHealthy => _deviceApiHealthy && _dataApiHealthy;
+    
+    // Add Data Point functionality
+    private bool _showAddDataPointForm = false;
+    private bool _isCreatingDataPoint = false;
+    private DeviceDto? _selectedDevice;
+    private DataPointFormModel _newDataPoint = new();
 
     private DeviceFormModel _newDevice = new();
 
@@ -342,15 +454,115 @@
     private async Task TestConnection(DeviceDto device)
     {
         Logger.LogInformation("Testing connection for device {DeviceId}", device.Id);
-        // Add connection test logic here
-        await Task.CompletedTask; // Placeholder for actual connection test
+        
+        try
+        {
+            // Create a test driver instance
+            var driverFactory = new Spider.Drivers.Core.Implementations.DriverFactory(
+                _serviceProvider,
+                _serviceProvider.GetService<ILogger<Spider.Drivers.Core.Implementations.DriverFactory>>()!);
+            
+            using var testDriver = driverFactory.CreateDriver(device.Protocol);
+            
+            var config = new Spider.Drivers.Core.Models.DriverConfiguration(
+                device.ConnectionString,
+                new Dictionary<string, object>
+                {
+                    { "Host", ParseHost(device.ConnectionString) },
+                    { "Port", ParsePort(device.ConnectionString) },
+                    { "Timeout", 5000 }
+                });
+
+            var initResult = await testDriver.InitializeAsync(config);
+            
+            if (initResult.Success)
+            {
+                var healthResult = await testDriver.HealthCheckAsync();
+                
+                if (healthResult.IsHealthy)
+                {
+                    Logger.LogInformation("Connection test successful for device {DeviceName}", device.Name);
+                    // Update UI to show success
+                    StateHasChanged();
+                }
+                else
+                {
+                    Logger.LogWarning("Connection test failed for device {DeviceName}: {Error}", device.Name, healthResult.ErrorMessage);
+                }
+            }
+            else
+            {
+                Logger.LogError("Failed to initialize driver for device {DeviceName}: {Error}", device.Name, initResult.ErrorMessage);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error testing connection for device {DeviceId}", device.Id);
+        }
     }
 
     private async Task AddDataPoint(DeviceDto device)
     {
         Logger.LogInformation("Adding data point for device {DeviceId}", device.Id);
-        // This would show a form to add data points
-        await Task.CompletedTask; // Placeholder for actual data point creation
+        
+        // Show modal for adding data point
+        _showAddDataPointForm = true;
+        _selectedDevice = device;
+        _newDataPoint = new DataPointFormModel
+        {
+            DeviceId = device.Id,
+            Name = $"DataPoint_{DateTime.Now:HHmmss}",
+            Address = "40001",
+            DataType = "Int16",
+            ScanRate = 1000,
+            Description = ""
+        };
+        StateHasChanged();
+    }
+
+    private async Task CreateDataPoint()
+    {
+        _isCreatingDataPoint = true;
+        try
+        {
+            var command = new Spider.DataAcquisition.Application.Commands.CreateDataPointCommand(
+                Name: _newDataPoint.Name,
+                Address: _newDataPoint.Address,
+                DataType: _newDataPoint.DataType,
+                DeviceId: _newDataPoint.DeviceId,
+                Description: _newDataPoint.Description,
+                ScanInterval: _newDataPoint.ScanRate,
+                Group: _newDataPoint.Unit,
+                Register: null);
+
+            var dataPointId = await DataApi.CreateDataPointAsync(command);
+            
+            if (dataPointId.HasValue)
+            {
+                Logger.LogInformation("Data point created successfully: {DataPointId}", dataPointId.Value);
+                await LoadDataPointCount(_newDataPoint.DeviceId); // Refresh count
+                HideAddDataPointForm();
+            }
+            else
+            {
+                Logger.LogError("Failed to create data point");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating data point");
+        }
+        finally
+        {
+            _isCreatingDataPoint = false;
+        }
+    }
+
+    private void HideAddDataPointForm()
+    {
+        _showAddDataPointForm = false;
+        _selectedDevice = null;
+        _newDataPoint = new DataPointFormModel();
     }
 
     private static string GetStatusBadgeClass(string status)
@@ -429,5 +641,19 @@
         public string ProtocolType { get; set; } = string.Empty;
         public string? ConnectionString { get; set; }
         public string ProjectIdString { get; set; } = "00000000-0000-0000-0000-000000000001";
+    }
+
+    private class DataPointFormModel
+    {
+        public Guid DeviceId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
+        public string DataType { get; set; } = "Int16";
+        public int ScanRate { get; set; } = 1000;
+        public string? Description { get; set; }
+        public double? ScaleFactor { get; set; }
+        public double? Offset { get; set; }
+        public string? Unit { get; set; }
+        public bool IsEnabled { get; set; } = true;
     }
 }

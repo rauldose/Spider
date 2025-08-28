@@ -10,12 +10,14 @@ public class DriverManagerService
 {
     private readonly List<IDriver> _drivers = new();
     private readonly ILogger<DriverManagerService> _logger;
+    private readonly IServiceProvider _serviceProvider;
 
     public event EventHandler? DriversChanged;
 
-    public DriverManagerService(ILogger<DriverManagerService> logger)
+    public DriverManagerService(ILogger<DriverManagerService> logger, IServiceProvider serviceProvider)
     {
         _logger = logger;
+        _serviceProvider = serviceProvider;
     }
 
     /// <summary>
@@ -156,6 +158,68 @@ public class DriverManagerService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to shutdown driver {DriverName}", driver.Metadata.Name);
+        }
+    }
+
+    /// <summary>
+    /// Create a driver instance by protocol type
+    /// </summary>
+    public async Task<IDriver> CreateDriverAsync(string protocolType)
+    {
+        var driverFactory = new Spider.Drivers.Core.Implementations.DriverFactory(
+            _serviceProvider,
+            _serviceProvider.GetService<ILogger<Spider.Drivers.Core.Implementations.DriverFactory>>()!);
+        
+        return driverFactory.CreateDriver(protocolType);
+    }
+
+    /// <summary>
+    /// Register a driver instance for management
+    /// </summary>
+    public async Task RegisterDriverInstanceAsync(string name, IDriver driver)
+    {
+        // Check if driver with this name already exists
+        var existing = _drivers.FirstOrDefault(d => d.Metadata.Name == name);
+        if (existing != null)
+        {
+            _drivers.Remove(existing);
+            try
+            {
+                await existing.ShutdownAsync();
+                existing.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error disposing existing driver instance {DriverName}", name);
+            }
+        }
+
+        _drivers.Add(driver);
+        _logger.LogInformation("Registered driver instance: {DriverName}", name);
+        DriversChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Unregister and dispose a driver instance
+    /// </summary>
+    public async Task UnregisterDriverInstanceAsync(string name)
+    {
+        var driver = _drivers.FirstOrDefault(d => d.Metadata.Name == name);
+        if (driver != null)
+        {
+            _drivers.Remove(driver);
+            try
+            {
+                await driver.ShutdownAsync();
+                driver.Dispose();
+                _logger.LogInformation("Unregistered and disposed driver instance: {DriverName}", name);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error disposing driver instance {DriverName}", name);
+            }
+            
+            DriversChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 }
