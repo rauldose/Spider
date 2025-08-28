@@ -1,0 +1,722 @@
+@page "/projects"
+@using Spider.ProjectManagement.Application.DTOs
+@using Spider.ProjectManagement.Application.Commands
+@using SpiderStudio.BlazorServer.Services
+@inject ProjectManagementApiService ProjectApi
+@inject ILogger<ProjectManagement> Logger
+
+<PageTitle>Project Management - Spider Studio</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3">📁 Project Management</h1>
+                    <p class="text-muted">Organize IoT projects with hierarchical structure and configuration management</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary" @onclick="ShowCreateProjectForm">
+                        <i class="bi bi-plus-circle me-2"></i>Create Project
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Health Status Bar -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert @(_apiHealthy ? "alert-success" : "alert-warning") d-flex align-items-center">
+                <i class="bi @(_apiHealthy ? "bi-check-circle" : "bi-exclamation-triangle") me-2"></i>
+                <div>
+                    <strong>API Status:</strong>
+                    Project Management API: <span class="@(_projectApiHealthy ? "text-success" : "text-danger")">@(_projectApiHealthy ? "Healthy" : "Unavailable")</span>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary ms-auto" @onclick="CheckApiHealth">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Statistics -->
+    @if (_statistics != null)
+    {
+        <div class="row mb-4">
+            <div class="col-md-2">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title">Total Projects</h6>
+                                <h3 class="mb-0">@_statistics.TotalProjects</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-folder2 fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-2">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title">Active</h6>
+                                <h3 class="mb-0">@_statistics.ActiveProjects</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-play-circle fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-2">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title">Inactive</h6>
+                                <h3 class="mb-0">@_statistics.InactiveProjects</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-pause-circle fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-2">
+                <div class="card bg-secondary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title">Archived</h6>
+                                <h3 class="mb-0">@_statistics.ArchivedProjects</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-archive fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-2">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title">Total Devices</h6>
+                                <h3 class="mb-0">@_statistics.TotalDevices</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-device-hdd fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-2">
+                <div class="card bg-dark text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title">Total Connections</h6>
+                                <h3 class="mb-0">@_statistics.TotalConnections</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-link-45deg fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Projects List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Projects</h5>
+                </div>
+                <div class="card-body">
+                    @if (_loading)
+                    {
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (_projects.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Description</th>
+                                        <th>Status</th>
+                                        <th>Parent Project</th>
+                                        <th>Configuration</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var project in _projects)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@project.Name</strong>
+                                                @if (project.ChildProjects.Any())
+                                                {
+                                                    <small class="text-muted">(@project.ChildProjects.Count children)</small>
+                                                }
+                                            </td>
+                                            <td>@project.Description</td>
+                                            <td>
+                                                <span class="badge @GetStatusBadgeClass(project.Status)">
+                                                    @project.Status
+                                                </span>
+                                            </td>
+                                            <td>@(project.ParentProjectName ?? "-")</td>
+                                            <td>
+                                                <small>
+                                                    Max Devices: @project.Configuration.MaxDevices<br/>
+                                                    Max Connections: @project.Configuration.MaxConnections<br/>
+                                                    Retention: @project.Configuration.DataRetentionPeriod.Days days
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <small>
+                                                    @project.CreatedAt.ToString("yyyy-MM-dd HH:mm")<br/>
+                                                    <span class="text-muted">by @project.CreatedBy</span>
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => EditProject(project)">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
+                                                    @if (project.Status == "Draft")
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-success" @onclick="() => ActivateProject(project.Id)">
+                                                            <i class="bi bi-play"></i>
+                                                        </button>
+                                                    }
+                                                    else if (project.Status == "Active")
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-warning" @onclick="() => DeactivateProject(project.Id)">
+                                                            <i class="bi bi-pause"></i>
+                                                        </button>
+                                                    }
+                                                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => ArchiveProject(project.Id)">
+                                                        <i class="bi bi-archive"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <p class="text-muted">No projects found. Create your first project to get started!</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Project Modal -->
+@if (_showCreateForm)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editingProjectId.HasValue ? "Edit Project" : "Create New Project")</h5>
+                    <button type="button" class="btn-close" @onclick="HideCreateProjectForm"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            @_errorMessage
+                        </div>
+                    }
+                    
+                    <form @onsubmit="CreateProject" @onsubmit:preventDefault="true">
+                        <div class="mb-3">
+                            <label for="projectName" class="form-label">Project Name *</label>
+                            <input type="text" class="form-control @(_validationErrors.ContainsKey("Name") ? "is-invalid" : "")" 
+                                   id="projectName" @bind="_newProject.Name" required>
+                            @if (_validationErrors.ContainsKey("Name"))
+                            {
+                                <div class="invalid-feedback">@_validationErrors["Name"]</div>
+                            }
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="projectDescription" class="form-label">Description *</label>
+                            <textarea class="form-control @(_validationErrors.ContainsKey("Description") ? "is-invalid" : "")" 
+                                      id="projectDescription" rows="3" @bind="_newProject.Description" required></textarea>
+                            @if (_validationErrors.ContainsKey("Description"))
+                            {
+                                <div class="invalid-feedback">@_validationErrors["Description"]</div>
+                            }
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="parentProject" class="form-label">Parent Project (Optional)</label>
+                            <select class="form-select" id="parentProject" @bind="_newProject.ParentProjectId">
+                                <option value="">None - Top Level Project</option>
+                                @foreach (var project in _projects.Where(p => p.Status != "Archived"))
+                                {
+                                    <option value="@project.Id">@project.Name</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="createdBy" class="form-label">Created By *</label>
+                            <input type="text" class="form-control @(_validationErrors.ContainsKey("CreatedBy") ? "is-invalid" : "")" 
+                                   id="createdBy" @bind="_newProject.CreatedBy" required>
+                            @if (_validationErrors.ContainsKey("CreatedBy"))
+                            {
+                                <div class="invalid-feedback">@_validationErrors["CreatedBy"]</div>
+                            }
+                        </div>
+
+                        <h6>Configuration Settings</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="maxDevices" class="form-label">Max Devices</label>
+                                    <input type="number" class="form-control" id="maxDevices" @bind="_newProject.Configuration.MaxDevices" min="1">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="maxConnections" class="form-label">Max Connections</label>
+                                    <input type="number" class="form-control" id="maxConnections" @bind="_newProject.Configuration.MaxConnections" min="1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="retentionDays" class="form-label">Data Retention (Days)</label>
+                            <input type="number" class="form-control" id="retentionDays" @bind="_retentionDays" min="1">
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="enableMonitoring" @bind="_newProject.Configuration.EnableRealTimeMonitoring">
+                                    <label class="form-check-label" for="enableMonitoring">
+                                        Real-time Monitoring
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="enableArchiving" @bind="_newProject.Configuration.EnableDataArchiving">
+                                    <label class="form-check-label" for="enableArchiving">
+                                        Data Archiving
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="enableAlerting" @bind="_newProject.Configuration.EnableAlerting">
+                                    <label class="form-check-label" for="enableAlerting">
+                                        Alerting
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideCreateProjectForm">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="CreateProject" disabled="@_creating">
+                        @if (_creating)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        }
+                        @(_editingProjectId.HasValue ? "Update Project" : "Create Project")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<ProjectDto> _projects = new();
+    private ProjectStatisticsDto? _statistics;
+    private bool _loading = true;
+    private bool _apiHealthy = false;
+    private bool _projectApiHealthy = false;
+    private bool _showCreateForm = false;
+    private bool _creating = false;
+    private int _retentionDays = 30;
+    private Guid? _editingProjectId = null;
+    private string? _errorMessage = null;
+    private Dictionary<string, string> _validationErrors = new();
+
+    private CreateProjectFormModel _newProject = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckApiHealth();
+        await LoadData();
+    }
+
+    private async Task CheckApiHealth()
+    {
+        _projectApiHealthy = await ProjectApi.IsHealthyAsync();
+        _apiHealthy = _projectApiHealthy;
+        StateHasChanged();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            if (_projectApiHealthy)
+            {
+                var projectsTask = ProjectApi.GetAllProjectsAsync();
+                var statisticsTask = ProjectApi.GetProjectStatisticsAsync();
+
+                await Task.WhenAll(projectsTask, statisticsTask);
+
+                _projects = (await projectsTask).ToList();
+                _statistics = await statisticsTask;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading project data");
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowCreateProjectForm()
+    {
+        _newProject = new CreateProjectFormModel();
+        _retentionDays = 30;
+        _editingProjectId = null;
+        _errorMessage = null;
+        _validationErrors.Clear();
+        _showCreateForm = true;
+    }
+
+    private void HideCreateProjectForm()
+    {
+        _showCreateForm = false;
+        _newProject = new CreateProjectFormModel();
+        _editingProjectId = null;
+        _errorMessage = null;
+        _validationErrors.Clear();
+    }
+
+    private async Task CreateProject()
+    {
+        // Clear previous errors
+        _errorMessage = null;
+        _validationErrors.Clear();
+        
+        // Validate form
+        if (!ValidateForm())
+        {
+            StateHasChanged();
+            return;
+        }
+
+        _creating = true;
+        StateHasChanged();
+
+        try
+        {
+            // Set retention period from days
+            _newProject.Configuration.DataRetentionPeriod = TimeSpan.FromDays(_retentionDays);
+
+            if (_editingProjectId.HasValue)
+            {
+                // Update existing project
+                var updateDto = new UpdateProjectDto(
+                    _newProject.Name,
+                    _newProject.Description,
+                    _newProject.CreatedBy);
+
+                var updateResult = await ProjectApi.UpdateProjectAsync(_editingProjectId.Value, updateDto);
+                
+                if (updateResult)
+                {
+                    // Update configuration separately
+                    var configDto = new ProjectConfigurationDto(
+                        _newProject.Configuration.MaxDevices,
+                        _newProject.Configuration.MaxConnections,
+                        _newProject.Configuration.DataRetentionPeriod,
+                        _newProject.Configuration.EnableRealTimeMonitoring,
+                        _newProject.Configuration.EnableDataArchiving,
+                        _newProject.Configuration.EnableAlerting,
+                        _newProject.Configuration.CustomSettings);
+
+                    var configUpdateDto = new ProjectConfigurationUpdateDto(
+                        configDto,
+                        _newProject.CreatedBy);
+
+                    await ProjectApi.UpdateProjectConfigurationAsync(_editingProjectId.Value, configUpdateDto);
+                }
+                else
+                {
+                    _errorMessage = "Failed to update project. Please check your inputs and try again.";
+                    return;
+                }
+            }
+            else
+            {
+                // Create new project
+                var configurationDto = new ProjectConfigurationDto(
+                    _newProject.Configuration.MaxDevices,
+                    _newProject.Configuration.MaxConnections,
+                    _newProject.Configuration.DataRetentionPeriod,
+                    _newProject.Configuration.EnableRealTimeMonitoring,
+                    _newProject.Configuration.EnableDataArchiving,
+                    _newProject.Configuration.EnableAlerting,
+                    _newProject.Configuration.CustomSettings
+                );
+
+                var createDto = new CreateProjectDto(
+                    _newProject.Name,
+                    _newProject.Description,
+                    configurationDto,
+                    _newProject.ParentProjectId,
+                    _newProject.CreatedBy
+                );
+
+                var result = await ProjectApi.CreateProjectAsync(createDto);
+                if (result == null)
+                {
+                    _errorMessage = "Failed to create project. Please check your inputs and try again.";
+                    return;
+                }
+            }
+            
+            await LoadData();
+            HideCreateProjectForm();
+            
+            // Notify parent components to refresh
+            await NotifyProjectTreeRefresh();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating/updating project");
+            _errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _creating = false;
+            StateHasChanged();
+        }
+    }
+
+    private bool ValidateForm()
+    {
+        bool isValid = true;
+        
+        if (string.IsNullOrWhiteSpace(_newProject.Name))
+        {
+            _validationErrors["Name"] = "Project name is required.";
+            isValid = false;
+        }
+        else if (_newProject.Name.Length < 2)
+        {
+            _validationErrors["Name"] = "Project name must be at least 2 characters long.";
+            isValid = false;
+        }
+        
+        if (string.IsNullOrWhiteSpace(_newProject.Description))
+        {
+            _validationErrors["Description"] = "Project description is required.";
+            isValid = false;
+        }
+        else if (_newProject.Description.Length < 10)
+        {
+            _validationErrors["Description"] = "Project description must be at least 10 characters long.";
+            isValid = false;
+        }
+        
+        if (string.IsNullOrWhiteSpace(_newProject.CreatedBy))
+        {
+            _validationErrors["CreatedBy"] = "Created by field is required.";
+            isValid = false;
+        }
+        
+        return isValid;
+    }
+
+    private async Task NotifyProjectTreeRefresh()
+    {
+        try
+        {
+            // Use JavaScript to trigger tree refresh if needed
+            // This is a simple approach - in a real app you might use a proper event bus
+            Logger.LogInformation("Project created/updated - tree should refresh");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Could not notify tree refresh");
+        }
+    }
+
+    private async Task ActivateProject(Guid projectId)
+    {
+        try
+        {
+            var statusChange = new ProjectStatusChangeDto("Active", "System", "Project activated from UI");
+            await ProjectApi.ChangeProjectStatusAsync(projectId, statusChange);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error activating project {ProjectId}", projectId);
+        }
+    }
+
+    private async Task DeactivateProject(Guid projectId)
+    {
+        try
+        {
+            var statusChange = new ProjectStatusChangeDto("Inactive", "System", "Project deactivated from UI");
+            await ProjectApi.ChangeProjectStatusAsync(projectId, statusChange);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error deactivating project {ProjectId}", projectId);
+        }
+    }
+
+    private async Task ArchiveProject(Guid projectId)
+    {
+        try
+        {
+            var statusChange = new ProjectStatusChangeDto("Archived", "System", "Project archived from UI");
+            await ProjectApi.ChangeProjectStatusAsync(projectId, statusChange);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error archiving project {ProjectId}", projectId);
+        }
+    }
+
+    private void EditProject(ProjectDto project)
+    {
+        Logger.LogInformation("Edit project {ProjectId} requested", project.Id);
+        
+        // Load project for editing
+        _newProject = new CreateProjectFormModel
+        {
+            Name = project.Name,
+            Description = project.Description,
+            ParentProjectId = project.ParentProjectId,
+            CreatedBy = project.CreatedBy,
+            Configuration = new ProjectConfigurationFormModel
+            {
+                MaxDevices = project.Configuration.MaxDevices,
+                MaxConnections = project.Configuration.MaxConnections,
+                DataRetentionPeriod = project.Configuration.DataRetentionPeriod,
+                EnableRealTimeMonitoring = project.Configuration.EnableRealTimeMonitoring,
+                EnableDataArchiving = project.Configuration.EnableDataArchiving,
+                EnableAlerting = project.Configuration.EnableAlerting,
+                CustomSettings = project.Configuration.CustomSettings
+            }
+        };
+        
+        _retentionDays = (int)project.Configuration.DataRetentionPeriod.TotalDays;
+        _editingProjectId = project.Id;
+        _showCreateForm = true;
+        StateHasChanged();
+    }
+
+    private async Task DeleteProject(Guid projectId)
+    {
+        try
+        {
+            Logger.LogInformation("Deleting project {ProjectId}", projectId);
+            
+            // In a real implementation, this would call the API to delete the project
+            // await ProjectApi.DeleteProjectAsync(projectId);
+            
+            // For now, remove from local list if it exists
+            var project = _projects.FirstOrDefault(p => p.Id == projectId);
+            if (project != null)
+            {
+                _projects.Remove(project);
+                Logger.LogInformation("Project {ProjectName} deleted successfully", project.Name);
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error deleting project {ProjectId}", projectId);
+        }
+    }
+
+    private string GetStatusBadgeClass(string status) => status switch
+    {
+        "Active" => "bg-success",
+        "Inactive" => "bg-warning",
+        "Archived" => "bg-secondary",
+        "Draft" => "bg-primary",
+        _ => "bg-secondary"
+    };
+
+    public class CreateProjectFormModel
+    {
+        public string Name { get; set; } = "";
+        public string Description { get; set; } = "";
+        public Guid? ParentProjectId { get; set; }
+        public string CreatedBy { get; set; } = "";
+        public ProjectConfigurationFormModel Configuration { get; set; } = new();
+    }
+
+    public class ProjectConfigurationFormModel
+    {
+        public int MaxDevices { get; set; } = 100;
+        public int MaxConnections { get; set; } = 50;
+        public TimeSpan DataRetentionPeriod { get; set; } = TimeSpan.FromDays(30);
+        public bool EnableRealTimeMonitoring { get; set; } = true;
+        public bool EnableDataArchiving { get; set; } = true;
+        public bool EnableAlerting { get; set; } = true;
+        public Dictionary<string, string> CustomSettings { get; set; } = new();
+    }
+}

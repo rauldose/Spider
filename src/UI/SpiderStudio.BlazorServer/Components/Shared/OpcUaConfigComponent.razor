@@ -1,0 +1,55 @@
+@using Spider.DeviceManagement.Application.DTOs
+
+<div class="protocol-config opcua-config">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Security Policy</label>
+            <InputSelect @bind-Value="_securityPolicy" class="form-select">
+                <option value="None">None</option>
+                <option value="Basic128Rsa15">Basic128Rsa15</option>
+                <option value="Basic256">Basic256</option>
+                <option value="Basic256Sha256">Basic256Sha256</option>
+            </InputSelect>
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Security Mode</label>
+            <InputSelect @bind-Value="_securityMode" class="form-select">
+                <option value="None">None</option>
+                <option value="Sign">Sign</option>
+                <option value="SignAndEncrypt">Sign & Encrypt</option>
+            </InputSelect>
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Username</label>
+            <InputText @bind-Value="_username" class="form-control" placeholder="Optional username" />
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Password</label>
+            <InputText @bind-Value="_password" class="form-control" type="password" placeholder="Optional password" />
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Session Timeout (ms)</label>
+            <InputNumber @bind-Value="_sessionTimeout" class="form-control" min="5000" step="1000" />
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Keep Alive Interval (ms)</label>
+            <InputNumber @bind-Value="_keepAliveInterval" class="form-control" min="1000" step="1000" />
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public DeviceDto Device { get; set; } = new();
+
+    private string _securityPolicy = "None";
+    private string _securityMode = "None";
+    private string _username = "";
+    private string _password = "";
+    private int _sessionTimeout = 60000;
+    private int _keepAliveInterval = 10000;
+}

@@ -1,0 +1,64 @@
+@using Spider.DeviceManagement.Application.DTOs
+
+<div class="protocol-config siemens-config">
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label">CPU Rack</label>
+            <InputNumber @bind-Value="_rack" class="form-control" min="0" max="7" />
+            <div class="form-text">CPU rack number (typically 0)</div>
+        </div>
+        
+        <div class="col-md-4">
+            <label class="form-label">CPU Slot</label>
+            <InputNumber @bind-Value="_slot" class="form-control" min="0" max="31" />
+            <div class="form-text">CPU slot number (typically 1 or 2)</div>
+        </div>
+        
+        <div class="col-md-4">
+            <label class="form-label">Connection Type</label>
+            <InputSelect @bind-Value="_connectionType" class="form-select">
+                <option value="PG">PG - Programming</option>
+                <option value="OP">OP - Operator</option>
+                <option value="S7_BASIC">S7 Basic</option>
+            </InputSelect>
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Local TSAP</label>
+            <InputText @bind-Value="_localTsap" class="form-control" placeholder="e.g., 01.00" />
+            <div class="form-text">Local Transport Service Access Point</div>
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Remote TSAP</label>
+            <InputText @bind-Value="_remoteTsap" class="form-control" placeholder="e.g., 01.02" />
+            <div class="form-text">Remote Transport Service Access Point</div>
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">PDU Size</label>
+            <InputSelect @bind-Value="_pduSize" class="form-select">
+                <option value="240">240 bytes</option>
+                <option value="480">480 bytes</option>
+                <option value="960">960 bytes</option>
+            </InputSelect>
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Connection Timeout (ms)</label>
+            <InputNumber @bind-Value="_timeout" class="form-control" min="1000" step="500" />
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public DeviceDto Device { get; set; } = new();
+
+    private int _rack = 0;
+    private int _slot = 1;
+    private string _connectionType = "PG";
+    private string _localTsap = "01.00";
+    private string _remoteTsap = "01.02";
+    private string _pduSize = "240";
+    private int _timeout = 5000;
+}

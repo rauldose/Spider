@@ -1,0 +1,210 @@
+﻿@inherits LayoutComponentBase
+@using Spider.ProjectManagement.Application.Commands
+@using Spider.ProjectManagement.Application.DTOs
+@using SpiderStudio.BlazorServer.Services
+@inject ProjectManagementApiService ProjectApi
+@inject IJSRuntime JSRuntime
+
+<!-- Spider WPF-like Layout -->
+<div class="spider-window">
+    <!-- Title Bar -->
+    <div class="title-bar">
+        <div class="title-content">
+            <img src="/spider.png" alt="Spider" class="title-icon" />
+            <span class="title-text">Spider Studio</span>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="spider-toolbar">
+        <div class="toolbar-section">
+            <button class="toolbar-btn" title="Save">
+                <i class="bi bi-floppy"></i>
+                <span>Save</span>
+            </button>
+            <button class="toolbar-btn" title="Start">
+                <i class="bi bi-play-fill"></i>
+                <span>Start</span>
+            </button>
+            <button class="toolbar-btn" title="Stop">
+                <i class="bi bi-stop-fill"></i>
+                <span>Stop</span>
+            </button>
+            <button class="toolbar-btn" title="Cancel">
+                <i class="bi bi-arrow-clockwise"></i>
+                <span>Cancel</span>
+            </button>
+        </div>
+        <div class="toolbar-divider"></div>
+        <div class="toolbar-section">
+            <button class="toolbar-btn" title="Publish">
+                <i class="bi bi-cloud-upload"></i>
+                <span>Publish</span>
+            </button>
+            <button class="toolbar-btn" title="Monitor">
+                <i class="bi bi-display"></i>
+                <span>Monitor</span>
+            </button>
+        </div>
+        <div class="toolbar-spacer"></div>
+        <div class="toolbar-section">
+            <span class="user-name">Administrator</span>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="spider-content">
+        <!-- Left Panel: Project Tree -->
+        <div class="project-panel">
+            <div class="tree-container">
+                <ProjectTreeComponent @ref="_projectTreeComponent" />
+            </div>
+            <div class="tree-toolbar">
+                <button class="tree-btn" title="Add" @onclick="ShowCreateProjectModal">
+                    <i class="bi bi-plus"></i>
+                    <span>Add</span>
+                </button>
+                <button class="tree-btn" title="Remove" @onclick="ShowRemoveConfirmation">
+                    <i class="bi bi-dash"></i>
+                    <span>Remove</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Splitter -->
+        <div class="splitter"></div>
+
+        <!-- Right Panel: Content -->
+        <div class="content-panel">
+            @Body
+        </div>
+    </div>
+</div>
+
+<!-- Create Project Modal -->
+@if (_showCreateProjectModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Project</h5>
+                    <button type="button" class="btn-close" @onclick="HideCreateProjectModal"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            @_errorMessage
+                        </div>
+                    }
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Project Name</label>
+                        <input type="text" class="form-control" @bind="_newProjectName" placeholder="Enter project name" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" @bind="_newProjectDescription" placeholder="Enter project description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideCreateProjectModal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="CreateProject" disabled="@string.IsNullOrEmpty(_newProjectName)">Create Project</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div id="blazor-error-ui">
+    <span class="me-3">An unhandled error has occurred.</span>
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+@code {
+    private ProjectTreeComponent? _projectTreeComponent;
+    private bool _showCreateProjectModal = false;
+    private string _newProjectName = "";
+    private string _newProjectDescription = "";
+    private string? _errorMessage = null;
+
+    private void ShowCreateProjectModal()
+    {
+        _showCreateProjectModal = true;
+        _newProjectName = "";
+        _newProjectDescription = "";
+        _errorMessage = null;
+        StateHasChanged();
+    }
+
+    private void HideCreateProjectModal()
+    {
+        _showCreateProjectModal = false;
+        _errorMessage = null;
+        StateHasChanged();
+    }
+
+    private async Task CreateProject()
+    {
+        _errorMessage = null;
+        
+        if (string.IsNullOrWhiteSpace(_newProjectName))
+        {
+            _errorMessage = "Project name is required.";
+            StateHasChanged();
+            return;
+        }
+        
+        if (_newProjectName.Length < 2)
+        {
+            _errorMessage = "Project name must be at least 2 characters long.";
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            var createProjectDto = new CreateProjectDto(
+                Name: _newProjectName.Trim(),
+                Description: _newProjectDescription?.Trim() ?? "",
+                Configuration: null, // Will use default configuration
+                ParentProjectId: null, // Root project
+                CreatedBy: "Administrator"
+            );
+
+            var createdProject = await ProjectApi.CreateProjectAsync(createProjectDto);
+            
+            if (createdProject != null)
+            {
+                HideCreateProjectModal();
+                
+                // Refresh the project tree
+                if (_projectTreeComponent != null)
+                {
+                    await _projectTreeComponent.RefreshAsync();
+                }
+                
+                StateHasChanged();
+            }
+            else
+            {
+                _errorMessage = "Failed to create project. Please check your inputs and try again.";
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error creating project: {ex.Message}";
+            StateHasChanged();
+        }
+    }
+
+    private async Task ShowRemoveConfirmation()
+    {
+        // For now, just show an alert that this feature is not implemented
+        await JSRuntime.InvokeVoidAsync("alert", "Remove functionality is not yet implemented.");
+    }
+}

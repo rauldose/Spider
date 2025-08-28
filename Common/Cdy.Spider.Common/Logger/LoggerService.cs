@@ -2,9 +2,9 @@
 //  Copyright (C) 2020  Inc. All rights reserved.
 //
 //==============================================================
-//  Create by 种道洋 at 2020/1/20 8:55:18.
+//  Create by Spider Developer at 2020/1/20 8:55:18.
 //  Version 1.0
-//  种道洋
+//  Spider Developer
 //==============================================================
 
 using System;

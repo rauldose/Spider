@@ -1,0 +1,104 @@
+@using Spider.DeviceManagement.Application.DTOs
+
+<div class="protocol-config modbus-config">
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label">Slave ID</label>
+            <InputNumber @bind-Value="_slaveId" class="form-control" min="1" max="247" />
+            <div class="form-text">Modbus slave/unit identifier (1-247)</div>
+        </div>
+        
+        <div class="col-md-4">
+            <label class="form-label">Function Code</label>
+            <InputSelect @bind-Value="_functionCode" class="form-select">
+                <option value="3">03 - Read Holding Registers</option>
+                <option value="4">04 - Read Input Registers</option>
+                <option value="1">01 - Read Coils</option>
+                <option value="2">02 - Read Discrete Inputs</option>
+            </InputSelect>
+        </div>
+        
+        <div class="col-md-4">
+            <label class="form-label">Byte Order</label>
+            <InputSelect @bind-Value="_byteOrder" class="form-select">
+                <option value="ABCD">ABCD (Big Endian)</option>
+                <option value="DCBA">DCBA (Little Endian)</option>
+                <option value="BADC">BADC (Mid-Big Endian)</option>
+                <option value="CDAB">CDAB (Mid-Little Endian)</option>
+            </InputSelect>
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Timeout (ms)</label>
+            <InputNumber @bind-Value="_timeout" class="form-control" min="100" step="100" />
+            <div class="form-text">Request timeout in milliseconds</div>
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Retry Count</label>
+            <InputNumber @bind-Value="_retryCount" class="form-control" min="0" max="10" />
+            <div class="form-text">Number of retries on communication failure</div>
+        </div>
+        
+        <div class="col-12">
+            <div class="form-check">
+                <InputCheckbox @bind-Value="_zeroBasedAddressing" class="form-check-input" id="zeroBasedAddressing" />
+                <label class="form-check-label" for="zeroBasedAddressing">
+                    Use zero-based addressing
+                </label>
+                <div class="form-text">
+                    Check if your device uses 0-based addressing instead of 1-based
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public DeviceDto Device { get; set; } = new();
+
+    private int _slaveId = 1;
+    private string _functionCode = "3";
+    private string _byteOrder = "ABCD";
+    private int _timeout = 3000;
+    private int _retryCount = 3;
+    private bool _zeroBasedAddressing = false;
+
+    protected override void OnParametersSet()
+    {
+        // Parse existing connection string if available
+        ParseConnectionString();
+    }
+
+    private void ParseConnectionString()
+    {
+        if (string.IsNullOrEmpty(Device.ConnectionString)) return;
+        
+        var parts = Device.ConnectionString.Split(';');
+        foreach (var part in parts)
+        {
+            var keyValue = part.Split('=');
+            if (keyValue.Length == 2)
+            {
+                var key = keyValue[0].Trim().ToLower();
+                var value = keyValue[1].Trim();
+                
+                switch (key)
+                {
+                    case "slaveid":
+                        if (int.TryParse(value, out var slaveId))
+                            _slaveId = slaveId;
+                        break;
+                    case "timeout":
+                        if (int.TryParse(value, out var timeout))
+                            _timeout = timeout;
+                        break;
+                    case "retries":
+                        if (int.TryParse(value, out var retries))
+                            _retryCount = retries;
+                        break;
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,70 @@
+@using Spider.DeviceManagement.Application.DTOs
+
+<div class="protocol-config mqtt-config">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Client ID</label>
+            <InputText @bind-Value="_clientId" class="form-control" placeholder="Unique client identifier" />
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">QoS Level</label>
+            <InputSelect @bind-Value="_qosLevel" class="form-select">
+                <option value="0">0 - At most once</option>
+                <option value="1">1 - At least once</option>
+                <option value="2">2 - Exactly once</option>
+            </InputSelect>
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Username</label>
+            <InputText @bind-Value="_username" class="form-control" placeholder="Optional username" />
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Password</label>
+            <InputText @bind-Value="_password" class="form-control" type="password" placeholder="Optional password" />
+        </div>
+        
+        <div class="col-12">
+            <label class="form-label">Subscribe Topics</label>
+            <InputTextArea @bind-Value="_subscribeTopics" class="form-control" rows="3" 
+                           placeholder="Enter topics to subscribe, one per line&#10;Example:&#10;sensors/temperature&#10;sensors/humidity" />
+            <div class="form-text">Enter MQTT topics to subscribe to, one per line</div>
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Keep Alive (seconds)</label>
+            <InputNumber @bind-Value="_keepAlive" class="form-control" min="10" step="10" />
+        </div>
+        
+        <div class="col-md-6">
+            <div class="form-check mt-4">
+                <InputCheckbox @bind-Value="_cleanSession" class="form-check-input" id="cleanSession" />
+                <label class="form-check-label" for="cleanSession">
+                    Clean Session
+                </label>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public DeviceDto Device { get; set; } = new();
+
+    private string _clientId = "";
+    private string _qosLevel = "1";
+    private string _username = "";
+    private string _password = "";
+    private string _subscribeTopics = "";
+    private int _keepAlive = 60;
+    private bool _cleanSession = true;
+
+    protected override void OnParametersSet()
+    {
+        if (string.IsNullOrEmpty(_clientId))
+        {
+            _clientId = $"SpiderClient_{Guid.NewGuid():N}";
+        }
+    }
+}

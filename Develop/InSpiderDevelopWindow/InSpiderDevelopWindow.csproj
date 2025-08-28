@@ -46,8 +46,8 @@
     <None Remove="Image\stop.png" />
     <None Remove="Image\user.png" />
     <None Remove="Image\UserSettings.png" />
-    <None Remove="Image\文件夹.png" />
-    <None Remove="Image\登录.png" />
+    <None Remove="Image\folder.png" />
+    <None Remove="Image\login.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -115,8 +115,8 @@
     <Resource Include="Image\stop.png" />
     <Resource Include="Image\user.png" />
     <Resource Include="Image\UserSettings.png" />
-    <Resource Include="Image\文件夹.png" />
-    <Resource Include="Image\登录.png" />
+    <Resource Include="Image\folder.png" />
+    <Resource Include="Image\login.png" />
   </ItemGroup>
 
   <ItemGroup>

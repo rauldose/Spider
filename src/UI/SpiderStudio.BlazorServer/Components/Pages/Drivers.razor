@@ -1,0 +1,882 @@
+@page "/drivers"
+@using Spider.Drivers.Core.Abstractions
+@using Spider.Drivers.Core.Models
+@using SpiderStudio.BlazorServer.Services
+@inject DriverManagerService DriverManager
+@inject ILogger<Drivers> Logger
+
+<PageTitle>Driver Configuration - Spider Studio</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-5">🔌 Driver Configuration</h1>
+                    <p class="lead">Configure and manage communication drivers</p>
+                </div>
+                <div>
+                    <button class="btn btn-success me-2" @onclick="ShowAddDriverModal">
+                        <i class="bi bi-plus-circle me-1"></i>Add Driver
+                    </button>
+                    <button class="btn btn-outline-secondary me-2" @onclick="ImportDrivers">
+                        <i class="bi bi-upload me-1"></i>Import
+                    </button>
+                    <button class="btn btn-outline-info" @onclick="ExportDrivers">
+                        <i class="bi bi-download me-1"></i>Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Driver Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <i class="bi bi-plugin" style="font-size: 2rem; color: var(--bs-primary);"></i>
+                    <h4 class="mt-2">@_totalDrivers</h4>
+                    <small class="text-muted">Total Drivers</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <i class="bi bi-check-circle" style="font-size: 2rem; color: var(--bs-success);"></i>
+                    <h4 class="mt-2">@_connectedDrivers</h4>
+                    <small class="text-muted">Connected</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <i class="bi bi-router" style="font-size: 2rem; color: var(--bs-info);"></i>
+                    <h4 class="mt-2">@_protocolCount</h4>
+                    <small class="text-muted">Protocols</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <i class="bi bi-exclamation-triangle" style="font-size: 2rem; color: var(--bs-warning);"></i>
+                    <h4 class="mt-2">@_errorDrivers</h4>
+                    <small class="text-muted">Errors</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Available Drivers -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Available Drivers</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <input type="text" class="form-control" placeholder="Search drivers..." @bind="_driverFilter" @oninput="FilterAvailableDrivers">
+                    </div>
+                    
+                    @foreach (var category in _availableDrivers.GroupBy(d => d.Category))
+                    {
+                        <div class="mb-3">
+                            <h6 class="text-muted">@category.Key</h6>
+                            @foreach (var driver in category.Where(d => string.IsNullOrEmpty(_driverFilter) || d.Name.Contains(_driverFilter, StringComparison.OrdinalIgnoreCase)))
+                            {
+                                <div class="card mb-2 driver-card" @onclick="() => SelectAvailableDriver(driver)">
+                                    <div class="card-body p-2">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong>@driver.Name</strong><br>
+                                                <small class="text-muted">@driver.Description</small>
+                                            </div>
+                                            <span class="badge bg-info">@driver.Version</span>
+                                        </div>
+                                        <div class="mt-2">
+                                            @foreach (var protocol in driver.SupportedProtocols)
+                                            {
+                                                <span class="badge bg-secondary me-1 small">@protocol</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Driver Configuration -->
+        <div class="col-lg-8">
+            @if (_selectedDriver != null)
+            {
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Configure @_selectedDriver.Name Driver</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Driver Name</label>
+                                <input type="text" class="form-control" @bind="_driverConfig.Name" placeholder="Enter driver name">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Protocol</label>
+                                <select class="form-select" @bind="_driverConfig.Protocol">
+                                    @foreach (var protocol in _selectedDriver.SupportedProtocols)
+                                    {
+                                        <option value="@protocol">@protocol</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Connection Type</label>
+                                <select class="form-select" @bind="_driverConfig.ConnectionType">
+                                    <option value="TCP">TCP</option>
+                                    <option value="RTU">RTU (Serial)</option>
+                                    <option value="ASCII">ASCII (Serial)</option>
+                                    <option value="UDP">UDP</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Update Rate (ms)</label>
+                                <input type="number" class="form-control" @bind="_driverConfig.UpdateRate" min="100" max="60000">
+                            </div>
+                        </div>
+
+                        <!-- Protocol-specific configuration -->
+                        @if (_driverConfig.ConnectionType == "TCP" || _driverConfig.ConnectionType == "UDP")
+                        {
+                            <hr>
+                            <h6>Network Configuration</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">IP Address</label>
+                                    <input type="text" class="form-control" @bind="_driverConfig.IpAddress" placeholder="192.168.1.100">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Port</label>
+                                    <input type="number" class="form-control" @bind="_driverConfig.Port" min="1" max="65535">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Timeout (ms)</label>
+                                    <input type="number" class="form-control" @bind="_driverConfig.Timeout" min="1000" max="30000">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Retry Attempts</label>
+                                    <input type="number" class="form-control" @bind="_driverConfig.RetryAttempts" min="1" max="10">
+                                </div>
+                            </div>
+                        }
+                        else if (_driverConfig.ConnectionType == "RTU" || _driverConfig.ConnectionType == "ASCII")
+                        {
+                            <hr>
+                            <h6>Serial Configuration</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">COM Port</label>
+                                    <select class="form-select" @bind="_driverConfig.ComPort">
+                                        <option value="COM1">COM1</option>
+                                        <option value="COM2">COM2</option>
+                                        <option value="COM3">COM3</option>
+                                        <option value="COM4">COM4</option>
+                                        <option value="COM5">COM5</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Baud Rate</label>
+                                    <select class="form-select" @bind="_driverConfig.BaudRate">
+                                        <option value="9600">9600</option>
+                                        <option value="19200">19200</option>
+                                        <option value="38400">38400</option>
+                                        <option value="57600">57600</option>
+                                        <option value="115200">115200</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Data Bits</label>
+                                    <select class="form-select" @bind="_driverConfig.DataBits">
+                                        <option value="7">7</option>
+                                        <option value="8">8</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Parity</label>
+                                    <select class="form-select" @bind="_driverConfig.Parity">
+                                        <option value="None">None</option>
+                                        <option value="Even">Even</option>
+                                        <option value="Odd">Odd</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Stop Bits</label>
+                                    <select class="form-select" @bind="_driverConfig.StopBits">
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                    </select>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Driver-specific settings -->
+                        @if (_selectedDriver.Name.Contains("Modbus"))
+                        {
+                            <hr>
+                            <h6>Modbus Configuration</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Slave ID</label>
+                                    <input type="number" class="form-control" @bind="_driverConfig.SlaveId" min="1" max="247">
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" @bind="_driverConfig.SwapBytes">
+                                        <label class="form-check-label">Swap bytes</label>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else if (_selectedDriver.Name.Contains("OPC"))
+                        {
+                            <hr>
+                            <h6>OPC Configuration</h6>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">Server Endpoint</label>
+                                    <input type="text" class="form-control" @bind="_driverConfig.OpcEndpoint" placeholder="opc.tcp://localhost:4840">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Username</label>
+                                    <input type="text" class="form-control" @bind="_driverConfig.Username">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Password</label>
+                                    <input type="password" class="form-control" @bind="_driverConfig.Password">
+                                </div>
+                            </div>
+                        }
+
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button class="btn btn-outline-secondary me-2" @onclick="TestConnection">
+                                    <i class="bi bi-play me-1"></i>Test Connection
+                                </button>
+                                <button class="btn btn-outline-info" @onclick="LoadTemplate">
+                                    <i class="bi bi-file-text me-1"></i>Load Template
+                                </button>
+                            </div>
+                            <div>
+                                <button class="btn btn-outline-secondary me-2" @onclick="CancelConfiguration">
+                                    Cancel
+                                </button>
+                                <button class="btn btn-success" @onclick="SaveDriver">
+                                    <i class="bi bi-check me-1"></i>Save Driver
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Configured Drivers List -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Configured Drivers</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (_configuredDrivers.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Protocol</th>
+                                            <th>Connection</th>
+                                            <th>Status</th>
+                                            <th>Last Activity</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var driver in _configuredDrivers)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <strong>@driver.Name</strong><br>
+                                                    <small class="text-muted">@driver.DriverType</small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-info">@driver.Protocol</span>
+                                                </td>
+                                                <td>
+                                                    <small>@GetConnectionDisplay(driver)</small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge @GetStatusBadge(driver.Status)">@driver.Status</span>
+                                                </td>
+                                                <td>
+                                                    <small>@driver.LastActivity.ToString("HH:mm:ss")</small>
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => EditDriver(driver)">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-success me-1" @onclick="() => StartDriver(driver)" disabled="@(driver.Status == "Connected")">
+                                                        <i class="bi bi-play"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => StopDriver(driver)" disabled="@(driver.Status != "Connected")">
+                                                        <i class="bi bi-stop"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteDriver(driver)">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-5">
+                                <i class="bi bi-plugin" style="font-size: 3rem; color: #6c757d;"></i>
+                                <h5 class="mt-3 text-muted">No drivers configured</h5>
+                                <p class="text-muted">Select a driver from the available list to get started</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<AvailableDriverModel> _availableDrivers = new();
+    private List<ConfiguredDriverModel> _configuredDrivers = new();
+    private AvailableDriverModel? _selectedDriver;
+    private DriverConfigurationModel _driverConfig = new();
+    private string _driverFilter = "";
+    
+    private int _totalDrivers = 0;
+    private int _connectedDrivers = 0;
+    private int _protocolCount = 0;
+    private int _errorDrivers = 0;
+
+    protected override void OnInitialized()
+    {
+        LoadAvailableDrivers();
+        LoadConfiguredDrivers();
+        UpdateStatistics();
+    }
+
+    private void LoadAvailableDrivers()
+    {
+        _availableDrivers = new List<AvailableDriverModel>
+        {
+            // Industrial Protocols
+            new() { Name = "Modbus TCP", Category = "Industrial", Description = "Modbus TCP/IP protocol driver", Version = "1.0", SupportedProtocols = new[] { "Modbus TCP" } },
+            new() { Name = "Modbus RTU", Category = "Industrial", Description = "Modbus RTU serial protocol driver", Version = "1.0", SupportedProtocols = new[] { "Modbus RTU" } },
+            new() { Name = "OPC UA Client", Category = "Industrial", Description = "OPC Unified Architecture client driver", Version = "1.0", SupportedProtocols = new[] { "OPC UA" } },
+            new() { Name = "Siemens S7", Category = "Industrial", Description = "Siemens S7 PLC communication", Version = "1.0", SupportedProtocols = new[] { "S7" } },
+            new() { Name = "Allen Bradley", Category = "Industrial", Description = "Allen Bradley ControlLogix/CompactLogix", Version = "1.0", SupportedProtocols = new[] { "EtherNet/IP" } },
+            new() { Name = "Omron FINS", Category = "Industrial", Description = "Omron FINS protocol driver", Version = "1.0", SupportedProtocols = new[] { "FINS" } },
+            
+            // IoT Protocols
+            new() { Name = "MQTT Client", Category = "IoT", Description = "MQTT publish/subscribe client", Version = "1.0", SupportedProtocols = new[] { "MQTT" } },
+            new() { Name = "CoAP Client", Category = "IoT", Description = "Constrained Application Protocol client", Version = "1.0", SupportedProtocols = new[] { "CoAP" } },
+            new() { Name = "HTTP REST", Category = "IoT", Description = "HTTP REST API client", Version = "1.0", SupportedProtocols = new[] { "HTTP" } },
+            
+            // Network Protocols
+            new() { Name = "TCP Client", Category = "Network", Description = "Generic TCP client driver", Version = "1.0", SupportedProtocols = new[] { "TCP" } },
+            new() { Name = "UDP Client", Category = "Network", Description = "Generic UDP client driver", Version = "1.0", SupportedProtocols = new[] { "UDP" } },
+            new() { Name = "Serial Port", Category = "Network", Description = "Generic serial port driver", Version = "1.0", SupportedProtocols = new[] { "Serial" } },
+            
+            // Demo/Test
+            new() { Name = "Demo Modbus", Category = "Demo", Description = "Demo Modbus driver for testing", Version = "1.0", SupportedProtocols = new[] { "Demo Modbus" } },
+            new() { Name = "Data Simulator", Category = "Demo", Description = "Random data simulator", Version = "1.0", SupportedProtocols = new[] { "Simulator" } }
+        };
+    }
+
+    private void LoadConfiguredDrivers()
+    {
+        _configuredDrivers = new List<ConfiguredDriverModel>
+        {
+            new() { Name = "PLC_001", DriverType = "Modbus TCP", Protocol = "Modbus TCP", IpAddress = "192.168.1.100", Port = 502, Status = "Connected", LastActivity = DateTime.Now.AddSeconds(-5) },
+            new() { Name = "PLC_002", DriverType = "Siemens S7", Protocol = "S7", IpAddress = "192.168.1.101", Port = 102, Status = "Connected", LastActivity = DateTime.Now.AddSeconds(-10) },
+            new() { Name = "Serial_001", DriverType = "Modbus RTU", Protocol = "Modbus RTU", ComPort = "COM1", BaudRate = 9600, Status = "Disconnected", LastActivity = DateTime.Now.AddMinutes(-5) }
+        };
+    }
+
+    private void UpdateStatistics()
+    {
+        _totalDrivers = _configuredDrivers.Count;
+        _connectedDrivers = _configuredDrivers.Count(d => d.Status == "Connected");
+        _protocolCount = _configuredDrivers.Select(d => d.Protocol).Distinct().Count();
+        _errorDrivers = _configuredDrivers.Count(d => d.Status == "Error");
+    }
+
+    private void FilterAvailableDrivers()
+    {
+        StateHasChanged();
+    }
+
+    private void SelectAvailableDriver(AvailableDriverModel driver)
+    {
+        _selectedDriver = driver;
+        _driverConfig = new DriverConfigurationModel
+        {
+            Name = $"{driver.Name}_{_configuredDrivers.Count + 1:D3}",
+            Protocol = driver.SupportedProtocols.First(),
+            ConnectionType = "TCP",
+            UpdateRate = 1000,
+            IpAddress = "192.168.1.100",
+            Port = GetDefaultPort(driver.Name),
+            Timeout = 5000,
+            RetryAttempts = 3,
+            SlaveId = 1,
+            BaudRate = 9600,
+            DataBits = 8,
+            Parity = "None",
+            StopBits = 1
+        };
+        StateHasChanged();
+    }
+
+    private int GetDefaultPort(string driverName)
+    {
+        return driverName switch
+        {
+            "Modbus TCP" => 502,
+            "OPC UA Client" => 4840,
+            "Siemens S7" => 102,
+            "MQTT Client" => 1883,
+            "HTTP REST" => 80,
+            _ => 502
+        };
+    }
+
+    private async Task TestConnection()
+    {
+        Logger.LogInformation("Testing connection for {DriverName}", _driverConfig.Name);
+        
+        try
+        {
+            using var testDriver = await DriverManager.CreateDriverAsync(_driverConfig.Protocol);
+            
+            var config = new Spider.Drivers.Core.Models.DriverConfiguration(
+                $"IP:{_driverConfig.IpAddress};Port:{_driverConfig.Port}",
+                new Dictionary<string, object>
+                {
+                    { "Host", _driverConfig.IpAddress },
+                    { "Port", _driverConfig.Port },
+                    { "Timeout", _driverConfig.Timeout },
+                    { "RetryAttempts", _driverConfig.RetryAttempts }
+                });
+
+            var initResult = await testDriver.InitializeAsync(config);
+            
+            if (initResult.Success)
+            {
+                var healthResult = await testDriver.HealthCheckAsync();
+                
+                if (healthResult.IsHealthy)
+                {
+                    Logger.LogInformation("Connection test successful for {DriverName}", _driverConfig.Name);
+                    // Show success message in UI
+                }
+                else
+                {
+                    Logger.LogWarning("Connection test failed for {DriverName}: {Error}", _driverConfig.Name, healthResult.ErrorMessage);
+                }
+            }
+            else
+            {
+                Logger.LogError("Failed to initialize driver for {DriverName}: {Error}", _driverConfig.Name, initResult.ErrorMessage);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error testing connection for {DriverName}", _driverConfig.Name);
+        }
+    }
+
+    private void LoadTemplate()
+    {
+        Logger.LogInformation("Loading template for {DriverType}", _selectedDriver?.Name);
+        
+        if (_selectedDriver != null)
+        {
+            // Load predefined template based on driver type
+            switch (_selectedDriver.Name)
+            {
+                case "Modbus TCP":
+                    _driverConfig.IpAddress = "192.168.1.100";
+                    _driverConfig.Port = 502;
+                    _driverConfig.Timeout = 5000;
+                    _driverConfig.SlaveId = 1;
+                    break;
+                    
+                case "OPC UA Client":
+                    _driverConfig.IpAddress = "localhost";
+                    _driverConfig.Port = 4840;
+                    _driverConfig.Timeout = 10000;
+                    break;
+                    
+                case "Siemens S7":
+                    _driverConfig.IpAddress = "192.168.1.101";
+                    _driverConfig.Port = 102;
+                    _driverConfig.Timeout = 8000;
+                    _driverConfig.SlaveId = 2;
+                    break;
+                    
+                case "MQTT Client":
+                    _driverConfig.IpAddress = "localhost";
+                    _driverConfig.Port = 1883;
+                    _driverConfig.Timeout = 30000;
+                    break;
+            }
+            
+            StateHasChanged();
+        }
+    }
+
+    private void SaveDriver()
+    {
+        if (_selectedDriver != null)
+        {
+            var newDriver = new ConfiguredDriverModel
+            {
+                Name = _driverConfig.Name,
+                DriverType = _selectedDriver.Name,
+                Protocol = _driverConfig.Protocol,
+                IpAddress = _driverConfig.IpAddress,
+                Port = _driverConfig.Port,
+                ComPort = _driverConfig.ComPort,
+                BaudRate = _driverConfig.BaudRate,
+                Status = "Disconnected",
+                LastActivity = DateTime.Now
+            };
+
+            _configuredDrivers.Add(newDriver);
+            UpdateStatistics();
+            CancelConfiguration();
+            Logger.LogInformation("Driver {DriverName} saved successfully", newDriver.Name);
+        }
+    }
+
+    private void CancelConfiguration()
+    {
+        _selectedDriver = null;
+        _driverConfig = new DriverConfigurationModel();
+        StateHasChanged();
+    }
+
+    private void EditDriver(ConfiguredDriverModel driver)
+    {
+        Logger.LogInformation("Edit driver: {DriverName}", driver.Name);
+        
+        // Load driver configuration for editing
+        var availableDriver = _availableDrivers.FirstOrDefault(d => d.Name == driver.DriverType);
+        if (availableDriver != null)
+        {
+            _selectedDriver = availableDriver;
+            _driverConfig = new DriverConfigurationModel
+            {
+                Name = driver.Name,
+                Protocol = driver.Protocol,
+                IpAddress = driver.IpAddress,
+                Port = driver.Port,
+                ComPort = driver.ComPort,
+                BaudRate = driver.BaudRate,
+                ConnectionType = !string.IsNullOrEmpty(driver.IpAddress) ? "TCP" : "Serial",
+                UpdateRate = 1000,
+                Timeout = 5000,
+                RetryAttempts = 3,
+                SlaveId = 1
+            };
+            StateHasChanged();
+        }
+    }
+
+    private async Task StartDriver(ConfiguredDriverModel driver)
+    {
+        try
+        {
+            Logger.LogInformation("Starting driver: {DriverName}", driver.Name);
+            
+            // Create and initialize the driver
+            var driverInstance = await DriverManager.CreateDriverAsync(driver.Protocol);
+            
+            var config = new Spider.Drivers.Core.Models.DriverConfiguration(
+                GetConnectionString(driver),
+                GetDriverSettings(driver));
+
+            var initResult = await driverInstance.InitializeAsync(config);
+            
+            if (initResult.Success)
+            {
+                // Register driver instance for management
+                await DriverManager.RegisterDriverInstanceAsync(driver.Name, driverInstance);
+                
+                driver.Status = "Connected";
+                driver.LastActivity = DateTime.Now;
+                UpdateStatistics();
+                Logger.LogInformation("Driver {DriverName} started successfully", driver.Name);
+            }
+            else
+            {
+                driver.Status = "Error";
+                Logger.LogError("Failed to start driver {DriverName}: {Error}", driver.Name, initResult.ErrorMessage);
+            }
+        }
+        catch (Exception ex)
+        {
+            driver.Status = "Error";
+            Logger.LogError(ex, "Error starting driver {DriverName}", driver.Name);
+        }
+        
+        StateHasChanged();
+    }
+
+    private async Task StopDriver(ConfiguredDriverModel driver)
+    {
+        try
+        {
+            Logger.LogInformation("Stopping driver: {DriverName}", driver.Name);
+            
+            // Get and dispose the driver instance
+            await DriverManager.UnregisterDriverInstanceAsync(driver.Name);
+            
+            driver.Status = "Disconnected";
+            UpdateStatistics();
+            Logger.LogInformation("Driver {DriverName} stopped successfully", driver.Name);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error stopping driver {DriverName}", driver.Name);
+        }
+        
+        StateHasChanged();
+    }
+
+    private void DeleteDriver(ConfiguredDriverModel driver)
+    {
+        _configuredDrivers.Remove(driver);
+        UpdateStatistics();
+        Logger.LogInformation("Deleted driver: {DriverName}", driver.Name);
+    }
+
+    private void ShowAddDriverModal()
+    {
+        // Clear selection to show available drivers
+        _selectedDriver = null;
+        StateHasChanged();
+    }
+
+    private void ImportDrivers()
+    {
+        Logger.LogInformation("Import drivers requested");
+        
+        // Simulate importing driver configurations from JSON
+        try
+        {
+            var importedDrivers = new List<ConfiguredDriverModel>
+            {
+                new() { 
+                    Name = "Imported_PLC_001", 
+                    DriverType = "Modbus TCP", 
+                    Protocol = "Modbus TCP", 
+                    IpAddress = "192.168.1.200", 
+                    Port = 502, 
+                    Status = "Disconnected", 
+                    LastActivity = DateTime.Now 
+                },
+                new() { 
+                    Name = "Imported_HMI_001", 
+                    DriverType = "OPC UA Client", 
+                    Protocol = "OPC UA", 
+                    IpAddress = "192.168.1.201", 
+                    Port = 4840, 
+                    Status = "Disconnected", 
+                    LastActivity = DateTime.Now 
+                }
+            };
+
+            // Add imported drivers
+            foreach (var driver in importedDrivers)
+            {
+                if (!_configuredDrivers.Any(d => d.Name == driver.Name))
+                {
+                    _configuredDrivers.Add(driver);
+                }
+            }
+
+            UpdateStatistics();
+            StateHasChanged();
+            
+            Logger.LogInformation("Successfully imported {Count} driver configurations", importedDrivers.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to import driver configurations");
+        }
+    }
+
+    private void ExportDrivers()
+    {
+        Logger.LogInformation("Export drivers requested");
+        
+        try
+        {
+            // Create export data structure
+            var exportData = new
+            {
+                ExportDate = DateTime.UtcNow,
+                Version = "1.0",
+                Drivers = _configuredDrivers.Select(d => new
+                {
+                    d.Name,
+                    d.DriverType,
+                    d.Protocol,
+                    d.IpAddress,
+                    d.Port,
+                    d.ComPort,
+                    d.BaudRate,
+                    ExportedAt = DateTime.UtcNow
+                })
+            };
+
+            // In a real implementation, this would trigger a file download
+            var json = System.Text.Json.JsonSerializer.Serialize(exportData, new System.Text.Json.JsonSerializerOptions 
+            { 
+                WriteIndented = true 
+            });
+
+            Logger.LogInformation("Driver export data generated: {Json}", json);
+            Logger.LogInformation("Successfully exported {Count} driver configurations", _configuredDrivers.Count);
+            
+            // TODO: Implement actual file download using IJSRuntime
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to export driver configurations");
+        }
+    }
+
+    private string GetConnectionString(ConfiguredDriverModel driver)
+    {
+        if (!string.IsNullOrEmpty(driver.IpAddress))
+        {
+            return $"IP:{driver.IpAddress};Port:{driver.Port}";
+        }
+        else if (!string.IsNullOrEmpty(driver.ComPort))
+        {
+            return $"COM:{driver.ComPort};Baud:{driver.BaudRate}";
+        }
+        return string.Empty;
+    }
+
+    private Dictionary<string, object> GetDriverSettings(ConfiguredDriverModel driver)
+    {
+        var settings = new Dictionary<string, object>();
+        
+        if (!string.IsNullOrEmpty(driver.IpAddress))
+        {
+            settings["Host"] = driver.IpAddress;
+            settings["Port"] = driver.Port;
+        }
+        
+        if (!string.IsNullOrEmpty(driver.ComPort))
+        {
+            settings["ComPort"] = driver.ComPort;
+            settings["BaudRate"] = driver.BaudRate;
+        }
+        
+        settings["Timeout"] = 5000;
+        settings["RetryAttempts"] = 3;
+        
+        return settings;
+    }
+
+    private static string GetConnectionDisplay(ConfiguredDriverModel driver)
+    {
+        if (!string.IsNullOrEmpty(driver.IpAddress))
+            return $"{driver.IpAddress}:{driver.Port}";
+        if (!string.IsNullOrEmpty(driver.ComPort))
+            return $"{driver.ComPort} @ {driver.BaudRate}";
+        return "N/A";
+    }
+
+    private static string GetStatusBadge(string status)
+    {
+        return status switch
+        {
+            "Connected" => "bg-success",
+            "Disconnected" => "bg-secondary",
+            "Error" => "bg-danger",
+            "Connecting" => "bg-warning",
+            _ => "bg-secondary"
+        };
+    }
+
+    public class AvailableDriverModel
+    {
+        public string Name { get; set; } = "";
+        public string Category { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string Version { get; set; } = "";
+        public string[] SupportedProtocols { get; set; } = Array.Empty<string>();
+    }
+
+    public class ConfiguredDriverModel
+    {
+        public string Name { get; set; } = "";
+        public string DriverType { get; set; } = "";
+        public string Protocol { get; set; } = "";
+        public string IpAddress { get; set; } = "";
+        public int Port { get; set; }
+        public string ComPort { get; set; } = "";
+        public int BaudRate { get; set; }
+        public string Status { get; set; } = "";
+        public DateTime LastActivity { get; set; }
+    }
+
+    public class DriverConfigurationModel
+    {
+        public string Name { get; set; } = "";
+        public string Protocol { get; set; } = "";
+        public string ConnectionType { get; set; } = "";
+        public int UpdateRate { get; set; }
+        
+        // Network settings
+        public string IpAddress { get; set; } = "";
+        public int Port { get; set; }
+        public int Timeout { get; set; }
+        public int RetryAttempts { get; set; }
+        
+        // Serial settings
+        public string ComPort { get; set; } = "";
+        public int BaudRate { get; set; }
+        public int DataBits { get; set; }
+        public string Parity { get; set; } = "";
+        public int StopBits { get; set; }
+        
+        // Protocol-specific settings
+        public int SlaveId { get; set; }
+        public bool SwapBytes { get; set; }
+        public string OpcEndpoint { get; set; } = "";
+        public string Username { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "spider",
+  "version": "1.0.0",
+  "description": "**物联网四板斧：[Mars 实时库](https://github.com/cdy816/mars) 、设备采集平台[Spider](https://github.com/cdy816/Spider) 、跨平台界面解决方案[Chameleon](https://github.com/cdy816/Chameleon)、数据分析报警引擎[Ant](https://github.com/cdy816/Ant)**  <br />  <br /> [![Contributors][contributors-shield]][contributors-url] [![Forks][forks-shield]][forks-url] [![Stargazers][stars-shield]][stars-url] [![Issues][issues-shield]][issues-url] [![Apache License][license-shield]][license-url] <br /> [![star](https://gitee.com/chongdaoyang/Spider/badge/star.svg?theme=white)](https://gitee.com/chongdaoyang/Spider/stargazers) [![fork](https://gitee.com/chongdaoyang/Spider/badge/fork.svg?theme=white)](https://gitee.com/chongdaoyang/Spider/members)",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test --ui",
+    "test:debug": "npx playwright test --debug",
+    "test:report": "npx playwright show-report"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
+  }
+}

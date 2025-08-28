@@ -1,0 +1,555 @@
+@page "/communication"
+@using SpiderStudio.BlazorServer.Services
+@using Spider.Communication.Application.DTOs
+@inject CommunicationApiService CommunicationApi
+@inject IJSRuntime JSRuntime
+@inject ILogger<CommunicationManagement> Logger
+
+<PageTitle>Communication Management</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">🔗 Communication Management</h1>
+                <button class="btn btn-primary" @onclick="ShowCreateLinkModal">
+                    <i class="bi bi-plus-circle"></i> Create Link
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">@(statistics?.TotalLinks ?? 0)</h4>
+                            <p class="mb-0">Total Links</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-link-45deg" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">@(statistics?.ConnectedLinks ?? 0)</h4>
+                            <p class="mb-0">Connected</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">@(statistics?.TotalChannels ?? 0)</h4>
+                            <p class="mb-0">Channels</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-collection" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">@(statistics?.OverallSuccessRate.ToString("F1") ?? "0.0")%</h4>
+                            <p class="mb-0">Health</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-heart-pulse" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Health Status -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🔗 Communication API Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        @if (isApiHealthy)
+                        {
+                            <span class="badge bg-success me-2">Healthy</span>
+                            <span>Communication API is operational</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger me-2">Unhealthy</span>
+                            <span>Communication API is not responding</span>
+                        }
+                        <button class="btn btn-sm btn-outline-secondary ms-auto" @onclick="CheckApiHealth">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Links Management -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Communication Links</h5>
+                </div>
+                <div class="card-body">
+                    @if (isLoading)
+                    {
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (!links.Any())
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-link-45deg" style="font-size: 3rem; color: #ccc;"></i>
+                            <h5 class="mt-3 text-muted">No communication links found</h5>
+                            <p class="text-muted">Create your first communication link to start data acquisition.</p>
+                            <button class="btn btn-primary" @onclick="ShowCreateLinkModal">
+                                <i class="bi bi-plus-circle"></i> Create First Link
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Protocol</th>
+                                        <th>Status</th>
+                                        <th>Health</th>
+                                        <th>Last Connected</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var link in links)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@link.Name</strong>
+                                                <br>
+                                                <small class="text-muted">@link.Description</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">@link.ProtocolType</span>
+                                            </td>
+                                            <td>
+                                                @if (link.Status == "Connected")
+                                                {
+                                                    <span class="badge bg-success">@link.Status</span>
+                                                }
+                                                else if (link.Status == "Connecting")
+                                                {
+                                                    <span class="badge bg-warning">@link.Status</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">@link.Status</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (link.Health.IsHealthy)
+                                                {
+                                                    <i class="bi bi-check-circle text-success"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i class="bi bi-x-circle text-danger"></i>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (link.LastActivity != DateTime.MinValue)
+                                                {
+                                                    @link.LastActivity.ToString("MMM dd, yyyy HH:mm")
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Never</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    @if (link.Status == "Connected")
+                                                    {
+                                                        <button class="btn btn-sm btn-warning" @onclick="() => DisconnectLink(link.Id)">
+                                                            <i class="bi bi-stop-circle"></i> Disconnect
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button class="btn btn-sm btn-success" @onclick="() => ConnectLink(link.Id)">
+                                                            <i class="bi bi-play-circle"></i> Connect
+                                                        </button>
+                                                    }
+                                                    <button class="btn btn-sm btn-info" @onclick="() => ViewLinkDetails(link.Id)">
+                                                        <i class="bi bi-eye"></i> Details
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Link Modal -->
+@if (showCreateModal)
+{
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Communication Link</h5>
+                    <button type="button" class="btn-close" @onclick="HideCreateLinkModal"></button>
+                </div>
+                <div class="modal-body">
+                    <form @onsubmit="CreateLink" @onsubmit:preventDefault="true">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Name *</label>
+                                    <input type="text" class="form-control" @bind="newLink.Name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Protocol *</label>
+                                    <select class="form-select" @bind="newLink.ProtocolType" required>
+                                        <option value="">Select Protocol</option>
+                                        @foreach (var protocol in protocolTypes)
+                                        {
+                                            <option value="@protocol">@protocol</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" rows="2" @bind="newLink.Description"></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Host/IP Address *</label>
+                                    <input type="text" class="form-control" 
+                                           value="@GetConfigValue("Host")" 
+                                           @onchange="@(e => SetConfigValue("Host", e.Value?.ToString() ?? ""))">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Port *</label>
+                                    <input type="number" class="form-control" 
+                                           value="@GetConfigValue("Port")" 
+                                           @onchange="@(e => SetConfigValue("Port", e.Value?.ToString() ?? ""))">
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (newLink.ProtocolType == "Mock")
+                        {
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Device ID</label>
+                                        <input type="text" class="form-control" 
+                                               value="@GetConfigValue("DeviceId")" 
+                                               @onchange="@(e => SetConfigValue("DeviceId", e.Value?.ToString() ?? ""))">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Polling Interval (ms)</label>
+                                        <input type="number" class="form-control" 
+                                               value="@GetConfigValue("PollingInterval")" 
+                                               @onchange="@(e => SetConfigValue("PollingInterval", e.Value?.ToString() ?? "1000"))">
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideCreateLinkModal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="CreateLink" disabled="@isCreating">
+                        @if (isCreating)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        Create Link
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop show"></div>
+}
+
+@code {
+    private List<LinkDto> links = new();
+    private List<string> protocolTypes = new();
+    private CommunicationStatisticsDto? statistics;
+    private bool isLoading = true;
+    private bool isApiHealthy = false;
+    private bool showCreateModal = false;
+    private bool isCreating = false;
+
+    private CreateLinkFormModel newLink = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        var tasks = new[]
+        {
+            LoadLinks(),
+            LoadStatistics(),
+            LoadProtocolTypes(),
+            CheckApiHealth()
+        };
+
+        await Task.WhenAll(tasks);
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task LoadLinks()
+    {
+        try
+        {
+            var result = await CommunicationApi.GetLinksAsync();
+            links = result.ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading links");
+            await JSRuntime.InvokeVoidAsync("alert", "Error loading links: " + ex.Message);
+        }
+    }
+
+    private async Task LoadStatistics()
+    {
+        try
+        {
+            statistics = await CommunicationApi.GetStatisticsAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading statistics");
+        }
+    }
+
+    private async Task LoadProtocolTypes()
+    {
+        try
+        {
+            var result = await CommunicationApi.GetProtocolTypesAsync();
+            protocolTypes = result.ToList();
+            
+            // Add Mock protocol if not present for testing
+            if (!protocolTypes.Contains("Mock"))
+            {
+                protocolTypes.Add("Mock");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading protocol types");
+            // Add default protocols for testing
+            protocolTypes = new List<string> { "Mock", "Modbus", "OPC UA", "MQTT" };
+        }
+    }
+
+    private async Task CheckApiHealth()
+    {
+        try
+        {
+            isApiHealthy = await CommunicationApi.IsHealthyAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error checking API health");
+            isApiHealthy = false;
+        }
+    }
+
+    private void ShowCreateLinkModal()
+    {
+        newLink = new CreateLinkFormModel 
+        { 
+            Configuration = new Dictionary<string, object>
+            {
+                ["Host"] = "192.168.1.100",
+                ["Port"] = 502,
+                ["DeviceId"] = "MockDevice01",
+                ["PollingInterval"] = 1000
+            }
+        };
+        showCreateModal = true;
+    }
+
+    private void HideCreateLinkModal()
+    {
+        showCreateModal = false;
+        newLink = new CreateLinkFormModel();
+    }
+
+    private async Task CreateLink()
+    {
+        if (string.IsNullOrWhiteSpace(newLink.Name) || string.IsNullOrWhiteSpace(newLink.ProtocolType))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Please fill in all required fields.");
+            return;
+        }
+
+        isCreating = true;
+        StateHasChanged();
+
+        try
+        {
+            var success = await CommunicationApi.CreateLinkAsync(newLink.ToDto());
+            if (success)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Link created successfully!");
+                HideCreateLinkModal();
+                await LoadData();
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Failed to create link. Please try again.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating link");
+            await JSRuntime.InvokeVoidAsync("alert", "Error creating link: " + ex.Message);
+        }
+        finally
+        {
+            isCreating = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ConnectLink(Guid linkId)
+    {
+        try
+        {
+            var success = await CommunicationApi.ConnectLinkAsync(linkId);
+            if (success)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Link connection initiated!");
+                await LoadData();
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Failed to connect link.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error connecting link");
+            await JSRuntime.InvokeVoidAsync("alert", "Error connecting link: " + ex.Message);
+        }
+    }
+
+    private async Task DisconnectLink(Guid linkId)
+    {
+        try
+        {
+            var success = await CommunicationApi.DisconnectLinkAsync(linkId);
+            if (success)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Link disconnected successfully!");
+                await LoadData();
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Failed to disconnect link.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error disconnecting link");
+            await JSRuntime.InvokeVoidAsync("alert", "Error disconnecting link: " + ex.Message);
+        }
+    }
+
+    private async Task ViewLinkDetails(Guid linkId)
+    {
+        try
+        {
+            var health = await CommunicationApi.GetLinkHealthAsync(linkId);
+            if (health != null)
+            {
+                var message = $"Link Health Details:\n" +
+                             $"Is Healthy: {health.IsHealthy}\n" +
+                             $"Success Rate: {health.SuccessRate:F2}%\n" +
+                             $"Avg Response Time: {health.AverageResponseTime.TotalMilliseconds:F2}ms\n" +
+                             $"Error Count: {health.ErrorCount}\n" +
+                             $"Last Error: {health.LastError:yyyy-MM-dd HH:mm:ss}";
+                await JSRuntime.InvokeVoidAsync("alert", message);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error getting link details");
+            await JSRuntime.InvokeVoidAsync("alert", "Error getting link details: " + ex.Message);
+        }
+    }
+
+    private string GetConfigValue(string key)
+    {
+        return newLink.Configuration.TryGetValue(key, out var value) ? value?.ToString() ?? "" : "";
+    }
+
+    private void SetConfigValue(string key, string value)
+    {
+        newLink.Configuration[key] = value;
+    }
+}

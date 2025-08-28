@@ -1,0 +1,428 @@
+/* Spider WPF-like Industrial Theme */
+html, body {
+    font-family: 'Microsoft YaHei', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #26282c;
+    color: #fafafa;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-size: 12px;
+    overflow: hidden;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+/* Remove Bootstrap overrides */
+.container-fluid {
+    padding: 0;
+    margin: 0;
+    max-width: none;
+}
+
+/* Override Bootstrap card styles to match WPF */
+.card {
+    border: 1px solid #555;
+    border-radius: 0;
+    background: rgba(229, 229, 229, 0.06);
+    color: #fafafa;
+    box-shadow: none;
+}
+
+.card-header {
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid #555;
+    padding: 8px 12px;
+    font-weight: bold;
+    font-size: 12px;
+    color: #fafafa;
+}
+
+.card-body {
+    padding: 12px;
+    background: rgba(229, 229, 229, 0.06);
+}
+
+/* Compact Tables */
+.table {
+    font-size: 11px;
+    background: transparent;
+    color: #fafafa;
+    margin-bottom: 0;
+}
+
+.table th {
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid #555;
+    border-top: none;
+    font-weight: bold;
+    color: #fafafa;
+    padding: 6px 8px;
+    font-size: 11px;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.table td {
+    padding: 4px 8px;
+    border-bottom: 1px solid #333;
+    border-top: none;
+    vertical-align: middle;
+    background: transparent;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Compact Buttons */
+.btn {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 2px;
+    font-weight: bold;
+    transition: all 0.2s;
+    border: 1px solid #555;
+}
+
+.btn-primary {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2563eb;
+    border-color: #2563eb;
+}
+
+.btn-success {
+    background: #10b981;
+    border-color: #10b981;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #059669;
+    border-color: #059669;
+}
+
+.btn-outline-primary {
+    background: transparent;
+    border-color: #3b82f6;
+    color: #3b82f6;
+}
+
+.btn-outline-primary:hover {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+}
+
+.btn-outline-danger {
+    background: transparent;
+    border-color: #dc2626;
+    color: #dc2626;
+}
+
+.btn-outline-danger:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: white;
+}
+
+.btn-outline-secondary {
+    background: transparent;
+    border-color: #6b7280;
+    color: #6b7280;
+}
+
+.btn-outline-secondary:hover {
+    background: #6b7280;
+    border-color: #6b7280;
+    color: white;
+}
+
+/* Compact Form Controls */
+.form-control {
+    border: 1px solid #555;
+    border-radius: 2px;
+    padding: 4px 8px;
+    font-size: 11px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fafafa;
+}
+
+.form-control:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.form-control::placeholder {
+    color: #9ca3af;
+}
+
+/* Compact Select */
+select.form-control {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23fafafa' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px 12px;
+    padding-right: 32px;
+}
+
+/* Compact Labels */
+label {
+    font-size: 11px;
+    font-weight: bold;
+    color: #fafafa;
+    margin-bottom: 4px;
+}
+
+/* Status Badges */
+.badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-weight: bold;
+}
+
+.bg-success {
+    background: #10b981 !important;
+    color: white;
+}
+
+.bg-danger {
+    background: #dc2626 !important;
+    color: white;
+}
+
+.bg-warning {
+    background: #f59e0b !important;
+    color: white;
+}
+
+.bg-info {
+    background: #0891b2 !important;
+    color: white;
+}
+
+.bg-secondary {
+    background: #6b7280 !important;
+    color: white;
+}
+
+.bg-light {
+    background: #f3f4f6 !important;
+    color: #1f2937;
+}
+
+/* Compact Text */
+.text-muted {
+    color: #9ca3af !important;
+}
+
+.text-primary {
+    color: #3b82f6 !important;
+}
+
+.text-success {
+    color: #10b981 !important;
+}
+
+.text-danger {
+    color: #dc2626 !important;
+}
+
+.text-warning {
+    color: #f59e0b !important;
+}
+
+.text-info {
+    color: #0891b2 !important;
+}
+
+/* Compact Spacing */
+.mb-1 { margin-bottom: 4px !important; }
+.mb-2 { margin-bottom: 8px !important; }
+.mb-3 { margin-bottom: 12px !important; }
+.mb-4 { margin-bottom: 16px !important; }
+
+.mt-1 { margin-top: 4px !important; }
+.mt-2 { margin-top: 8px !important; }
+.mt-3 { margin-top: 12px !important; }
+
+.p-0 { padding: 0 !important; }
+.p-1 { padding: 4px !important; }
+.p-2 { padding: 8px !important; }
+.p-3 { padding: 12px !important; }
+
+.px-3 { padding-left: 12px !important; padding-right: 12px !important; }
+.py-2 { padding-top: 8px !important; padding-bottom: 8px !important; }
+
+/* Loading States */
+.spinner-border-sm {
+    width: 12px;
+    height: 12px;
+}
+
+.spinner-border {
+    border-color: #3b82f6;
+    border-right-color: transparent;
+}
+
+/* Flexbox Utilities */
+.d-flex { display: flex !important; }
+.align-items-center { align-items: center !important; }
+.justify-content-between { justify-content: space-between !important; }
+.justify-content-center { justify-content: center !important; }
+.flex-1 { flex: 1 !important; }
+.gap-2 { gap: 8px !important; }
+.gap-3 { gap: 12px !important; }
+
+/* Grid Utilities */
+.row { 
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0;
+}
+
+.col-12 { width: 100%; }
+.col-6 { width: 50%; }
+.col-3 { width: 25%; }
+.col-lg-8 { width: 66.666667%; }
+.col-lg-4 { width: 33.333333%; }
+.col-md-2 { width: 16.666667%; }
+
+@media (max-width: 768px) {
+    .col-lg-8, .col-lg-4, .col-md-2 {
+        width: 100%;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .spider-window {
+        font-size: 11px;
+    }
+    
+    .project-panel {
+        width: 100%;
+        height: 200px;
+    }
+    
+    .spider-content {
+        flex-direction: column;
+    }
+}
+
+/* Error UI */
+#blazor-error-ui {
+    background: #dc2626;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 8px 12px;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+    color: white;
+    font-size: 11px;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 12px;
+    top: 8px;
+}
+
+/* Dark Theme Modal Styles */
+.modal {
+    color: #fafafa;
+}
+
+.modal-content {
+    background-color: #2d3748 !important;
+    border: 1px solid #555 !important;
+    border-radius: 4px !important;
+    color: #fafafa !important;
+}
+
+.modal-header {
+    background-color: #374151 !important;
+    border-bottom: 1px solid #555 !important;
+    color: #fafafa !important;
+    padding: 12px 16px !important;
+}
+
+.modal-title {
+    color: #fafafa !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+}
+
+.modal-body {
+    background-color: #2d3748 !important;
+    color: #fafafa !important;
+    padding: 16px !important;
+}
+
+.modal-footer {
+    background-color: #374151 !important;
+    border-top: 1px solid #555 !important;
+    padding: 12px 16px !important;
+}
+
+.btn-close {
+    background: transparent !important;
+    border: none !important;
+    color: #fafafa !important;
+    opacity: 0.8 !important;
+    font-size: 16px !important;
+    width: 24px !important;
+    height: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.btn-close:hover {
+    opacity: 1 !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.btn-close::before {
+    content: "×" !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+}
+
+/* Alert styling for dark theme */
+.alert {
+    border: 1px solid #555 !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    padding: 8px 12px !important;
+}
+
+.alert-danger {
+    background-color: rgba(220, 38, 38, 0.2) !important;
+    border-color: #dc2626 !important;
+    color: #fca5a5 !important;
+}
+
+.alert-success {
+    background-color: rgba(16, 185, 129, 0.2) !important;
+    border-color: #10b981 !important;
+    color: #6ee7b7 !important;
+}
+
+.alert-warning {
+    background-color: rgba(245, 158, 11, 0.2) !important;
+    border-color: #f59e0b !important;
+    color: #fcd34d !important;
+}

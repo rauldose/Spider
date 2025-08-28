@@ -1,0 +1,132 @@
+@using Spider.DeviceManagement.Application.DTOs
+@using Spider.DataAcquisition.Application.DTOs
+
+<div class="monitoring-tab">
+    <div class="row">
+        <div class="col-12">
+            <h5 class="border-bottom pb-2 mb-4">
+                <i class="bi bi-graph-up me-2"></i>Real-time Monitoring
+            </h5>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="bi bi-tags text-primary fs-1"></i>
+                    <h5 class="card-title mt-2">@DataPoints.Count</h5>
+                    <p class="card-text text-muted">Total Data Points</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="bi bi-check-circle text-success fs-1"></i>
+                    <h5 class="card-title mt-2">@_goodQualityCount</h5>
+                    <p class="card-text text-muted">Good Quality</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="bi bi-exclamation-triangle text-warning fs-1"></i>
+                    <h5 class="card-title mt-2">@_uncertainQualityCount</h5>
+                    <p class="card-text text-muted">Uncertain Quality</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="bi bi-x-circle text-danger fs-1"></i>
+                    <h5 class="card-title mt-2">@_badQualityCount</h5>
+                    <p class="card-text text-muted">Bad Quality</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simple Data Grid -->
+    <div class="card">
+        <div class="card-header">
+            <h6 class="mb-0">
+                <i class="bi bi-speedometer2 me-2"></i>Data Point Values
+            </h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Name</th>
+                            <th>Address</th>
+                            <th>Value</th>
+                            <th>Quality</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (DataPoints.Any())
+                        {
+                            @foreach (var dataPoint in DataPoints)
+                            {
+                                <tr>
+                                    <td><strong>@dataPoint.Name</strong></td>
+                                    <td><code class="small">@dataPoint.Address</code></td>
+                                    <td><span class="font-monospace">@FormatValue(dataPoint.LastValue)</span></td>
+                                    <td>
+                                        <span class="badge @GetQualityBadgeClass(dataPoint.LastValueQuality)">
+                                            @(dataPoint.LastValueQuality ?? "Unknown")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            @(dataPoint.LastScanTime?.ToString("HH:mm:ss") ?? "Never")
+                                        </small>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">
+                                    No data points configured for monitoring.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public DeviceDto Device { get; set; } = new();
+    [Parameter] public List<DataPointDto> DataPoints { get; set; } = new();
+
+    private int _goodQualityCount => DataPoints.Count(dp => (dp.LastValueQuality ?? "Unknown") == "Good");
+    private int _uncertainQualityCount => DataPoints.Count(dp => (dp.LastValueQuality ?? "Unknown") == "Uncertain");
+    private int _badQualityCount => DataPoints.Count(dp => (dp.LastValueQuality ?? "Unknown") == "Bad");
+
+    private string FormatValue(object? value)
+    {
+        return value?.ToString() ?? "null";
+    }
+
+    private string GetQualityBadgeClass(string? quality)
+    {
+        return (quality ?? "Unknown") switch
+        {
+            "Good" => "bg-success",
+            "Bad" => "bg-danger",
+            "Uncertain" => "bg-warning",
+            _ => "bg-secondary"
+        };
+    }
+}

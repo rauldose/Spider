@@ -1,0 +1,206 @@
+@using Spider.DataAcquisition.Application.DTOs
+
+<EditForm Model="_editModel" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Name *</label>
+            <InputText @bind-Value="_editModel.Name" class="form-control" placeholder="Enter data point name" />
+            <ValidationMessage For="() => _editModel.Name" />
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Address *</label>
+            <InputText @bind-Value="_editModel.Address" class="form-control" placeholder="e.g., 40001, DB1.DBX0.0" />
+            <ValidationMessage For="() => _editModel.Address" />
+            <div class="form-text">
+                Specify the protocol-specific address for this data point
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <label class="form-label">Data Type *</label>
+            <InputSelect @bind-Value="_editModel.DataType" class="form-select">
+                <option value="Boolean">Boolean</option>
+                <option value="Integer">Integer</option>
+                <option value="Float">Float</option>
+                <option value="String">String</option>
+                <option value="DateTime">DateTime</option>
+            </InputSelect>
+            <ValidationMessage For="() => _editModel.DataType" />
+        </div>
+        
+        <div class="col-md-4">
+            <label class="form-label">Quality</label>
+            <InputSelect @bind-Value="_editModel.Quality" class="form-select">
+                <option value="Good">Good</option>
+                <option value="Uncertain">Uncertain</option>
+                <option value="Bad">Bad</option>
+            </InputSelect>
+        </div>
+        
+        <div class="col-md-4">
+            <label class="form-label">Initial Value</label>
+            <InputText @bind-Value="_editModel.InitialValue" class="form-control" placeholder="Optional initial value" />
+            <div class="form-text">
+                Leave empty to read from device
+            </div>
+        </div>
+        
+        <div class="col-12">
+            <label class="form-label">Description</label>
+            <InputTextArea @bind-Value="_editModel.Description" class="form-control" rows="2" 
+                           placeholder="Optional description for this data point" />
+        </div>
+        
+        <!-- Advanced Settings -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Advanced Settings</h6>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                @onclick="ToggleAdvancedSettings">
+                            @(_showAdvanced ? "Hide" : "Show")
+                        </button>
+                    </div>
+                </div>
+                @if (_showAdvanced)
+                {
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Scan Rate (ms)</label>
+                                <InputNumber @bind-Value="_editModel.ScanInterval" class="form-control" min="100" step="100" />
+                                <div class="form-text">How often to read this data point</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check mt-4">
+                                    <InputCheckbox @bind-Value="_editModel.IsEnabled" class="form-check-input" id="isEnabled" />
+                                    <label class="form-check-label" for="isEnabled">
+                                        Enable data point
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    
+    <div class="d-flex justify-content-end gap-2 mt-4">
+        <button type="button" class="btn btn-outline-secondary" @onclick="@(() => OnCancel.InvokeAsync())">
+            Cancel
+        </button>
+        <button type="submit" class="btn btn-primary" disabled="@_isSaving">
+            @if (_isSaving)
+            {
+                <span class="spinner-border spinner-border-sm me-2"></span>
+            }
+            Save Data Point
+        </button>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter] public DataPointDto? DataPoint { get; set; }
+    [Parameter] public EventCallback<DataPointDto> OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private bool _isSaving = false;
+    private bool _showAdvanced = false;
+    private EditModel _editModel = new();
+
+    protected override void OnParametersSet()
+    {
+        if (DataPoint != null)
+        {
+            _editModel = new EditModel
+            {
+                Id = DataPoint.Id,
+                Name = DataPoint.Name,
+                Description = DataPoint.Description ?? "",
+                Address = DataPoint.Address,
+                DataType = DataPoint.DataType,
+                DeviceId = DataPoint.DeviceId,
+                IsEnabled = DataPoint.IsEnabled,
+                ScanInterval = DataPoint.ScanInterval,
+                InitialValue = DataPoint.LastValue?.ToString() ?? "",
+                Quality = DataPoint.LastValueQuality ?? "Good"
+            };
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            _isSaving = true;
+            StateHasChanged();
+
+            // Create a new DTO with updated values
+            var updatedDataPoint = new DataPointDto(
+                _editModel.Id,
+                _editModel.Name,
+                _editModel.Description,
+                _editModel.Address,
+                _editModel.DataType,
+                _editModel.DeviceId,
+                _editModel.IsEnabled,
+                _editModel.ScanInterval,
+                ConvertToDataType(_editModel.InitialValue, _editModel.DataType),
+                _editModel.Quality,
+                DateTime.Now
+            );
+
+            await OnSave.InvokeAsync(updatedDataPoint);
+        }
+        catch (Exception)
+        {
+            // Handle validation or save errors
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleAdvancedSettings()
+    {
+        _showAdvanced = !_showAdvanced;
+        StateHasChanged();
+    }
+
+    private object? ConvertToDataType(string value, string dataType)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        
+        return dataType switch
+        {
+            "Boolean" => bool.TryParse(value, out var boolResult) ? boolResult : null,
+            "Integer" => int.TryParse(value, out var intResult) ? intResult : null,
+            "Float" => double.TryParse(value, out var doubleResult) ? doubleResult : null,
+            "DateTime" => DateTime.TryParse(value, out var dateResult) ? dateResult : null,
+            "String" => value,
+            _ => value
+        };
+    }
+
+    private class EditModel
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string Address { get; set; } = "";
+        public string DataType { get; set; } = "Float";
+        public Guid DeviceId { get; set; }
+        public bool IsEnabled { get; set; } = true;
+        public int ScanInterval { get; set; } = 1000;
+        public string InitialValue { get; set; } = "";
+        public string Quality { get; set; } = "Good";
+    }
+}

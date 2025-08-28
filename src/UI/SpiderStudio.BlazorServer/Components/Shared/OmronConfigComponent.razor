@@ -1,0 +1,67 @@
+@using Spider.DeviceManagement.Application.DTOs
+
+<div class="protocol-config omron-config">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">FINS Node Address</label>
+            <InputNumber @bind-Value="_finsNode" class="form-control" min="0" max="254" />
+            <div class="form-text">FINS node address of the PLC (default: 0)</div>
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Unit Address</label>
+            <InputNumber @bind-Value="_unitAddress" class="form-control" min="0" max="255" />
+            <div class="form-text">Unit address within the node (default: 0)</div>
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Local Node</label>
+            <InputNumber @bind-Value="_localNode" class="form-control" min="0" max="254" />
+            <div class="form-text">Local FINS node address (default: 1)</div>
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Connection Type</label>
+            <InputSelect @bind-Value="_connectionType" class="form-select">
+                <option value="TCP">TCP/IP</option>
+                <option value="UDP">UDP</option>
+                <option value="HostLink">Host Link</option>
+            </InputSelect>
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Response Timeout (ms)</label>
+            <InputNumber @bind-Value="_timeout" class="form-control" min="500" step="100" />
+        </div>
+        
+        <div class="col-md-6">
+            <label class="form-label">Max Data Length</label>
+            <InputNumber @bind-Value="_maxDataLength" class="form-control" min="1" max="1998" />
+            <div class="form-text">Maximum data length per request</div>
+        </div>
+        
+        <div class="col-12">
+            <div class="form-check">
+                <InputCheckbox @bind-Value="_useExtendedAddressing" class="form-check-input" id="useExtendedAddressing" />
+                <label class="form-check-label" for="useExtendedAddressing">
+                    Use extended addressing format
+                </label>
+                <div class="form-text">
+                    Enable for newer Omron PLCs that support extended addressing
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public DeviceDto Device { get; set; } = new();
+
+    private int _finsNode = 0;
+    private int _unitAddress = 0;
+    private int _localNode = 1;
+    private string _connectionType = "TCP";
+    private int _timeout = 3000;
+    private int _maxDataLength = 1000;
+    private bool _useExtendedAddressing = false;
+}

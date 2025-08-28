@@ -1,0 +1,382 @@
+@using Spider.DeviceManagement.Application.DTOs
+@using Spider.ProjectManagement.Application.DTOs
+@using SpiderStudio.BlazorServer.Services
+@inject DeviceManagementApiService DeviceApi
+@inject ProjectManagementApiService ProjectApi
+@inject NavigationManager Navigation
+@inject ILogger<ProjectTreeComponent> Logger
+@implements IDisposable
+
+<div class="project-tree">
+    <!-- Root Project Node (matches WPF ProjectItemViewModel) -->
+    <div class="tree-node">
+        <div class="tree-item @(IsSelected("project-root") ? "selected" : "")" @onclick='() => ToggleNode("project-root")'>
+            <i class="bi @(IsExpanded("project-root") ? "bi-folder2-open" : "bi-folder2") tree-icon project-icon"></i>
+            <span class="tree-text">Project</span>
+        </div>
+        
+        @if (IsExpanded("project-root"))
+        {
+            <div class="tree-children">
+                @if (_projects.Any())
+                {
+                    @foreach (var project in _projects.Where(p => p.ParentProjectId == null))
+                    {
+                        @RenderMachineNode(project)
+                    }
+                }
+                else
+                {
+                    <!-- No machines message -->
+                    <div class="tree-node">
+                        <div class="tree-item" @onclick='() => NavigateToPath("/projects")'>
+                            <i class="bi bi-plus-circle tree-icon"></i>
+                            <span class="tree-text text-muted">Create First Project</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+    
+    <!-- Server Security Node (matches WPF ServerSecurityTreeViewModel) -->
+    <div class="tree-node">
+        <div class="tree-item @(IsSelected("server-security") ? "selected" : "")" @onclick='() => ToggleNode("server-security")'>
+            <i class="bi @(IsExpanded("server-security") ? "bi-folder2-open" : "bi-folder2") tree-icon security-icon"></i>
+            <span class="tree-text">Server Security</span>
+        </div>
+        
+        @if (IsExpanded("server-security"))
+        {
+            <div class="tree-children">
+                <div class="tree-node">
+                    <div class="tree-item" @onclick='() => NavigateToPath("/user-management")'>
+                        <i class="bi bi-person-gear tree-icon"></i>
+                        <span class="tree-text">User Editor</span>
+                    </div>
+                </div>
+                <div class="tree-node">
+                    <div class="tree-item" @onclick='() => NavigateToPath("/user-groups")'>
+                        <i class="bi bi-people tree-icon"></i>
+                        <span class="tree-text">User Manager</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // Render Machine Node (matches WPF MachineViewModel)
+    private RenderFragment RenderMachineNode(ProjectDto project) => __builder =>
+    {
+        <div class="tree-node">
+            <div class="tree-item @(IsSelected($"machine-{project.Id}") ? "selected" : "")" @onclick='() => ToggleNode($"machine-{project.Id}")'>
+                <i class="bi @(IsExpanded($"machine-{project.Id}") ? "bi-pc-display" : "bi-pc-display") tree-icon machine-icon"></i>
+                <span class="tree-text">@project.Name</span>
+                <span class="project-status @(project.Status.ToLower())">@project.Status[0]</span>
+            </div>
+            
+            @if (IsExpanded($"machine-{project.Id}"))
+            {
+                <div class="tree-children">
+                    <!-- Child Projects/Machines -->
+                    @if (project.ChildProjects.Any())
+                    {
+                        @foreach (var childProject in project.ChildProjects)
+                        {
+                            @RenderMachineNode(childProject)
+                        }
+                    }
+
+                    <!-- Devices Root Node (matches WPF DeviceRootViewModel) -->
+                    <div class="tree-node">
+                        <div class="tree-item" @onclick='() => ToggleNode($"device-root-{project.Id}")'>
+                            <i class="bi @(IsExpanded($"device-root-{project.Id}") ? "bi-hdd-stack" : "bi-hdd-stack") tree-icon device-root-icon"></i>
+                            <span class="tree-text">Devices</span>
+                        </div>
+                        
+                        @if (IsExpanded($"device-root-{project.Id}"))
+                        {
+                            <div class="tree-children">
+                                @foreach (var device in _devices.Where(d => d.ProjectId == project.Id))
+                                {
+                                    <div class="tree-node device-node">
+                                        <div class="tree-item @(IsSelected($"device-{device.Id}") ? "selected" : "")" 
+                                             @onclick="() => SelectDevice(device)">
+                                            <i class="bi bi-cpu tree-icon device-icon"></i>
+                                            <span class="tree-text">@device.Name</span>
+                                            <span class="device-status @(device.Status == "Connected" ? "online" : "offline")"></span>
+                                        </div>
+                                    </div>
+                                }
+                                @if (!_devices.Any(d => d.ProjectId == project.Id))
+                                {
+                                    <div class="tree-node">
+                                        <div class="tree-item" @onclick='() => NavigateToPath("/devices")'>
+                                            <i class="bi bi-plus-circle tree-icon"></i>
+                                            <span class="tree-text text-muted">Add Device</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <!-- APIs Node (matches WPF APITreeViewModel) -->
+                    <div class="tree-node">
+                        <div class="tree-item" @onclick='() => NavigateToPath("/api-management")'>
+                            <i class="bi bi-cloud tree-icon api-icon"></i>
+                            <span class="tree-text">APIs</span>
+                        </div>
+                    </div>
+
+                    <!-- Links Node (matches WPF LinkTreeViewModel) -->
+                    <div class="tree-node">
+                        <div class="tree-item" @onclick='() => NavigateToPath("/communication")'>
+                            <i class="bi bi-link tree-icon link-icon"></i>
+                            <span class="tree-text">Links</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    };
+}
+
+<style>
+.project-tree {
+    font-size: 12px;
+    color: #fafafa;
+    user-select: none;
+}
+
+.tree-node {
+    margin-left: 0;
+}
+
+.tree-children {
+    margin-left: 16px;
+}
+
+.tree-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background-color 0.2s;
+    min-height: 24px;
+}
+
+.tree-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.tree-item.selected {
+    background: rgba(59, 130, 246, 0.3);
+    border: 1px solid rgba(59, 130, 246, 0.5);
+}
+
+.tree-icon {
+    font-size: 14px;
+    width: 16px;
+    flex-shrink: 0;
+}
+
+/* WPF-like icon colors */
+.project-icon {
+    color: #f59e0b; /* PROJECT.png equivalent */
+}
+
+.machine-icon {
+    color: #8b5cf6; /* computer.png equivalent */
+}
+
+.device-root-icon {
+    color: #06b6d4; /* idevices.png equivalent */
+}
+
+.device-icon {
+    color: #10b981; /* devices.png equivalent */
+}
+
+.api-icon {
+    color: #3b82f6; /* API.png equivalent */
+}
+
+.link-icon {
+    color: #f97316; /* Link.png equivalent */
+}
+
+.security-icon {
+    color: #dc2626; /* server-security.png equivalent */
+}
+
+.tree-text {
+    font-size: 12px;
+    flex: 1;
+}
+
+.device-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-left: auto;
+}
+
+.device-status.online {
+    background: #10b981;
+    box-shadow: 0 0 4px #10b981;
+}
+
+.device-status.offline {
+    background: #ef4444;
+}
+
+.project-status {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    margin-left: auto;
+    font-size: 8px;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    line-height: 12px;
+    flex-shrink: 0;
+}
+
+.project-status.active {
+    background: #10b981;
+}
+
+.project-status.draft {
+    background: #3b82f6;
+}
+
+.project-status.inactive {
+    background: #f59e0b;
+}
+
+.project-status.archived {
+    background: #6b7280;
+}
+
+.root-node .tree-item {
+    font-weight: bold;
+}
+</style>
+
+@code {
+    private List<ProjectDto> _projects = new();
+    private List<DeviceDto> _devices = new();
+    private HashSet<string> _expandedNodes = new();
+    private string? _selectedNode;
+    private Timer? _refreshTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProjects();
+        await LoadDevices();
+        
+        // Auto-expand root nodes to match WPF behavior
+        _expandedNodes.Add("project-root");
+        if (_projects.Any())
+        {
+            // Auto-expand first machine/project
+            var firstProject = _projects.Where(p => p.ParentProjectId == null).FirstOrDefault();
+            if (firstProject != null)
+            {
+                _expandedNodes.Add($"machine-{firstProject.Id}");
+                _expandedNodes.Add($"device-root-{firstProject.Id}");
+            }
+        }
+        
+        // Set up auto-refresh timer to check for changes every 10 seconds
+        _refreshTimer = new Timer(async _ => await RefreshAsync(), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+    }
+
+    public async Task RefreshAsync()
+    {
+        await LoadProjects();
+        await LoadDevices();
+        StateHasChanged();
+    }
+    
+    public void Dispose()
+    {
+        _refreshTimer?.Dispose();
+    }
+
+    private async Task LoadProjects()
+    {
+        try
+        {
+            _projects = (await ProjectApi.GetAllProjectsAsync()).ToList();
+            
+            // Auto-expand first machine if this is initial load and no nodes are expanded
+            if (_projects.Any() && !_expandedNodes.Any(x => x.StartsWith("machine-")))
+            {
+                var firstProject = _projects.Where(p => p.ParentProjectId == null).FirstOrDefault();
+                if (firstProject != null)
+                {
+                    _expandedNodes.Add($"machine-{firstProject.Id}");
+                    _expandedNodes.Add($"device-root-{firstProject.Id}");
+                }
+            }
+            
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load projects for tree view");
+        }
+    }
+
+    private async Task LoadDevices()
+    {
+        try
+        {
+            // Load devices for all projects
+            var allDevices = new List<DeviceDto>();
+            foreach (var project in _projects)
+            {
+                var projectDevices = await DeviceApi.GetDevicesByProjectAsync(project.Id);
+                allDevices.AddRange(projectDevices);
+            }
+            _devices = allDevices;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load devices for tree view");
+        }
+    }
+
+    private void ToggleNode(string nodeId)
+    {
+        if (_expandedNodes.Contains(nodeId))
+            _expandedNodes.Remove(nodeId);
+        else
+            _expandedNodes.Add(nodeId);
+        StateHasChanged();
+    }
+
+    private bool IsExpanded(string nodeId) => _expandedNodes.Contains(nodeId);
+
+    private void SelectDevice(DeviceDto device)
+    {
+        _selectedNode = $"device-{device.Id}";
+        Navigation.NavigateTo($"/device/{device.Id}");
+        StateHasChanged();
+    }
+
+    private bool IsSelected(string nodeId) => _selectedNode == nodeId;
+
+    private void NavigateToPath(string path)
+    {
+        Navigation.NavigateTo(path);
+    }
+}
