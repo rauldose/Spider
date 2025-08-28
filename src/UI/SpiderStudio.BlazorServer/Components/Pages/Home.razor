@@ -1,624 +1,167 @@
-﻿@page "/"
+@page "/"
 @using Spider.DeviceManagement.Application.DTOs
-@using Spider.DeviceManagement.Application.Commands
 @using SpiderStudio.BlazorServer.Services
-@inject DeviceManagementApiService DeviceApi
 @inject NavigationManager Navigation
-@inject IServiceProvider ServiceProvider
+@inject DeviceManagementApiService DeviceApi
+@inject ProjectManagementApiService ProjectApi
 @inject ILogger<Home> Logger
 
-<PageTitle>Spider Studio</PageTitle>
+<PageTitle>Spider Studio - Home</PageTitle>
 
-<!-- Compact WPF-like Device Detail Interface -->
-<div class="device-detail-container">
-    @if (_selectedDevice != null)
-    {
-        <!-- Device Configuration Tabs -->
-        <div class="device-tabs">
-            <div class="tab-header">
-                <button class="tab-button @(_activeTab == "communication" ? "active" : "")" 
-                        @onclick='() => SetActiveTab("communication")'>>
-                    Communication
-                </button>
-                <button class="tab-button @(_activeTab == "tags" ? "active" : "")" 
-                        @onclick='() => SetActiveTab("tags")'>>
-                    Tags
-                </button>
-            </div>
-
-            <div class="tab-content">
-                @if (_activeTab == "communication")
-                {
-                    <div class="communication-panel">
-                        <div class="config-row">
-                            <label class="config-label">Protocol:</label>
-                            <select class="config-input" @bind="_selectedDevice.Protocol">
-                                <option value="Modbus">Modbus TCP</option>
-                                <option value="OpcUa">OPC UA</option>
-                                <option value="Mqtt">MQTT</option>
-                                <option value="Siemens">Siemens S7</option>
-                                <option value="Omron">Omron FINS</option>
-                            </select>
-                        </div>
-                        
-                        <div class="config-row">
-                            <label class="config-label">Connection String:</label>
-                            <input type="text" class="config-input" @bind="_selectedDevice.ConnectionString" 
-                                   placeholder="e.g., 192.168.1.10:502" />
-                        </div>
-                        
-                        <div class="config-row">
-                            <label class="config-label">Timeout (ms):</label>
-                            <input type="number" class="config-input" value="5000" />
-                        </div>
-
-                        <div class="config-actions">
-                            <button class="action-btn primary" @onclick="TestConnection">
-                                <i class="bi bi-play-circle"></i> Test Connection
-                            </button>
-                            <button class="action-btn secondary" @onclick="SaveDevice">
-                                <i class="bi bi-floppy"></i> Save
-                            </button>
-                        </div>
-                    </div>
-                }
-                else if (_activeTab == "tags")
-                {
-                    <div class="tags-panel">
-                        <div class="tags-toolbar">
-                            <button class="tool-btn" @onclick="AddTag">
-                                <i class="bi bi-plus"></i> Add
-                            </button>
-                            <button class="tool-btn" @onclick="RemoveTag">
-                                <i class="bi bi-dash"></i> Remove
-                            </button>
-                            <button class="tool-btn" @onclick="ImportTags">
-                                <i class="bi bi-download"></i> Import
-                            </button>
-                            <button class="tool-btn" @onclick="ExportTags">
-                                <i class="bi bi-upload"></i> Export
-                            </button>
-                        </div>
-
-                        <div class="tags-grid">
-                            <div class="grid-header">
-                                <div class="grid-cell">Name</div>
-                                <div class="grid-cell">Type</div>
-                                <div class="grid-cell">Address</div>
-                                <div class="grid-cell">Value</div>
-                                <div class="grid-cell">Quality</div>
-                            </div>
-                            @foreach (var tag in _tags)
-                            {
-                                <div class="grid-row">
-                                    <div class="grid-cell">@tag.Name</div>
-                                    <div class="grid-cell">@tag.DataType</div>
-                                    <div class="grid-cell">@tag.Address</div>
-                                    <div class="grid-cell">@tag.Value</div>
-                                    <div class="grid-cell">
-                                        <span class="quality-indicator @tag.Quality.ToLower()">@tag.Quality</span>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                }
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-5">🏠 Spider Studio</h1>
+                    <p class="lead">Modern IoT Device Collection Platform</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary me-2" @onclick="ConnectAll">
+                        <i class="bi bi-play-circle me-1"></i>Connect All
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="DisconnectAll">
+                        <i class="bi bi-stop-circle me-1"></i>Disconnect All
+                    </button>
+                </div>
             </div>
         </div>
-    }
-    else
-    {
-        <!-- Welcome Message -->
-        <div class="welcome-panel">
-            <div class="welcome-content">
-                <i class="bi bi-cpu-fill welcome-icon"></i>
-                <h3>Spider Studio</h3>
-                <p>Select a device from the project tree to configure communication settings and data points.</p>
-                <button class="action-btn primary" @onclick="CreateSampleDevice">
-                    <i class="bi bi-plus-circle"></i> Create Sample Device
-                </button>
+    </div>
+
+    <!-- API Status Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Device Management</h5>
+                    <span class="badge bg-warning">Unavailable</span>
+                    <p class="card-text mt-2">Devices: 0</p>
+                </div>
             </div>
         </div>
-    }
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Data Acquisition</h5>
+                    <span class="badge bg-warning">Unavailable</span>
+                    <p class="card-text mt-2">Data Points: 0</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Connection Management</h5>
+                    <span class="badge bg-warning">Unavailable</span>
+                    <p class="card-text mt-2">Connected: 0/0</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Project Management</h5>
+                    <span class="badge bg-warning">Unavailable</span>
+                    <p class="card-text mt-2">Active: 0/0</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Communication</h5>
+                    <span class="badge bg-warning">Unavailable</span>
+                    <p class="card-text mt-2">Links: 0/0</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">System Status</h5>
+                    <div class="row">
+                        <div class="col-6">
+                            <h3 class="text-primary">0</h3>
+                            <small>Total Drivers</small>
+                        </div>
+                        <div class="col-6">
+                            <h3 class="text-success">0</h3>
+                            <small>Connected</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" @onclick='() => Navigation.NavigateTo("/device-management")'>
+                            <i class="bi bi-cpu me-1"></i>Manage Devices
+                        </button>
+                        <button class="btn btn-outline-success" @onclick='() => Navigation.NavigateTo("/drivers")'>
+                            <i class="bi bi-gear me-1"></i>Configure Drivers
+                        </button>
+                        <button class="btn btn-outline-info" @onclick='() => Navigation.NavigateTo("/monitoring")'>
+                            <i class="bi bi-graph-up me-1"></i>Monitor Data
+                        </button>
+                        <button class="btn btn-outline-warning" @onclick='() => Navigation.NavigateTo("/settings")'>
+                            <i class="bi bi-gear-fill me-1"></i>Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">System Information</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Version:</dt>
+                        <dd class="col-sm-8">2.0.0-beta</dd>
+                        
+                        <dt class="col-sm-4">Build:</dt>
+                        <dd class="col-sm-8">DDD Architecture</dd>
+                        
+                        <dt class="col-sm-4">Status:</dt>
+                        <dd class="col-sm-8"><span class="badge bg-success">Operational</span></dd>
+                        
+                        <dt class="col-sm-4">Uptime:</dt>
+                        <dd class="col-sm-8">@GetUptime()</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<style>
-.device-detail-container {
-    height: 100%;
-    background: rgba(229, 229, 229, 0.06);
-    display: flex;
-    flex-direction: column;
-}
-
-/* Device Tabs */
-.device-tabs {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.tab-header {
-    display: flex;
-    border-bottom: 1px solid #555;
-    background: rgba(0, 0, 0, 0.2);
-}
-
-.tab-button {
-    padding: 8px 20px;
-    background: transparent;
-    border: none;
-    color: #fafafa;
-    cursor: pointer;
-    font-size: 12px;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-}
-
-.tab-button:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.tab-button.active {
-    background: rgba(255, 255, 255, 0.1);
-    border-bottom-color: #3b82f6;
-}
-
-.tab-content {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-}
-
-/* Communication Panel */
-.communication-panel {
-    max-width: 600px;
-}
-
-.config-row {
-    display: flex;
-    align-items: center;
-    margin-bottom: 16px;
-    gap: 12px;
-}
-
-.config-label {
-    width: 120px;
-    font-size: 12px;
-    color: #fafafa;
-    font-weight: bold;
-}
-
-.config-input {
-    flex: 1;
-    padding: 6px 10px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid #555;
-    border-radius: 3px;
-    color: #fafafa;
-    font-size: 12px;
-}
-
-.config-input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    background: rgba(255, 255, 255, 0.15);
-}
-
-.config-actions {
-    margin-top: 20px;
-    display: flex;
-    gap: 10px;
-}
-
-/* Tags Panel */
-.tags-panel {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
-.tags-toolbar {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #555;
-}
-
-.tool-btn {
-    padding: 4px 12px;
-    background: transparent;
-    border: 1px solid #555;
-    color: #fafafa;
-    font-size: 11px;
-    cursor: pointer;
-    border-radius: 3px;
-    transition: all 0.2s;
-}
-
-.tool-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: #3b82f6;
-}
-
-.tags-grid {
-    flex: 1;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid #555;
-    border-radius: 3px;
-    overflow: hidden;
-}
-
-.grid-header {
-    display: grid;
-    grid-template-columns: 1fr 80px 120px 80px 80px;
-    background: rgba(0, 0, 0, 0.4);
-    border-bottom: 1px solid #555;
-}
-
-.grid-row {
-    display: grid;
-    grid-template-columns: 1fr 80px 120px 80px 80px;
-    border-bottom: 1px solid #333;
-}
-
-.grid-row:hover {
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.grid-cell {
-    padding: 6px 8px;
-    font-size: 11px;
-    color: #fafafa;
-    border-right: 1px solid #333;
-    display: flex;
-    align-items: center;
-}
-
-.grid-header .grid-cell {
-    font-weight: bold;
-    text-transform: uppercase;
-    background: rgba(0, 0, 0, 0.3);
-}
-
-.quality-indicator {
-    padding: 2px 6px;
-    border-radius: 2px;
-    font-size: 10px;
-}
-
-.quality-indicator.good {
-    background: #10b981;
-    color: white;
-}
-
-.quality-indicator.bad {
-    background: #dc2626;
-    color: white;
-}
-
-.quality-indicator.uncertain {
-    background: #f59e0b;
-    color: white;
-}
-
-/* Welcome Panel */
-.welcome-panel {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.welcome-content {
-    text-align: center;
-    color: #fafafa;
-}
-
-.welcome-icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-    opacity: 0.7;
-}
-
-.welcome-content h3 {
-    margin-bottom: 1rem;
-    font-weight: bold;
-}
-
-.welcome-content p {
-    margin-bottom: 2rem;
-    opacity: 0.8;
-}
-
-/* Action Buttons */
-.action-btn {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 3px;
-    font-size: 12px;
-    font-weight: bold;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s;
-}
-
-.action-btn.primary {
-    background: #3b82f6;
-    color: white;
-}
-
-.action-btn.primary:hover {
-    background: #2563eb;
-}
-
-.action-btn.secondary {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fafafa;
-    border: 1px solid #555;
-}
-
-.action-btn.secondary:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-</style>
-
 @code {
-    private DeviceDto? _selectedDevice;
-    private string _activeTab = "communication";
-    private List<TagData> _tags = new();
+    private readonly DateTime _startTime = DateTime.Now;
 
-    protected override async Task OnInitializedAsync()
+    private void ConnectAll()
     {
-        await LoadSampleData();
+        Logger.LogInformation("Connect All requested");
+        // Implementation for connecting all drivers
     }
 
-    private async Task LoadSampleData()
+    private void DisconnectAll()
     {
-        // Load first device as selected by default
-        try
-        {
-            var projectId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-            var devices = await DeviceApi.GetDevicesByProjectAsync(projectId);
-            _selectedDevice = devices.FirstOrDefault();
-            
-            if (_selectedDevice != null)
-            {
-                LoadSampleTags();
-            }
-        }
-        catch
-        {
-            // Handle error
-        }
+        Logger.LogInformation("Disconnect All requested");
+        // Implementation for disconnecting all drivers
     }
 
-    private void LoadSampleTags()
+    private string GetUptime()
     {
-        _tags = new[]
-        {
-            new TagData("Temperature", "Float", "40001", "23.5", "Good"),
-            new TagData("Pressure", "Int16", "40002", "1250", "Good"),
-            new TagData("FlowRate", "Float", "40003", "45.2", "Good"),
-            new TagData("Status", "Bool", "00001", "true", "Good"),
-            new TagData("Alarm", "Bool", "00002", "false", "Good")
-        }.ToList();
-    }
-
-    private void SetActiveTab(string tab)
-    {
-        _activeTab = tab;
-        StateHasChanged();
-    }
-
-    private async Task TestConnection()
-    {
-        if (_selectedDevice == null) return;
-
-        try
-        {
-            Logger.LogInformation("Testing connection for device {DeviceName}", _selectedDevice.Name);
-            
-            // Create test driver instance using DriverManager
-            var driverManager = ServiceProvider.GetService<SpiderStudio.BlazorServer.Services.DriverManagerService>();
-            if (driverManager != null)
-            {
-                using var testDriver = await driverManager.CreateDriverAsync(_selectedDevice.Protocol);
-                
-                var config = new Spider.Drivers.Core.Models.DriverConfiguration(
-                    _selectedDevice.ConnectionString,
-                    new Dictionary<string, object>
-                    {
-                        { "Host", ParseHost(_selectedDevice.ConnectionString) },
-                        { "Port", ParsePort(_selectedDevice.ConnectionString) },
-                        { "Timeout", 5000 }
-                    });
-
-                var initResult = await testDriver.InitializeAsync(config);
-                
-                if (initResult.Success)
-                {
-                    var healthResult = await testDriver.HealthCheckAsync();
-                    Logger.LogInformation("Connection test result: {IsHealthy}, Message: {Message}", 
-                        healthResult.IsHealthy, healthResult.ErrorMessage);
-                }
-                else
-                {
-                    Logger.LogError("Failed to initialize driver: {Error}", initResult.ErrorMessage);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error testing connection");
-        }
-    }
-
-    private async Task SaveDevice()
-    {
-        if (_selectedDevice == null) return;
-
-        try
-        {
-            Logger.LogInformation("Device save requested for {DeviceName}", _selectedDevice.Name);
-            
-            // For now, just log the save operation since UpdateDeviceCommand doesn't exist yet
-            // In a complete implementation, this would save the device changes
-            Logger.LogInformation("Device {DeviceName} changes logged (update functionality pending)", _selectedDevice.Name);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error saving device {DeviceName}", _selectedDevice?.Name ?? "Unknown");
-        }
-    }
-        {
-            Logger.LogError(ex, "Error saving device");
-        }
-    }
-
-    private void AddTag()
-    {
-        Logger.LogInformation("Adding new tag");
-        var newTag = new TagData($"NewTag_{DateTime.Now:HHmmss}", "Int16", "40001", "0", "Good");
-        _tags.Add(newTag);
-        StateHasChanged();
-    }
-
-    private void RemoveTag()
-    {
-        Logger.LogInformation("Removing selected tag");
-        if (_tags.Any())
-        {
-            _tags.RemoveAt(_tags.Count - 1);
-            StateHasChanged();
-        }
-    }
-
-    private void ImportTags()
-    {
-        Logger.LogInformation("Importing tags");
-        
-        try
-        {
-            // Simulate importing tags from a configuration file
-            var importedTags = new[]
-            {
-                new TagData("ImportedTemp", "Single", "40101", "22.5", "Good"),
-                new TagData("ImportedPress", "Single", "40102", "1.5", "Good"),
-                new TagData("ImportedFlow", "Single", "40103", "18.2", "Good")
-            }.ToList();
-
-            foreach (var tag in importedTags)
-            {
-                if (!_tags.Any(t => t.Name == tag.Name))
-                {
-                    _tags.Add(tag);
-                }
-            }
-            
-            Logger.LogInformation("Successfully imported {Count} tags", importedTags.Count);
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error importing tags");
-        }
-    }
-
-    private void ExportTags()
-    {
-        Logger.LogInformation("Exporting tags");
-        
-        try
-        {
-            // Create export data structure
-            var exportData = new
-            {
-                ExportDate = DateTime.UtcNow,
-                DeviceName = _selectedDevice?.Name ?? "Unknown",
-                Tags = _tags.Select(t => new
-                {
-                    t.Name,
-                    t.DataType,
-                    t.Address,
-                    t.Value,
-                    t.Quality
-                })
-            };
-
-            var json = System.Text.Json.JsonSerializer.Serialize(exportData, new System.Text.Json.JsonSerializerOptions 
-            { 
-                WriteIndented = true 
-            });
-
-            Logger.LogInformation("Tag export data generated: {Count} tags", _tags.Count);
-            // In a real implementation, this would trigger a file download
-            Logger.LogInformation("Export JSON: {Json}", json);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error exporting tags");
-        }
-    }
-
-    private void CreateSampleDevice()
-    {
-        Navigation.NavigateTo("/devices");
-    }
-
-    private static string ParseHost(string connectionString)
-    {
-        if (string.IsNullOrEmpty(connectionString)) return "localhost";
-        
-        if (connectionString.Contains("IP:"))
-        {
-            var parts = connectionString.Split(';');
-            var ipPart = parts.FirstOrDefault(p => p.StartsWith("IP:"));
-            return ipPart?.Split(':')[1] ?? "localhost";
-        }
-        
-        return connectionString.Split(':')[0] ?? "localhost";
-    }
-
-    private static int ParsePort(string connectionString)
-    {
-        if (string.IsNullOrEmpty(connectionString)) return 502;
-        
-        if (connectionString.Contains("Port:"))
-        {
-            var parts = connectionString.Split(';');
-            var portPart = parts.FirstOrDefault(p => p.StartsWith("Port:"));
-            if (portPart != null && int.TryParse(portPart.Split(':')[1], out var port))
-            {
-                return port;
-            }
-        }
-        
-        if (connectionString.Contains(":") && int.TryParse(connectionString.Split(':')[1], out var simplePort))
-        {
-            return simplePort;
-        }
-        
-        return 502; // Default Modbus port
-    }
-
-    public class TagData
-    {
-        public string Name { get; set; }
-        public string DataType { get; set; }
-        public string Address { get; set; }
-        public string Value { get; set; }
-        public string Quality { get; set; }
-
-        public TagData(string name, string dataType, string address, string value, string quality)
-        {
-            Name = name;
-            DataType = dataType;
-            Address = address;
-            Value = value;
-            Quality = quality;
-        }
+        var uptime = DateTime.Now - _startTime;
+        return $"{uptime.Hours:D2}:{uptime.Minutes:D2}:{uptime.Seconds:D2}";
     }
 }

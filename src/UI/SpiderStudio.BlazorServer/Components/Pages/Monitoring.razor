@@ -484,6 +484,91 @@
         };
     }
 
+    private void ClearData()
+    {
+        try
+        {
+            Logger.LogInformation("Clearing monitoring data");
+            
+            // Clear all data points history
+            foreach (var dataPoint in _dataPoints)
+            {
+                dataPoint.History.Clear();
+            }
+            
+            // Clear events
+            _events.Clear();
+            
+            Logger.LogInformation("Monitoring data cleared successfully");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error clearing monitoring data");
+        }
+    }
+
+    private void ExportData()
+    {
+        try
+        {
+            Logger.LogInformation("Exporting monitoring data");
+            
+            var exportData = new
+            {
+                ExportTimestamp = DateTime.UtcNow,
+                DataPoints = _dataPoints.Select(dp => new
+                {
+                    dp.Name,
+                    dp.Value,
+                    dp.Unit,
+                    dp.Quality,
+                    dp.Device,
+                    dp.Address,
+                    dp.LastUpdate,
+                    HistoryCount = dp.History.Count,
+                    MinValue = dp.History.Count > 0 ? dp.History.Min() : 0,
+                    MaxValue = dp.History.Count > 0 ? dp.History.Max() : 0,
+                    AvgValue = dp.History.Count > 0 ? dp.History.Average() : 0
+                }),
+                Connections = _connections.Select(c => new
+                {
+                    c.Name,
+                    c.Address,
+                    c.Status,
+                    c.ResponseTime
+                }),
+                Events = _events.Take(100).Select(e => new // Limit to last 100 events
+                {
+                    e.Level,
+                    e.Message,
+                    e.Timestamp
+                }),
+                Statistics = new
+                {
+                    TotalDataPoints = _dataPoints.Count,
+                    GoodDataPoints = _dataPoints.Count(dp => dp.Quality == "Good"),
+                    ConnectedDevices = _connections.Count(c => c.Status == "Connected"),
+                    TotalEvents = _events.Count
+                }
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(exportData, new System.Text.Json.JsonSerializerOptions 
+            { 
+                WriteIndented = true 
+            });
+
+            Logger.LogInformation("Monitoring data export prepared: {Size} characters", json.Length);
+            Logger.LogInformation("Export data: {DataSummary}", $"{_dataPoints.Count} data points, {_connections.Count} connections, {_events.Count} events");
+            
+            // In a real implementation, this would trigger a file download
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error exporting monitoring data");
+        }
+    }
+
     public void Dispose()
     {
         StopMonitoring();

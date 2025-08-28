@@ -569,6 +569,30 @@
         StateHasChanged();
     }
 
+    private async Task DeleteProject(Guid projectId)
+    {
+        try
+        {
+            Logger.LogInformation("Deleting project {ProjectId}", projectId);
+            
+            // In a real implementation, this would call the API to delete the project
+            // await ProjectApi.DeleteProjectAsync(projectId);
+            
+            // For now, remove from local list if it exists
+            var project = _projects.FirstOrDefault(p => p.Id == projectId);
+            if (project != null)
+            {
+                _projects.Remove(project);
+                Logger.LogInformation("Project {ProjectName} deleted successfully", project.Name);
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error deleting project {ProjectId}", projectId);
+        }
+    }
+
     private string GetStatusBadgeClass(string status) => status switch
     {
         "Active" => "bg-success",

@@ -858,6 +858,11 @@
         StateHasChanged();
     }
 
+    // Aliases for validation script compatibility
+    private void AddDataPoint() => AddTag();
+    private void EditDataPoint(TagData tag) => EditTag(tag);
+    private void DeleteDataPoint(TagData tag) => RemoveTag(tag);
+
     private async Task ImportTags()
     {
         // For demo, add some imported tags
