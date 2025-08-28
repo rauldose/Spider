@@ -104,13 +104,13 @@ public class LinkConfiguration : IEntityTypeConfiguration<Link>
         // Ignore Driver property (not persisted)
         builder.Ignore(l => l.Driver);
 
-        // Configure indexes
-        builder.HasIndex(l => l.Metadata.Name)
+        // Configure indexes (using the owned type properties)
+        builder.HasIndex("Metadata_Name")
             .IsUnique();
 
         builder.HasIndex(l => l.Status);
 
-        builder.HasIndex(l => l.Metadata.ProtocolType);
+        builder.HasIndex("Metadata_ProtocolType");
     }
 }
 
