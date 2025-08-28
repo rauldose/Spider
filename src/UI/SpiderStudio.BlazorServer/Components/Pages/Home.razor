@@ -13,7 +13,6 @@
 @inject ProjectManagementApiService ProjectApi
 @inject CommunicationApiService CommunicationApi
 @inject ILogger<Home> Logger
-@inject ILogger<SpiderStudio.BlazorServer.Drivers.DemoModbusDriver> DemoDriverLogger
 
 <PageTitle>Spider Studio - Modern IoT Platform</PageTitle>
 
@@ -222,8 +221,8 @@
                             <i class="bi bi-inbox" style="font-size: 3rem; color: #6c757d;"></i>
                             <h5 class="mt-3 text-muted">No drivers configured</h5>
                             <p class="text-muted">Add drivers to start collecting IoT data</p>
-                            <button class="btn btn-primary" @onclick="AddDemoDriver">
-                                Add Demo Driver
+                            <button class="btn btn-primary" @onclick="@(() => AddProductionDriver("Modbus"))">
+                                Configure Drivers
                             </button>
                         </div>
                     }
@@ -341,7 +340,18 @@
 
         try
         {
-            var results = await DriverManager.ConnectAllAsync();
+            // In production, this should use proper driver configurations from settings
+            var driverConfigurations = new Dictionary<string, DriverConfiguration>();
+            
+            // For now, create sample configurations for available drivers
+            foreach (var driver in DriverManager.GetDrivers())
+            {
+                // This should come from user configuration or settings
+                var configuration = new DriverConfiguration("modbus://localhost:502");
+                driverConfigurations[driver.Metadata.Name] = configuration;
+            }
+            
+            var results = await DriverManager.ConnectDriversAsync(driverConfigurations);
             Logger.LogInformation("Connected {Count} drivers", results.Count(r => r.Value));
             RefreshDriverList();
         }
@@ -454,10 +464,11 @@
         DriverManager.RemoveDriver(driverName);
     }
 
-    private void AddDemoDriver()
+    private void AddProductionDriver(string protocolType)
     {
-        var demoDriver = new SpiderStudio.BlazorServer.Drivers.DemoModbusDriver(DemoDriverLogger);
-        DriverManager.AddDriver(demoDriver);
+        // Use proper driver factory to create production drivers
+        // This should be replaced with proper driver configuration UI
+        Logger.LogInformation("Driver registration should be done through proper configuration, not UI demo buttons");
     }
 
     private static string GetStatusBadgeClass(DriverStatus status)

@@ -79,9 +79,9 @@ public class DriverManagerService
     }
 
     /// <summary>
-    /// Connect all drivers
+    /// Connect drivers with proper configurations
     /// </summary>
-    public async Task<Dictionary<string, bool>> ConnectAllAsync(CancellationToken cancellationToken = default)
+    public async Task<Dictionary<string, bool>> ConnectDriversAsync(Dictionary<string, DriverConfiguration> driverConfigurations, CancellationToken cancellationToken = default)
     {
         var results = new Dictionary<string, bool>();
         
@@ -89,12 +89,18 @@ public class DriverManagerService
         {
             try
             {
-                // For demo purposes, using empty configuration
-                var configuration = new DriverConfiguration("demo://localhost");
-                var result = await driver.InitializeAsync(configuration, cancellationToken);
-                results[driver.Metadata.Name] = result.Success;
-                
-                _logger.LogInformation("Driver {DriverName} initialization result: {Success}", driver.Metadata.Name, result.Success);
+                if (driverConfigurations.TryGetValue(driver.Metadata.Name, out var configuration))
+                {
+                    var result = await driver.InitializeAsync(configuration, cancellationToken);
+                    results[driver.Metadata.Name] = result.Success;
+                    
+                    _logger.LogInformation("Driver {DriverName} initialization result: {Success}", driver.Metadata.Name, result.Success);
+                }
+                else
+                {
+                    _logger.LogWarning("No configuration provided for driver {DriverName}", driver.Metadata.Name);
+                    results[driver.Metadata.Name] = false;
+                }
             }
             catch (Exception ex)
             {
@@ -104,6 +110,31 @@ public class DriverManagerService
         }
 
         return results;
+    }
+
+    /// <summary>
+    /// Connect a specific driver with configuration
+    /// </summary>
+    public async Task<bool> ConnectDriverAsync(string driverName, DriverConfiguration configuration, CancellationToken cancellationToken = default)
+    {
+        var driver = GetDriverByName(driverName);
+        if (driver == null)
+        {
+            _logger.LogWarning("Driver {DriverName} not found", driverName);
+            return false;
+        }
+
+        try
+        {
+            var result = await driver.InitializeAsync(configuration, cancellationToken);
+            _logger.LogInformation("Driver {DriverName} initialization result: {Success}", driverName, result.Success);
+            return result.Success;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to initialize driver {DriverName}", driverName);
+            return false;
+        }
     }
 
     /// <summary>

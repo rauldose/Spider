@@ -140,7 +140,7 @@ public class DriverFactory : IDriverFactory
 
     private void RegisterDefaultDrivers()
     {
-        RegisterDriver<MockDriver>("Mock");
+        // Production-ready drivers only
         RegisterDriver<ModbusDriver>("Modbus");
         RegisterDriver<OpcUaDriver>("OpcUa");
         RegisterDriver<MqttDriver>("Mqtt");
@@ -148,6 +148,9 @@ public class DriverFactory : IDriverFactory
         RegisterDriver<SiemensDriver>("Siemens");
         RegisterDriver<OmronDriver>("Omron");
         RegisterDriver<MitsubishiDriver>("Mitsubishi");
+        
+        // Note: MockDriver removed from production registration
+        // For testing/development scenarios, register MockDriver separately via RegisterDriver<MockDriver>("Mock")
     }
 }
 

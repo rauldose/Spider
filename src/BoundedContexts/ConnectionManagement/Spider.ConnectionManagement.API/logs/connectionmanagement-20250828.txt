@@ -23,3 +23,24 @@
 2025-08-28 01:45:18.309 +00:00 [WRN] Failed to determine the https port for redirect.
 2025-08-28 01:45:18.624 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 349.372ms
 2025-08-28 01:45:33.764 +00:00 [INF] Application is shutting down...
+2025-08-28 05:32:45.343 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 05:32:45.959 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 05:32:46.000 +00:00 [INF] Saved 0 entities to in-memory store.
+2025-08-28 05:32:46.493 +00:00 [INF] Starting Spider ConnectionManagement API
+2025-08-28 05:32:46.589 +00:00 [INF] Started connection health monitoring service
+2025-08-28 05:32:46.815 +00:00 [INF] Now listening on: http://localhost:5005
+2025-08-28 05:32:46.816 +00:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-08-28 05:32:46.819 +00:00 [INF] Hosting environment: Development
+2025-08-28 05:32:46.819 +00:00 [INF] Content root path: /home/runner/work/Spider/Spider/src/BoundedContexts/ConnectionManagement/Spider.ConnectionManagement.API
+2025-08-28 05:41:41.149 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 05:41:41.581 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 05:41:41.609 +00:00 [INF] Saved 0 entities to in-memory store.
+2025-08-28 05:41:41.854 +00:00 [INF] Starting Spider ConnectionManagement API
+2025-08-28 05:41:41.885 +00:00 [INF] Started connection health monitoring service
+2025-08-28 05:41:41.992 +00:00 [INF] Now listening on: http://localhost:5005
+2025-08-28 05:41:41.994 +00:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-08-28 05:41:41.998 +00:00 [INF] Hosting environment: Development
+2025-08-28 05:41:41.998 +00:00 [INF] Content root path: /home/runner/work/Spider/Spider/src/BoundedContexts/ConnectionManagement/Spider.ConnectionManagement.API
+2025-08-28 05:41:42.443 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
+2025-08-28 05:41:42.548 +00:00 [WRN] Failed to determine the https port for redirect.
+2025-08-28 05:41:43.191 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 753.9594ms
