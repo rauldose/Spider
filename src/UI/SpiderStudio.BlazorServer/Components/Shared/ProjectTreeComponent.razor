@@ -8,74 +8,95 @@
 @implements IDisposable
 
 <div class="project-tree">
-    @if (_projects.Any())
-    {
-        @foreach (var project in _projects.Where(p => p.ParentProjectId == null))
+    <!-- Root Project Node (matches WPF ProjectItemViewModel) -->
+    <div class="tree-node">
+        <div class="tree-item @(IsSelected("project-root") ? "selected" : "")" @onclick='() => ToggleNode("project-root")'>
+            <i class="bi @(IsExpanded("project-root") ? "bi-folder2-open" : "bi-folder2") tree-icon project-icon"></i>
+            <span class="tree-text">Project</span>
+        </div>
+        
+        @if (IsExpanded("project-root"))
         {
-            @RenderProjectNode(project)
-        }
-    }
-    else
-    {
-        <!-- No projects message -->
-        <div class="tree-node">
-            <div class="tree-item">
-                <i class="bi bi-folder tree-icon"></i>
-                <span class="tree-text text-muted">No projects found</span>
+            <div class="tree-children">
+                @if (_projects.Any())
+                {
+                    @foreach (var project in _projects.Where(p => p.ParentProjectId == null))
+                    {
+                        @RenderMachineNode(project)
+                    }
+                }
+                else
+                {
+                    <!-- No machines message -->
+                    <div class="tree-node">
+                        <div class="tree-item" @onclick='() => NavigateToPath("/projects")'>
+                            <i class="bi bi-plus-circle tree-icon"></i>
+                            <span class="tree-text text-muted">Create First Project</span>
+                        </div>
+                    </div>
+                }
             </div>
+        }
+    </div>
+    
+    <!-- Server Security Node (matches WPF ServerSecurityTreeViewModel) -->
+    <div class="tree-node">
+        <div class="tree-item @(IsSelected("server-security") ? "selected" : "")" @onclick='() => ToggleNode("server-security")'>
+            <i class="bi @(IsExpanded("server-security") ? "bi-folder2-open" : "bi-folder2") tree-icon security-icon"></i>
+            <span class="tree-text">Server Security</span>
+        </div>
+        
+        @if (IsExpanded("server-security"))
+        {
             <div class="tree-children">
                 <div class="tree-node">
-                    <div class="tree-item" @onclick='() => NavigateToPath("/projects")'>
-                        <i class="bi bi-plus-circle tree-icon"></i>
-                        <span class="tree-text">Create Project</span>
+                    <div class="tree-item" @onclick='() => NavigateToPath("/user-management")'>
+                        <i class="bi bi-person-gear tree-icon"></i>
+                        <span class="tree-text">User Editor</span>
+                    </div>
+                </div>
+                <div class="tree-node">
+                    <div class="tree-item" @onclick='() => NavigateToPath("/user-groups")'>
+                        <i class="bi bi-people tree-icon"></i>
+                        <span class="tree-text">User Manager</span>
                     </div>
                 </div>
             </div>
-        </div>
-    }
+        }
+    </div>
 </div>
 
 @code {
-    private RenderFragment RenderProjectNode(ProjectDto project) => __builder =>
+    // Render Machine Node (matches WPF MachineViewModel)
+    private RenderFragment RenderMachineNode(ProjectDto project) => __builder =>
     {
         <div class="tree-node">
-            <div class="tree-item @(IsSelected($"project-{project.Id}") ? "selected" : "")" @onclick='() => ToggleNode($"project-{project.Id}")'>
-                <i class="bi @(IsExpanded($"project-{project.Id}") ? "bi-folder2-open" : "bi-folder2") tree-icon"></i>
+            <div class="tree-item @(IsSelected($"machine-{project.Id}") ? "selected" : "")" @onclick='() => ToggleNode($"machine-{project.Id}")'>
+                <i class="bi @(IsExpanded($"machine-{project.Id}") ? "bi-pc-display" : "bi-pc-display") tree-icon machine-icon"></i>
                 <span class="tree-text">@project.Name</span>
                 <span class="project-status @(project.Status.ToLower())">@project.Status[0]</span>
             </div>
             
-            @if (IsExpanded($"project-{project.Id}"))
+            @if (IsExpanded($"machine-{project.Id}"))
             {
                 <div class="tree-children">
-                    <!-- Child Projects -->
+                    <!-- Child Projects/Machines -->
                     @if (project.ChildProjects.Any())
                     {
-                        <div class="tree-node">
-                            <div class="tree-item" @onclick='() => ToggleNode($"subprojects-{project.Id}")'>
-                                <i class="bi @(IsExpanded($"subprojects-{project.Id}") ? "bi-folder2-open" : "bi-folder2") tree-icon"></i>
-                                <span class="tree-text">Sub Projects (@project.ChildProjects.Count)</span>
-                            </div>
-                            @if (IsExpanded($"subprojects-{project.Id}"))
-                            {
-                                <div class="tree-children">
-                                    @foreach (var childProject in project.ChildProjects)
-                                    {
-                                        @RenderProjectNode(childProject)
-                                    }
-                                </div>
-                            }
-                        </div>
+                        @foreach (var childProject in project.ChildProjects)
+                        {
+                            @RenderMachineNode(childProject)
+                        }
                     }
 
-                    <!-- Devices Node -->
+                    <!-- Devices Root Node (matches WPF DeviceRootViewModel) -->
                     <div class="tree-node">
-                        <div class="tree-item" @onclick='() => ToggleNode($"devices-{project.Id}")'>
-                            <i class="bi @(IsExpanded($"devices-{project.Id}") ? "bi-folder2-open" : "bi-folder2") tree-icon"></i>
+                        <div class="tree-item" @onclick='() => ToggleNode($"device-root-{project.Id}")'>
+                            <i class="bi @(IsExpanded($"device-root-{project.Id}") ? "bi-hdd-stack" : "bi-hdd-stack") tree-icon device-root-icon"></i>
                             <span class="tree-text">Devices</span>
                         </div>
                         
-                        @if (IsExpanded($"devices-{project.Id}"))
+                        @if (IsExpanded($"device-root-{project.Id}"))
                         {
                             <div class="tree-children">
                                 @foreach (var device in _devices.Where(d => d.ProjectId == project.Id))
@@ -83,7 +104,7 @@
                                     <div class="tree-node device-node">
                                         <div class="tree-item @(IsSelected($"device-{device.Id}") ? "selected" : "")" 
                                              @onclick="() => SelectDevice(device)">
-                                            <i class="bi bi-cpu tree-icon"></i>
+                                            <i class="bi bi-cpu tree-icon device-icon"></i>
                                             <span class="tree-text">@device.Name</span>
                                             <span class="device-status @(device.Status == "Connected" ? "online" : "offline")"></span>
                                         </div>
@@ -102,56 +123,20 @@
                         }
                     </div>
 
-                    <!-- Connections Node -->
+                    <!-- APIs Node (matches WPF APITreeViewModel) -->
                     <div class="tree-node">
-                        <div class="tree-item" @onclick='() => ToggleNode($"connections-{project.Id}")'>
-                            <i class="bi @(IsExpanded($"connections-{project.Id}") ? "bi-folder2-open" : "bi-folder2") tree-icon"></i>
-                            <span class="tree-text">Connections</span>
+                        <div class="tree-item" @onclick='() => NavigateToPath("/api-management")'>
+                            <i class="bi bi-cloud tree-icon api-icon"></i>
+                            <span class="tree-text">APIs</span>
                         </div>
-                        
-                        @if (IsExpanded($"connections-{project.Id}"))
-                        {
-                            <div class="tree-children">
-                                <div class="tree-node">
-                                    <div class="tree-item" @onclick='() => NavigateToPath("/connections")'>
-                                        <i class="bi bi-link tree-icon"></i>
-                                        <span class="tree-text">Manage Connections</span>
-                                    </div>
-                                </div>
-                                <div class="tree-node">
-                                    <div class="tree-item" @onclick='() => NavigateToPath("/communication")'>
-                                        <i class="bi bi-broadcast tree-icon"></i>
-                                        <span class="tree-text">Communication</span>
-                                    </div>
-                                </div>
-                            </div>
-                        }
                     </div>
 
-                    <!-- Management Node -->
+                    <!-- Links Node (matches WPF LinkTreeViewModel) -->
                     <div class="tree-node">
-                        <div class="tree-item" @onclick='() => ToggleNode($"management-{project.Id}")'>
-                            <i class="bi @(IsExpanded($"management-{project.Id}") ? "bi-folder2-open" : "bi-folder2") tree-icon"></i>
-                            <span class="tree-text">Management</span>
+                        <div class="tree-item" @onclick='() => NavigateToPath("/communication")'>
+                            <i class="bi bi-link tree-icon link-icon"></i>
+                            <span class="tree-text">Links</span>
                         </div>
-                        
-                        @if (IsExpanded($"management-{project.Id}"))
-                        {
-                            <div class="tree-children">
-                                <div class="tree-node">
-                                    <div class="tree-item" @onclick='() => NavigateToPath("/drivers")'>
-                                        <i class="bi bi-cpu tree-icon"></i>
-                                        <span class="tree-text">Drivers</span>
-                                    </div>
-                                </div>
-                                <div class="tree-node">
-                                    <div class="tree-item" @onclick='() => NavigateToPath("/tags")'>
-                                        <i class="bi bi-tag tree-icon"></i>
-                                        <span class="tree-text">Tags</span>
-                                    </div>
-                                </div>
-                            </div>
-                        }
                     </div>
                 </div>
             }
@@ -200,6 +185,35 @@
     flex-shrink: 0;
 }
 
+/* WPF-like icon colors */
+.project-icon {
+    color: #f59e0b; /* PROJECT.png equivalent */
+}
+
+.machine-icon {
+    color: #8b5cf6; /* computer.png equivalent */
+}
+
+.device-root-icon {
+    color: #06b6d4; /* idevices.png equivalent */
+}
+
+.device-icon {
+    color: #10b981; /* devices.png equivalent */
+}
+
+.api-icon {
+    color: #3b82f6; /* API.png equivalent */
+}
+
+.link-icon {
+    color: #f97316; /* Link.png equivalent */
+}
+
+.security-icon {
+    color: #dc2626; /* server-security.png equivalent */
+}
+
 .tree-text {
     font-size: 12px;
     flex: 1;
@@ -215,6 +229,10 @@
 .device-status.online {
     background: #10b981;
     box-shadow: 0 0 4px #10b981;
+}
+
+.device-status.offline {
+    background: #ef4444;
 }
 
 .project-status {
@@ -263,6 +281,19 @@
         await LoadProjects();
         await LoadDevices();
         
+        // Auto-expand root nodes to match WPF behavior
+        _expandedNodes.Add("project-root");
+        if (_projects.Any())
+        {
+            // Auto-expand first machine/project
+            var firstProject = _projects.Where(p => p.ParentProjectId == null).FirstOrDefault();
+            if (firstProject != null)
+            {
+                _expandedNodes.Add($"machine-{firstProject.Id}");
+                _expandedNodes.Add($"device-root-{firstProject.Id}");
+            }
+        }
+        
         // Set up auto-refresh timer to check for changes every 10 seconds
         _refreshTimer = new Timer(async _ => await RefreshAsync(), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
     }
@@ -285,11 +316,15 @@
         {
             _projects = (await ProjectApi.GetAllProjectsAsync()).ToList();
             
-            // Auto-expand first project if available
-            if (_projects.Any() && !_expandedNodes.Any())
+            // Auto-expand first machine if this is initial load and no nodes are expanded
+            if (_projects.Any() && !_expandedNodes.Any(x => x.StartsWith("machine-")))
             {
-                var firstProject = _projects.First();
-                _expandedNodes.Add($"project-{firstProject.Id}");
+                var firstProject = _projects.Where(p => p.ParentProjectId == null).FirstOrDefault();
+                if (firstProject != null)
+                {
+                    _expandedNodes.Add($"machine-{firstProject.Id}");
+                    _expandedNodes.Add($"device-root-{firstProject.Id}");
+                }
             }
             
             StateHasChanged();

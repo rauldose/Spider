@@ -265,3 +265,39 @@ System.MissingMethodException: Constructor on type 'Spider.ConnectionManagement.
 2025-08-28 18:06:49.726 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 11.841ms
 2025-08-28 18:13:06.336 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
 2025-08-28 18:13:06.339 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 2.2946ms
+2025-08-28 18:22:39.795 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 18:22:39.943 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 18:22:39.952 +00:00 [INF] Saved 0 entities to in-memory store.
+2025-08-28 18:22:40.054 +00:00 [INF] Starting Spider ConnectionManagement API
+2025-08-28 18:22:40.067 +00:00 [INF] Started connection health monitoring service
+2025-08-28 18:22:40.102 +00:00 [INF] Now listening on: http://localhost:5005
+2025-08-28 18:22:40.102 +00:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-08-28 18:22:40.103 +00:00 [INF] Hosting environment: Development
+2025-08-28 18:22:40.103 +00:00 [INF] Content root path: /home/runner/work/Spider/Spider/src/BoundedContexts/ConnectionManagement/Spider.ConnectionManagement.API
+2025-08-28 18:23:15.986 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
+2025-08-28 18:23:16.022 +00:00 [WRN] Failed to determine the https port for redirect.
+2025-08-28 18:23:16.324 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 338.9785ms
+2025-08-28 18:23:46.304 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
+2025-08-28 18:23:46.360 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 56.0313ms
+2025-08-28 18:23:48.152 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
+2025-08-28 18:23:48.161 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 9.1183ms
+2025-08-28 18:23:58.225 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
+2025-08-28 18:23:58.226 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 1.8593ms
+2025-08-28 18:25:01.583 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 18:25:01.687 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 18:25:01.694 +00:00 [INF] Saved 0 entities to in-memory store.
+2025-08-28 18:25:01.766 +00:00 [INF] Starting Spider ConnectionManagement API
+2025-08-28 18:25:01.778 +00:00 [INF] Started connection health monitoring service
+2025-08-28 18:25:01.815 +00:00 [INF] Now listening on: http://localhost:5005
+2025-08-28 18:25:01.815 +00:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-08-28 18:25:01.815 +00:00 [INF] Hosting environment: Development
+2025-08-28 18:25:01.815 +00:00 [INF] Content root path: /home/runner/work/Spider/Spider/src/BoundedContexts/ConnectionManagement/Spider.ConnectionManagement.API
+2025-08-28 18:25:28.667 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
+2025-08-28 18:25:28.704 +00:00 [WRN] Failed to determine the https port for redirect.
+2025-08-28 18:25:29.038 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 371.7222ms
+2025-08-28 18:25:37.289 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
+2025-08-28 18:25:37.352 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 63.4967ms
+2025-08-28 18:25:50.032 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
+2025-08-28 18:25:50.039 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 7.1395ms
+2025-08-28 18:25:50.373 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
+2025-08-28 18:25:50.380 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 6.8102ms
