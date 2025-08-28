@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Spider.Communication.Domain.Entities;
 using Spider.Communication.Domain.ValueObjects;
+using Spider.Core.SharedKernel.Base;
 using System.Text.Json;
 
 namespace Spider.Communication.Infrastructure.Persistence.Configurations;
@@ -20,73 +21,32 @@ public class LinkConfiguration : IEntityTypeConfiguration<Link>
         builder.Property(l => l.Id)
             .ValueGeneratedNever();
 
-        // Configure LinkMetadata as owned type
-        builder.OwnsOne(l => l.Metadata, metadata =>
-        {
-            metadata.Property(m => m.Name)
-                .HasMaxLength(100)
-                .IsRequired();
+        // Configure LinkMetadata as JSON
+        builder.Property(l => l.Metadata)
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => JsonSerializer.Deserialize<LinkMetadata>(v, (JsonSerializerOptions?)null)!)
+            .HasColumnType("nvarchar(max)");
 
-            metadata.Property(m => m.Description)
-                .HasMaxLength(500);
+        // Configure LinkConfiguration as JSON
+        builder.Property(l => l.Configuration)
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => JsonSerializer.Deserialize<Spider.Communication.Domain.ValueObjects.LinkConfiguration>(v, (JsonSerializerOptions?)null)!)
+            .HasColumnType("nvarchar(max)");
 
-            metadata.Property(m => m.ProtocolType)
-                .HasMaxLength(50)
-                .IsRequired();
-        });
-
-        // Configure LinkConfiguration as owned type
-        builder.OwnsOne(l => l.Configuration, config =>
-        {
-            config.Property(c => c.ConnectionString)
-                .HasMaxLength(1000)
-                .IsRequired();
-
-            config.Property(c => c.Parameters)
-                .HasConversion(
-                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                    v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<string, object>())
-                .HasColumnType("nvarchar(max)");
-
-            config.Property(c => c.ConnectionTimeout)
-                .HasConversion(
-                    v => v.TotalMilliseconds,
-                    v => TimeSpan.FromMilliseconds(v));
-
-            config.Property(c => c.OperationTimeout)
-                .HasConversion(
-                    v => v.TotalMilliseconds,
-                    v => TimeSpan.FromMilliseconds(v));
-
-            config.Property(c => c.HealthCheckInterval)
-                .HasConversion(
-                    v => v.TotalMilliseconds,
-                    v => TimeSpan.FromMilliseconds(v));
-
-            config.Property(c => c.MaxChannels);
-
-            config.Property(c => c.AutoReconnect);
-
-            config.Property(c => c.MaxRetryAttempts);
-        });
-
-        // Configure LinkHealth as owned type
-        builder.OwnsOne(l => l.Health, health =>
-        {
-            health.Property(h => h.IsHealthy);
-
-            health.Property(h => h.Status)
-                .HasMaxLength(50);
-
-            health.Property(h => h.ErrorMessage)
-                .HasMaxLength(1000);
-
-            health.Property(h => h.LastChecked);
-        });
+        // Configure LinkHealth as JSON
+        builder.Property(l => l.Health)
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => JsonSerializer.Deserialize<LinkHealth>(v, (JsonSerializerOptions?)null)!)
+            .HasColumnType("nvarchar(max)");
 
         // Configure LinkStatus as enum
         builder.Property(l => l.Status)
-            .HasConversion<string>()
+            .HasConversion(
+                v => v.Name,
+                v => Enumeration.FromDisplayName<LinkStatus>(v))
             .HasMaxLength(50);
 
         builder.Property(l => l.CreatedAt)
@@ -104,13 +64,8 @@ public class LinkConfiguration : IEntityTypeConfiguration<Link>
         // Ignore Driver property (not persisted)
         builder.Ignore(l => l.Driver);
 
-        // Configure indexes (using the owned type properties)
-        builder.HasIndex("Metadata_Name")
-            .IsUnique();
-
+        // Configure indexes
         builder.HasIndex(l => l.Status);
-
-        builder.HasIndex("Metadata_ProtocolType");
     }
 }
 
@@ -139,17 +94,38 @@ public class ChannelConfiguration : IEntityTypeConfiguration<Channel>
             .HasMaxLength(500);
 
         builder.Property(c => c.Type)
-            .HasConversion<string>()
+            .HasConversion(
+                v => v.Name,
+                v => Enumeration.FromDisplayName<ChannelType>(v))
             .HasMaxLength(50)
             .IsRequired();
 
         builder.Property(c => c.Status)
-            .HasConversion<string>()
+            .HasConversion(
+                v => v.Name,
+                v => Enumeration.FromDisplayName<ChannelStatus>(v))
             .HasMaxLength(50)
             .IsRequired();
 
         builder.Property(c => c.CreatedAt)
             .IsRequired();
+
+        builder.Property(c => c.LastActivity)
+            .IsRequired();
+
+        // Configure ChannelConfiguration as JSON
+        builder.Property(c => c.Configuration)
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => JsonSerializer.Deserialize<Spider.Communication.Domain.ValueObjects.ChannelConfiguration>(v, (JsonSerializerOptions?)null)!)
+            .HasColumnType("nvarchar(max)");
+
+        // Configure ChannelHealth as JSON
+        builder.Property(c => c.Health)
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => JsonSerializer.Deserialize<ChannelHealth>(v, (JsonSerializerOptions?)null)!)
+            .HasColumnType("nvarchar(max)");
 
         // Configure relationships
         builder.HasMany(c => c.DataPoints)
@@ -198,7 +174,9 @@ public class DataPointConfiguration : IEntityTypeConfiguration<DataPoint>
             .IsRequired();
 
         builder.Property(dp => dp.DataType)
-            .HasConversion<string>()
+            .HasConversion(
+                v => v.Name,
+                v => Enumeration.FromDisplayName<DataPointType>(v))
             .HasMaxLength(50)
             .IsRequired();
 
@@ -220,6 +198,13 @@ public class DataPointConfiguration : IEntityTypeConfiguration<DataPoint>
 
         builder.Property(dp => dp.CreatedAt)
             .IsRequired();
+
+        // Configure DataPointConfiguration as JSON
+        builder.Property(dp => dp.Configuration)
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => JsonSerializer.Deserialize<Spider.Communication.Domain.ValueObjects.DataPointConfiguration>(v, (JsonSerializerOptions?)null)!)
+            .HasColumnType("nvarchar(max)");
 
         // Configure indexes
         builder.HasIndex(dp => dp.ChannelId);

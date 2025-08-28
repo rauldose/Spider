@@ -27,6 +27,16 @@ public class LinkMetadata : ValueObject
         Tags = tags ?? new Dictionary<string, string>();
     }
 
+    // Parameterless constructor for EF Core
+    private LinkMetadata()
+    {
+        Name = "Unknown";
+        Description = string.Empty;
+        ProtocolType = "Unknown";
+        Version = "1.0.0";
+        Tags = new Dictionary<string, string>();
+    }
+
     protected override IEnumerable<object> GetEqualityComponents()
     {
         yield return Name;
@@ -78,6 +88,19 @@ public class LinkConfiguration : ValueObject
         MaxRetryAttempts = maxRetryAttempts >= 0 ? maxRetryAttempts : throw new ArgumentException("Max retry attempts cannot be negative", nameof(maxRetryAttempts));
     }
 
+    // Parameterless constructor for EF Core
+    private LinkConfiguration()
+    {
+        ConnectionString = "localhost:502";
+        Parameters = new Dictionary<string, object>();
+        ConnectionTimeout = TimeSpan.FromSeconds(30);
+        OperationTimeout = TimeSpan.FromSeconds(10);
+        HealthCheckInterval = TimeSpan.FromMinutes(1);
+        MaxChannels = 10;
+        AutoReconnect = true;
+        MaxRetryAttempts = 3;
+    }
+
     protected override IEnumerable<object> GetEqualityComponents()
     {
         yield return ConnectionString;
@@ -127,6 +150,16 @@ public class LinkHealth : ValueObject
         ErrorMessage = errorMessage;
         LastChecked = lastChecked;
         Metrics = metrics ?? new Dictionary<string, object>();
+    }
+
+    // Parameterless constructor for EF Core
+    private LinkHealth()
+    {
+        IsHealthy = false;
+        Status = "Unknown";
+        ErrorMessage = null;
+        LastChecked = DateTime.UtcNow;
+        Metrics = new Dictionary<string, object>();
     }
 
     public static LinkHealth Good(DateTime lastChecked, Dictionary<string, object>? metrics = null) =>
@@ -192,6 +225,17 @@ public class ChannelConfiguration : ValueObject
         Properties = properties ?? new Dictionary<string, object>();
     }
 
+    // Parameterless constructor for EF Core
+    private ChannelConfiguration()
+    {
+        ScanInterval = TimeSpan.FromSeconds(1);
+        HealthCheckInterval = TimeSpan.FromMinutes(5);
+        MaxDataPoints = 100;
+        EnableBuffering = false;
+        BufferSize = 1000;
+        Properties = new Dictionary<string, object>();
+    }
+
     protected override IEnumerable<object> GetEqualityComponents()
     {
         yield return ScanInterval;
@@ -237,6 +281,16 @@ public class ChannelHealth : ValueObject
         ErrorMessage = errorMessage;
         LastChecked = lastChecked;
         Metrics = metrics ?? new Dictionary<string, object>();
+    }
+
+    // Parameterless constructor for EF Core
+    private ChannelHealth()
+    {
+        IsHealthy = false;
+        Status = "Unknown";
+        ErrorMessage = null;
+        LastChecked = DateTime.UtcNow;
+        Metrics = new Dictionary<string, object>();
     }
 
     public static ChannelHealth Good(DateTime lastChecked, Dictionary<string, object>? metrics = null) =>
@@ -306,6 +360,17 @@ public class DataPointConfiguration : ValueObject
         Offset = offset;
         DefaultValue = defaultValue;
         Properties = properties ?? new Dictionary<string, object>();
+    }
+
+    // Parameterless constructor for EF Core
+    private DataPointConfiguration()
+    {
+        ScanInterval = TimeSpan.FromSeconds(1);
+        EnableLogging = true;
+        ScalingFactor = null;
+        Offset = null;
+        DefaultValue = null;
+        Properties = new Dictionary<string, object>();
     }
 
     public static DataPointConfiguration Default() => new();
