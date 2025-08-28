@@ -1,0 +1,625 @@
+@page "/settings"
+@using SpiderStudio.BlazorServer.Services
+@inject ILogger<Settings> Logger
+
+<PageTitle>Settings - Spider Studio</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-5">⚙️ Settings</h1>
+                    <p class="lead">Configure system settings and preferences</p>
+                </div>
+                <div>
+                    <button class="btn btn-success me-2" @onclick="SaveSettings">
+                        <i class="bi bi-check-circle me-1"></i>Save Changes
+                    </button>
+                    <button class="btn btn-outline-secondary me-2" @onclick="ResetToDefaults">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Reset to Defaults
+                    </button>
+                    <button class="btn btn-outline-info" @onclick="ExportSettings">
+                        <i class="bi bi-download me-1"></i>Export Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Settings Navigation -->
+        <div class="col-lg-3">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Settings Categories</h6>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="#" class="list-group-item list-group-item-action @GetActiveClass("general")" @onclick='() => SetActiveSection("general")'>>
+                        <i class="bi bi-gear me-2"></i>General
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action @GetActiveClass("communication")" @onclick='() => SetActiveSection("communication")'>>
+                        <i class="bi bi-wifi me-2"></i>Communication
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action @GetActiveClass("database")" @onclick='() => SetActiveSection("database")'>>
+                        <i class="bi bi-database me-2"></i>Database
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action @GetActiveClass("logging")" @onclick='() => SetActiveSection("logging")'>>
+                        <i class="bi bi-journal-text me-2"></i>Logging
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action @GetActiveClass("security")" @onclick='() => SetActiveSection("security")'>>
+                        <i class="bi bi-shield-check me-2"></i>Security
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action @GetActiveClass("performance")" @onclick='() => SetActiveSection("performance")'>>
+                        <i class="bi bi-speedometer2 me-2"></i>Performance
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action @GetActiveClass("backup")" @onclick='() => SetActiveSection("backup")'>>
+                        <i class="bi bi-hdd me-2"></i>Backup & Recovery
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Content -->
+        <div class="col-lg-9">
+            @if (_activeSection == "general")
+            {
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">General Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Application Name</label>
+                                <input type="text" class="form-control" @bind="_settings.ApplicationName">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Update Interval (ms)</label>
+                                <input type="number" class="form-control" @bind="_settings.UpdateInterval" min="100" max="10000">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Language</label>
+                                <select class="form-select" @bind="_settings.Language">
+                                    <option value="en">English</option>
+                                    <option value="zh">中文</option>
+                                    <option value="es">Español</option>
+                                    <option value="fr">Français</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Theme</label>
+                                <select class="form-select" @bind="_settings.Theme">
+                                    <option value="light">Light</option>
+                                    <option value="dark">Dark</option>
+                                    <option value="auto">Auto</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" @bind="_settings.AutoStartMonitoring">
+                                    <label class="form-check-label">
+                                        Auto-start monitoring on application launch
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" @bind="_settings.ShowNotifications">
+                                    <label class="form-check-label">
+                                        Show system notifications
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (_activeSection == "communication")
+            {
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Communication Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Default Timeout (ms)</label>
+                                <input type="number" class="form-control" @bind="_settings.DefaultTimeout" min="1000" max="30000">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Retry Attempts</label>
+                                <input type="number" class="form-control" @bind="_settings.RetryAttempts" min="1" max="10">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Connection Pool Size</label>
+                                <input type="number" class="form-control" @bind="_settings.ConnectionPoolSize" min="1" max="100">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Heartbeat Interval (sec)</label>
+                                <input type="number" class="form-control" @bind="_settings.HeartbeatInterval" min="10" max="300">
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" @bind="_settings.EnableKeepAlive">
+                                    <label class="form-check-label">
+                                        Enable connection keep-alive
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" @bind="_settings.EnableAutoReconnect">
+                                    <label class="form-check-label">
+                                        Enable automatic reconnection
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (_activeSection == "database")
+            {
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Database Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Connection String</label>
+                                <textarea class="form-control" rows="3" @bind="_settings.DatabaseConnectionString"></textarea>
+                                <div class="form-text">
+                                    Configure the database connection string for data persistence
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Command Timeout (sec)</label>
+                                <input type="number" class="form-control" @bind="_settings.DatabaseTimeout" min="30" max="300">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Connection Pool Size</label>
+                                <input type="number" class="form-control" @bind="_settings.DatabasePoolSize" min="5" max="100">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Batch Size</label>
+                                <input type="number" class="form-control" @bind="_settings.BatchSize" min="100" max="10000">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Data Retention (days)</label>
+                                <input type="number" class="form-control" @bind="_settings.DataRetentionDays" min="1" max="3650">
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" @bind="_settings.EnableDataCompression">
+                                    <label class="form-check-label">
+                                        Enable data compression
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (_activeSection == "logging")
+            {
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Logging Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Log Level</label>
+                                <select class="form-select" @bind="_settings.LogLevel">
+                                    <option value="Trace">Trace</option>
+                                    <option value="Debug">Debug</option>
+                                    <option value="Information">Information</option>
+                                    <option value="Warning">Warning</option>
+                                    <option value="Error">Error</option>
+                                    <option value="Critical">Critical</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Log File Size Limit (MB)</label>
+                                <input type="number" class="form-control" @bind="_settings.LogFileSizeLimit" min="1" max="1000">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Log File Path</label>
+                                <input type="text" class="form-control" @bind="_settings.LogFilePath">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Max Log Files</label>
+                                <input type="number" class="form-control" @bind="_settings.MaxLogFiles" min="1" max="100">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Log Retention (days)</label>
+                                <input type="number" class="form-control" @bind="_settings.LogRetentionDays" min="1" max="365">
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" @bind="_settings.EnableFileLogging">
+                                    <label class="form-check-label">
+                                        Enable file logging
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" @bind="_settings.EnableConsoleLogging">
+                                    <label class="form-check-label">
+                                        Enable console logging
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (_activeSection == "security")
+            {
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Security Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Session Timeout (minutes)</label>
+                                <input type="number" class="form-control" @bind="_settings.SessionTimeout" min="5" max="480">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Max Login Attempts</label>
+                                <input type="number" class="form-control" @bind="_settings.MaxLoginAttempts" min="3" max="10">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Password Min Length</label>
+                                <input type="number" class="form-control" @bind="_settings.PasswordMinLength" min="4" max="50">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Account Lockout (minutes)</label>
+                                <input type="number" class="form-control" @bind="_settings.AccountLockoutMinutes" min="5" max="1440">
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" @bind="_settings.RequireStrongPasswords">
+                                    <label class="form-check-label">
+                                        Require strong passwords
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" @bind="_settings.EnableTwoFactorAuth">
+                                    <label class="form-check-label">
+                                        Enable two-factor authentication
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" @bind="_settings.EnableAuditLogging">
+                                    <label class="form-check-label">
+                                        Enable audit logging
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (_activeSection == "performance")
+            {
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Performance Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Worker Threads</label>
+                                <input type="number" class="form-control" @bind="_settings.WorkerThreads" min="1" max="50">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Queue Size</label>
+                                <input type="number" class="form-control" @bind="_settings.QueueSize" min="100" max="10000">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Cache Size (MB)</label>
+                                <input type="number" class="form-control" @bind="_settings.CacheSize" min="10" max="1000">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Cache TTL (minutes)</label>
+                                <input type="number" class="form-control" @bind="_settings.CacheTtl" min="1" max="60">
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" @bind="_settings.EnableCaching">
+                                    <label class="form-check-label">
+                                        Enable caching
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" @bind="_settings.EnablePerformanceCounters">
+                                    <label class="form-check-label">
+                                        Enable performance counters
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (_activeSection == "backup")
+            {
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Backup & Recovery Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Backup Directory</label>
+                                <input type="text" class="form-control" @bind="_settings.BackupDirectory">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Backup Interval (hours)</label>
+                                <input type="number" class="form-control" @bind="_settings.BackupInterval" min="1" max="168">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Backup Retention (days)</label>
+                                <input type="number" class="form-control" @bind="_settings.BackupRetentionDays" min="1" max="365">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Max Backup Files</label>
+                                <input type="number" class="form-control" @bind="_settings.MaxBackupFiles" min="1" max="100">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Compression Level</label>
+                                <select class="form-select" @bind="_settings.CompressionLevel">
+                                    <option value="None">None</option>
+                                    <option value="Fast">Fast</option>
+                                    <option value="Optimal">Optimal</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" @bind="_settings.EnableAutoBackup">
+                                    <label class="form-check-label">
+                                        Enable automatic backup
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" @bind="_settings.EnableBackupNotification">
+                                    <label class="form-check-label">
+                                        Notify on backup completion
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <h6>Manual Backup Actions</h6>
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn btn-primary" @onclick="CreateBackup">
+                                    <i class="bi bi-download me-1"></i>Create Backup Now
+                                </button>
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn btn-outline-secondary" @onclick="RestoreBackup">
+                                    <i class="bi bi-upload me-1"></i>Restore from Backup
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Settings Status -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Configuration Status:</strong>
+                            <span class="badge @(_hasUnsavedChanges ? "bg-warning" : "bg-success") ms-2">
+                                @(_hasUnsavedChanges ? "Unsaved Changes" : "Saved")
+                            </span>
+                        </div>
+                        <div>
+                            <small class="text-muted">Last saved: @_lastSaved.ToString("yyyy-MM-dd HH:mm:ss")</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _activeSection = "general";
+    private bool _hasUnsavedChanges = false;
+    private DateTime _lastSaved = DateTime.Now.AddHours(-1);
+    
+    private SettingsModel _settings = new();
+
+    protected override void OnInitialized()
+    {
+        LoadSettings();
+    }
+
+    private void LoadSettings()
+    {
+        // Load default settings
+        _settings = new SettingsModel
+        {
+            ApplicationName = "Spider Studio",
+            UpdateInterval = 1000,
+            Language = "en",
+            Theme = "light",
+            AutoStartMonitoring = true,
+            ShowNotifications = true,
+            DefaultTimeout = 5000,
+            RetryAttempts = 3,
+            ConnectionPoolSize = 10,
+            HeartbeatInterval = 30,
+            EnableKeepAlive = true,
+            EnableAutoReconnect = true,
+            DatabaseConnectionString = "Data Source=spider.db;Version=3;",
+            DatabaseTimeout = 60,
+            DatabasePoolSize = 20,
+            BatchSize = 1000,
+            DataRetentionDays = 30,
+            EnableDataCompression = true,
+            LogLevel = "Information",
+            LogFileSizeLimit = 50,
+            LogFilePath = "./logs",
+            MaxLogFiles = 10,
+            LogRetentionDays = 30,
+            EnableFileLogging = true,
+            EnableConsoleLogging = true,
+            SessionTimeout = 60,
+            MaxLoginAttempts = 5,
+            PasswordMinLength = 8,
+            AccountLockoutMinutes = 15,
+            RequireStrongPasswords = true,
+            EnableTwoFactorAuth = false,
+            EnableAuditLogging = true,
+            WorkerThreads = 4,
+            QueueSize = 1000,
+            CacheSize = 100,
+            CacheTtl = 15,
+            EnableCaching = true,
+            EnablePerformanceCounters = true,
+            BackupDirectory = "./backups",
+            BackupInterval = 24,
+            BackupRetentionDays = 30,
+            MaxBackupFiles = 10,
+            CompressionLevel = "Optimal",
+            EnableAutoBackup = true,
+            EnableBackupNotification = true
+        };
+    }
+
+    private void SetActiveSection(string section)
+    {
+        _activeSection = section;
+        StateHasChanged();
+    }
+
+    private string GetActiveClass(string section)
+    {
+        return _activeSection == section ? "active" : "";
+    }
+
+    private void SaveSettings()
+    {
+        try
+        {
+            // TODO: Implement actual settings persistence
+            _hasUnsavedChanges = false;
+            _lastSaved = DateTime.Now;
+            Logger.LogInformation("Settings saved successfully");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error saving settings");
+        }
+    }
+
+    private void ResetToDefaults()
+    {
+        LoadSettings();
+        _hasUnsavedChanges = true;
+        Logger.LogInformation("Settings reset to defaults");
+        StateHasChanged();
+    }
+
+    private void ExportSettings()
+    {
+        // TODO: Implement settings export
+        Logger.LogInformation("Export settings requested");
+    }
+
+    private void CreateBackup()
+    {
+        // TODO: Implement manual backup
+        Logger.LogInformation("Manual backup requested");
+    }
+
+    private void RestoreBackup()
+    {
+        // TODO: Implement backup restoration
+        Logger.LogInformation("Backup restoration requested");
+    }
+
+    public class SettingsModel
+    {
+        // General
+        public string ApplicationName { get; set; } = "";
+        public int UpdateInterval { get; set; }
+        public string Language { get; set; } = "";
+        public string Theme { get; set; } = "";
+        public bool AutoStartMonitoring { get; set; }
+        public bool ShowNotifications { get; set; }
+
+        // Communication
+        public int DefaultTimeout { get; set; }
+        public int RetryAttempts { get; set; }
+        public int ConnectionPoolSize { get; set; }
+        public int HeartbeatInterval { get; set; }
+        public bool EnableKeepAlive { get; set; }
+        public bool EnableAutoReconnect { get; set; }
+
+        // Database
+        public string DatabaseConnectionString { get; set; } = "";
+        public int DatabaseTimeout { get; set; }
+        public int DatabasePoolSize { get; set; }
+        public int BatchSize { get; set; }
+        public int DataRetentionDays { get; set; }
+        public bool EnableDataCompression { get; set; }
+
+        // Logging
+        public string LogLevel { get; set; } = "";
+        public int LogFileSizeLimit { get; set; }
+        public string LogFilePath { get; set; } = "";
+        public int MaxLogFiles { get; set; }
+        public int LogRetentionDays { get; set; }
+        public bool EnableFileLogging { get; set; }
+        public bool EnableConsoleLogging { get; set; }
+
+        // Security
+        public int SessionTimeout { get; set; }
+        public int MaxLoginAttempts { get; set; }
+        public int PasswordMinLength { get; set; }
+        public int AccountLockoutMinutes { get; set; }
+        public bool RequireStrongPasswords { get; set; }
+        public bool EnableTwoFactorAuth { get; set; }
+        public bool EnableAuditLogging { get; set; }
+
+        // Performance
+        public int WorkerThreads { get; set; }
+        public int QueueSize { get; set; }
+        public int CacheSize { get; set; }
+        public int CacheTtl { get; set; }
+        public bool EnableCaching { get; set; }
+        public bool EnablePerformanceCounters { get; set; }
+
+        // Backup
+        public string BackupDirectory { get; set; } = "";
+        public int BackupInterval { get; set; }
+        public int BackupRetentionDays { get; set; }
+        public int MaxBackupFiles { get; set; }
+        public string CompressionLevel { get; set; } = "";
+        public bool EnableAutoBackup { get; set; }
+        public bool EnableBackupNotification { get; set; }
+    }
+}

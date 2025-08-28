@@ -1,0 +1,518 @@
+@page "/monitoring"
+@using Spider.Drivers.Core.Abstractions
+@using Spider.Drivers.Core.Models
+@using SpiderStudio.BlazorServer.Services
+@inject DeviceManagementApiService DeviceApi
+@inject DataAcquisitionApiService DataApi
+@inject ILogger<Monitoring> Logger
+
+<PageTitle>Real-time Monitoring - Spider Studio</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-5">📊 Real-time Monitoring</h1>
+                    <p class="lead">Live data monitoring and visualization</p>
+                </div>
+                <div>
+                    <button class="btn btn-success me-2" @onclick="StartMonitoring" disabled="@_isMonitoring">
+                        @if (_isMonitoring)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        <i class="bi bi-play me-1"></i>Start Monitoring
+                    </button>
+                    <button class="btn btn-danger me-2" @onclick="StopMonitoring" disabled="@(!_isMonitoring)">
+                        <i class="bi bi-stop me-1"></i>Stop
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="RefreshData">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monitoring Status -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <i class="bi @(_isMonitoring ? "bi-broadcast" : "bi-broadcast-pin")" style="font-size: 2rem; color: @(_isMonitoring ? "var(--bs-success)" : "var(--bs-secondary)");"></i>
+                    <h6 class="mt-2">Monitoring</h6>
+                    <span class="badge @(_isMonitoring ? "bg-success" : "bg-secondary")">
+                        @(_isMonitoring ? "Active" : "Stopped")
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <i class="bi bi-speedometer2" style="font-size: 2rem; color: var(--bs-info);"></i>
+                    <h6 class="mt-2">Update Rate</h6>
+                    <div class="h4">@_updateRate ms</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <i class="bi bi-check-circle" style="font-size: 2rem; color: var(--bs-success);"></i>
+                    <h6 class="mt-2">Good Quality</h6>
+                    <div class="h4">@_goodQualityCount</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <i class="bi bi-exclamation-triangle" style="font-size: 2rem; color: var(--bs-warning);"></i>
+                    <h6 class="mt-2">Issues</h6>
+                    <div class="h4">@_badQualityCount</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Data Grid -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Live Data Points</h5>
+                    <div>
+                        <select class="form-select form-select-sm" @bind="_selectedDevice" @bind:after="FilterByDevice">
+                            <option value="">All Devices</option>
+                            @foreach (var device in _devices)
+                            {
+                                <option value="@device">@device</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-dark sticky-top">
+                                <tr>
+                                    <th>Tag</th>
+                                    <th>Value</th>
+                                    <th>Quality</th>
+                                    <th>Device</th>
+                                    <th>Last Update</th>
+                                    <th>Trend</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var dataPoint in _filteredDataPoints)
+                                {
+                                    <tr class="@GetRowClass(dataPoint.Quality)">
+                                        <td>
+                                            <strong>@dataPoint.Name</strong><br>
+                                            <small class="text-muted">@dataPoint.Address</small>
+                                        </td>
+                                        <td>
+                                            <code class="@GetValueClass(dataPoint.Quality) fs-6">@dataPoint.Value</code>
+                                            <small class="text-muted d-block">@dataPoint.Unit</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge @GetQualityBadge(dataPoint.Quality)">@dataPoint.Quality</span>
+                                        </td>
+                                        <td>
+                                            <small>@dataPoint.Device</small>
+                                        </td>
+                                        <td>
+                                            <small>@dataPoint.LastUpdate.ToString("HH:mm:ss.fff")</small>
+                                        </td>
+                                        <td>
+                                            <div class="mini-chart">
+                                                @RenderMiniChart(dataPoint.History)
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Real-time Charts -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">System Performance</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="progress mb-2" style="height: 8px;">
+                                    <div class="progress-bar bg-info" style="width: @(_cpuUsage)%"></div>
+                                </div>
+                                <small>CPU: @(_cpuUsage)%</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="progress mb-2" style="height: 8px;">
+                                    <div class="progress-bar bg-warning" style="width: @(_memoryUsage)%"></div>
+                                </div>
+                                <small>Memory: @(_memoryUsage)%</small>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="text-center">
+                                <div class="h5 text-primary">@_throughput</div>
+                                <small class="text-muted">Tags/sec</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Connection Status -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Connection Status</h6>
+                </div>
+                <div class="card-body">
+                    @foreach (var connection in _connections)
+                    {
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>@connection.Name</strong><br>
+                                <small class="text-muted">@connection.Address</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge @GetConnectionBadge(connection.Status)">@connection.Status</span><br>
+                                <small class="text-muted">@connection.ResponseTime ms</small>
+                            </div>
+                        </div>
+                        @if (connection != _connections.Last())
+                        {
+                            <hr class="my-2">
+                        }
+                    }
+                </div>
+            </div>
+
+            <!-- Event Log -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Recent Events</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div style="max-height: 200px; overflow-y: auto;">
+                        @foreach (var evt in _events.TakeLast(10))
+                        {
+                            <div class="p-2 border-bottom">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <span class="badge @GetEventBadge(evt.Level) me-2">@evt.Level</span>
+                                    <small class="text-muted">@evt.Timestamp.ToString("HH:mm:ss")</small>
+                                </div>
+                                <small class="d-block mt-1">@evt.Message</small>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool _isMonitoring = false;
+    private int _updateRate = 1000;
+    private int _goodQualityCount = 0;
+    private int _badQualityCount = 0;
+    private string _selectedDevice = "";
+    private int _cpuUsage = 25;
+    private int _memoryUsage = 45;
+    private int _throughput = 127;
+
+    private List<DataPointViewModel> _dataPoints = new();
+    private List<DataPointViewModel> _filteredDataPoints = new();
+    private List<string> _devices = new();
+    private List<ConnectionViewModel> _connections = new();
+    private List<EventViewModel> _events = new();
+
+    private System.Timers.Timer? _monitoringTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInitialData();
+    }
+
+    private Task LoadInitialData()
+    {
+        try
+        {
+            // Initialize sample data
+            _dataPoints = new List<DataPointViewModel>
+            {
+                new() { Name = "Temperature_01", Value = "25.4", Unit = "°C", Quality = "Good", Device = "PLC_001", Address = "40001", LastUpdate = DateTime.Now, History = new() },
+                new() { Name = "Pressure_01", Value = "1.23", Unit = "bar", Quality = "Good", Device = "PLC_001", Address = "40002", LastUpdate = DateTime.Now, History = new() },
+                new() { Name = "Flow_Rate", Value = "15.8", Unit = "L/min", Quality = "Good", Device = "PLC_001", Address = "40003", LastUpdate = DateTime.Now, History = new() },
+                new() { Name = "Motor_Speed", Value = "1450", Unit = "RPM", Quality = "Good", Device = "PLC_002", Address = "40010", LastUpdate = DateTime.Now, History = new() },
+                new() { Name = "Vibration", Value = "0.5", Unit = "mm/s", Quality = "Uncertain", Device = "PLC_002", Address = "40011", LastUpdate = DateTime.Now, History = new() },
+                new() { Name = "Power_Consumption", Value = "2.4", Unit = "kW", Quality = "Good", Device = "PLC_003", Address = "40020", LastUpdate = DateTime.Now, History = new() }
+            };
+
+            _devices = _dataPoints.Select(d => d.Device).Distinct().ToList();
+            _filteredDataPoints = _dataPoints;
+
+            _connections = new List<ConnectionViewModel>
+            {
+                new() { Name = "PLC_001", Address = "192.168.1.100", Status = "Connected", ResponseTime = 15 },
+                new() { Name = "PLC_002", Address = "192.168.1.101", Status = "Connected", ResponseTime = 22 },
+                new() { Name = "PLC_003", Address = "192.168.1.102", Status = "Timeout", ResponseTime = 1000 }
+            };
+
+            _events = new List<EventViewModel>
+            {
+                new() { Level = "Info", Message = "Monitoring started", Timestamp = DateTime.Now.AddMinutes(-5) },
+                new() { Level = "Warning", Message = "High temperature detected on sensor 01", Timestamp = DateTime.Now.AddMinutes(-3) },
+                new() { Level = "Info", Message = "Device PLC_002 reconnected", Timestamp = DateTime.Now.AddMinutes(-1) },
+                new() { Level = "Error", Message = "Communication timeout with PLC_003", Timestamp = DateTime.Now }
+            };
+
+            UpdateStatistics();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading initial data");
+        }
+        return Task.CompletedTask;
+    }
+
+    private void StartMonitoring()
+    {
+        _isMonitoring = true;
+        _monitoringTimer = new System.Timers.Timer(_updateRate);
+        _monitoringTimer.Elapsed += OnTimerElapsed;
+        _monitoringTimer.Start();
+        
+        AddEvent("Info", "Real-time monitoring started");
+        Logger.LogInformation("Real-time monitoring started");
+    }
+
+    private void StopMonitoring()
+    {
+        _isMonitoring = false;
+        _monitoringTimer?.Stop();
+        _monitoringTimer?.Dispose();
+        
+        AddEvent("Info", "Real-time monitoring stopped");
+        Logger.LogInformation("Real-time monitoring stopped");
+    }
+
+    private void OnTimerElapsed(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        InvokeAsync(() =>
+        {
+            SimulateDataUpdates();
+            UpdateStatistics();
+            StateHasChanged();
+        });
+    }
+
+    private void SimulateDataUpdates()
+    {
+        var random = new Random();
+        
+        foreach (var dataPoint in _dataPoints)
+        {
+            // Simulate value changes
+            if (double.TryParse(dataPoint.Value, out var currentValue))
+            {
+                var change = (random.NextDouble() - 0.5) * 2; // ±1 change
+                var newValue = Math.Max(0, currentValue + change);
+                dataPoint.Value = newValue.ToString("F1");
+                
+                // Add to history for mini charts
+                dataPoint.History.Add((float)newValue);
+                if (dataPoint.History.Count > 20)
+                {
+                    dataPoint.History.RemoveAt(0);
+                }
+            }
+
+            // Occasionally simulate quality issues
+            if (random.Next(0, 100) < 5) // 5% chance
+            {
+                dataPoint.Quality = random.Next(0, 2) == 0 ? "Uncertain" : "Bad";
+                AddEvent("Warning", $"Quality issue detected on {dataPoint.Name}");
+            }
+            else if (dataPoint.Quality != "Good")
+            {
+                dataPoint.Quality = "Good";
+                AddEvent("Info", $"Quality restored on {dataPoint.Name}");
+            }
+
+            dataPoint.LastUpdate = DateTime.Now;
+        }
+
+        // Update performance metrics
+        _cpuUsage = Math.Max(15, Math.Min(85, _cpuUsage + random.Next(-5, 6)));
+        _memoryUsage = Math.Max(20, Math.Min(75, _memoryUsage + random.Next(-3, 4)));
+        _throughput = random.Next(100, 200);
+    }
+
+    private void UpdateStatistics()
+    {
+        _goodQualityCount = _dataPoints.Count(d => d.Quality == "Good");
+        _badQualityCount = _dataPoints.Count(d => d.Quality != "Good");
+    }
+
+    private void FilterByDevice()
+    {
+        _filteredDataPoints = string.IsNullOrEmpty(_selectedDevice) 
+            ? _dataPoints 
+            : _dataPoints.Where(d => d.Device == _selectedDevice).ToList();
+    }
+
+    private async Task RefreshData()
+    {
+        await LoadInitialData();
+        StateHasChanged();
+    }
+
+    private void AddEvent(string level, string message)
+    {
+        _events.Add(new EventViewModel 
+        { 
+            Level = level, 
+            Message = message, 
+            Timestamp = DateTime.Now 
+        });
+        
+        // Keep only last 50 events
+        if (_events.Count > 50)
+        {
+            _events.RemoveAt(0);
+        }
+    }
+
+    private static string GetRowClass(string quality)
+    {
+        return quality switch
+        {
+            "Bad" => "table-danger",
+            "Uncertain" => "table-warning",
+            _ => ""
+        };
+    }
+
+    private static string GetValueClass(string quality)
+    {
+        return quality switch
+        {
+            "Good" => "text-success",
+            "Bad" => "text-danger",
+            _ => "text-warning"
+        };
+    }
+
+    private static string GetQualityBadge(string quality)
+    {
+        return quality switch
+        {
+            "Good" => "bg-success",
+            "Bad" => "bg-danger",
+            _ => "bg-warning"
+        };
+    }
+
+    private static string GetConnectionBadge(string status)
+    {
+        return status switch
+        {
+            "Connected" => "bg-success",
+            "Timeout" or "Error" => "bg-danger",
+            _ => "bg-warning"
+        };
+    }
+
+    private static string GetEventBadge(string level)
+    {
+        return level switch
+        {
+            "Info" => "bg-info",
+            "Warning" => "bg-warning",
+            "Error" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private RenderFragment RenderMiniChart(List<float> history)
+    {
+        return builder =>
+        {
+            if (history.Count > 1)
+            {
+                var points = new List<string>();
+                var max = history.Max();
+                var min = history.Min();
+                var range = max - min;
+                
+                for (int i = 0; i < history.Count; i++)
+                {
+                    var x = i * (40.0 / (history.Count - 1));
+                    var y = range > 0 ? 15 - ((history[i] - min) / range * 15) : 7.5;
+                    points.Add($"{x:F1},{y:F1}");
+                }
+
+                builder.OpenElement(0, "svg");
+                builder.AddAttribute(1, "width", "40");
+                builder.AddAttribute(2, "height", "15");
+                builder.AddAttribute(3, "style", "display: inline-block; vertical-align: middle;");
+                
+                builder.OpenElement(4, "polyline");
+                builder.AddAttribute(5, "points", string.Join(" ", points));
+                builder.AddAttribute(6, "fill", "none");
+                builder.AddAttribute(7, "stroke", "#0d6efd");
+                builder.AddAttribute(8, "stroke-width", "1");
+                builder.CloseElement();
+                
+                builder.CloseElement();
+            }
+        };
+    }
+
+    public void Dispose()
+    {
+        StopMonitoring();
+    }
+
+    public class DataPointViewModel
+    {
+        public string Name { get; set; } = "";
+        public string Value { get; set; } = "";
+        public string Unit { get; set; } = "";
+        public string Quality { get; set; } = "";
+        public string Device { get; set; } = "";
+        public string Address { get; set; } = "";
+        public DateTime LastUpdate { get; set; }
+        public List<float> History { get; set; } = new();
+    }
+
+    public class ConnectionViewModel
+    {
+        public string Name { get; set; } = "";
+        public string Address { get; set; } = "";
+        public string Status { get; set; } = "";
+        public int ResponseTime { get; set; }
+    }
+
+    public class EventViewModel
+    {
+        public string Level { get; set; } = "";
+        public string Message { get; set; } = "";
+        public DateTime Timestamp { get; set; }
+    }
+}

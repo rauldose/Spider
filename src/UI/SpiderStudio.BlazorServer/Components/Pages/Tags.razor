@@ -1,0 +1,423 @@
+@page "/tags"
+@using Spider.Drivers.Core.Abstractions
+@using Spider.Drivers.Core.Models
+@using SpiderStudio.BlazorServer.Services
+@inject DeviceManagementApiService DeviceApi
+@inject DataAcquisitionApiService DataApi
+@inject ILogger<Tags> Logger
+
+<PageTitle>Tags Management - Spider Studio</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-5">🏷️ Tags Management</h1>
+                    <p class="lead">Configure and manage IoT data tags</p>
+                </div>
+                <div>
+                    <button class="btn btn-success me-2" @onclick="ShowCreateTagModal">
+                        <i class="bi bi-plus-circle me-2"></i>Create Tag
+                    </button>
+                    <button class="btn btn-outline-secondary me-2" @onclick="ImportTags">
+                        <i class="bi bi-upload me-2"></i>Import
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="ExportTags">
+                        <i class="bi bi-download me-2"></i>Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tag Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <i class="bi bi-tags" style="font-size: 2rem; color: var(--bs-primary);"></i>
+                    <h4 class="mt-2">@_totalTags</h4>
+                    <small class="text-muted">Total Tags</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <i class="bi bi-check-circle" style="font-size: 2rem; color: var(--bs-success);"></i>
+                    <h4 class="mt-2">@_activeTags</h4>
+                    <small class="text-muted">Active Tags</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <i class="bi bi-graph-up" style="font-size: 2rem; color: var(--bs-info);"></i>
+                    <h4 class="mt-2">@_readTags</h4>
+                    <small class="text-muted">Read Tags</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <i class="bi bi-pencil" style="font-size: 2rem; color: var(--bs-warning);"></i>
+                    <h4 class="mt-2">@_writeTags</h4>
+                    <small class="text-muted">Write Tags</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tag Filters and Search -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" placeholder="Search tags..." @bind="_searchFilter" @oninput="FilterTags">
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" @bind="_typeFilter" @bind:after="FilterTags">
+                <option value="">All Types</option>
+                <option value="Bool">Boolean</option>
+                <option value="Int16">Short</option>
+                <option value="UInt16">UShort</option>
+                <option value="Int32">Integer</option>
+                <option value="UInt32">UInteger</option>
+                <option value="Int64">Long</option>
+                <option value="Single">Float</option>
+                <option value="Double">Double</option>
+                <option value="String">String</option>
+                <option value="DateTime">DateTime</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" @bind="_statusFilter" @bind:after="FilterTags">
+                <option value="">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Error">Error</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Tags Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Tag List</h5>
+        </div>
+        <div class="card-body">
+            @if (_filteredTags.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" class="form-check-input" @onchange="ToggleSelectAll">
+                                </th>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Address</th>
+                                <th>Device</th>
+                                <th>Value</th>
+                                <th>Quality</th>
+                                <th>Last Update</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var tag in _filteredTags)
+                            {
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input" @bind="tag.Selected">
+                                    </td>
+                                    <td>
+                                        <strong>@tag.Name</strong><br>
+                                        <small class="text-muted">@tag.Description</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">@tag.DataType</span>
+                                    </td>
+                                    <td>@tag.Address</td>
+                                    <td>
+                                        <small>@tag.DeviceName</small>
+                                    </td>
+                                    <td>
+                                        <code class="@GetValueCssClass(tag.Quality)">@tag.Value</code>
+                                    </td>
+                                    <td>
+                                        <span class="badge @GetQualityBadgeClass(tag.Quality)">@tag.Quality</span>
+                                    </td>
+                                    <td>
+                                        <small>@tag.LastUpdate.ToString("HH:mm:ss")</small>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => EditTag(tag)">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-success me-1" @onclick="() => TestTag(tag)">
+                                            <i class="bi bi-play"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteTag(tag)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Bulk Actions -->
+                @if (_filteredTags.Any(t => t.Selected))
+                {
+                    <div class="mt-3 p-3 bg-light rounded">
+                        <div class="d-flex align-items-center">
+                            <span class="me-3"><strong>@_filteredTags.Count(t => t.Selected)</strong> tags selected</span>
+                            <button class="btn btn-sm btn-outline-danger me-2" @onclick="DeleteSelectedTags">
+                                <i class="bi bi-trash me-1"></i>Delete Selected
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning me-2" @onclick="ActivateSelectedTags">
+                                <i class="bi bi-play me-1"></i>Activate Selected
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="DeactivateSelectedTags">
+                                <i class="bi bi-stop me-1"></i>Deactivate Selected
+                            </button>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-tags" style="font-size: 3rem; color: #6c757d;"></i>
+                    <h5 class="mt-3 text-muted">No tags found</h5>
+                    <p class="text-muted">Create your first tag to start collecting data</p>
+                    <button class="btn btn-primary" @onclick="ShowCreateTagModal">
+                        <i class="bi bi-plus-circle me-2"></i>Create Tag
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<TagViewModel> _tags = new();
+    private List<TagViewModel> _filteredTags = new();
+    private string _searchFilter = "";
+    private string _typeFilter = "";
+    private string _statusFilter = "";
+    
+    private int _totalTags = 0;
+    private int _activeTags = 0;
+    private int _readTags = 0;
+    private int _writeTags = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTags();
+        StartSimulation();
+    }
+
+    private Task LoadTags()
+    {
+        try
+        {
+            // Load sample tags for demonstration
+            _tags = new List<TagViewModel>
+            {
+                new() { Name = "Temperature_01", DataType = "Single", Address = "40001", DeviceName = "PLC_001", Description = "Reactor temperature", Value = "25.4°C", Quality = "Good", LastUpdate = DateTime.Now.AddSeconds(-10) },
+                new() { Name = "Pressure_01", DataType = "Single", Address = "40002", DeviceName = "PLC_001", Description = "System pressure", Value = "1.2 bar", Quality = "Good", LastUpdate = DateTime.Now.AddSeconds(-5) },
+                new() { Name = "Flow_Rate", DataType = "Single", Address = "40003", DeviceName = "PLC_001", Description = "Fluid flow rate", Value = "15.8 L/min", Quality = "Good", LastUpdate = DateTime.Now.AddSeconds(-2) },
+                new() { Name = "Motor_Status", DataType = "Bool", Address = "00001", DeviceName = "PLC_001", Description = "Motor running status", Value = "True", Quality = "Good", LastUpdate = DateTime.Now.AddSeconds(-1) },
+                new() { Name = "Alarm_Level", DataType = "UInt16", Address = "40010", DeviceName = "PLC_002", Description = "Current alarm level", Value = "0", Quality = "Good", LastUpdate = DateTime.Now.AddSeconds(-15) },
+                new() { Name = "Production_Count", DataType = "UInt32", Address = "40020", DeviceName = "PLC_002", Description = "Daily production count", Value = "1247", Quality = "Good", LastUpdate = DateTime.Now.AddSeconds(-20) },
+                new() { Name = "Error_Code", DataType = "String", Address = "40030", DeviceName = "PLC_003", Description = "Last error code", Value = "OK", Quality = "Uncertain", LastUpdate = DateTime.Now.AddMinutes(-5) },
+                new() { Name = "Timestamp", DataType = "DateTime", Address = "40040", DeviceName = "PLC_003", Description = "System timestamp", Value = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), Quality = "Good", LastUpdate = DateTime.Now }
+            };
+
+            UpdateStatistics();
+            FilterTags();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading tags");
+        }
+        return Task.CompletedTask;
+    }
+
+    private void UpdateStatistics()
+    {
+        _totalTags = _tags.Count;
+        _activeTags = _tags.Count(t => t.Quality == "Good");
+        _readTags = _tags.Count(t => t.DataType != "Bool");
+        _writeTags = _tags.Count(t => t.DataType == "Bool" || t.DataType.Contains("Int"));
+    }
+
+    private void FilterTags()
+    {
+        _filteredTags = _tags.Where(tag =>
+            (string.IsNullOrEmpty(_searchFilter) || tag.Name.Contains(_searchFilter, StringComparison.OrdinalIgnoreCase) || 
+             tag.Description.Contains(_searchFilter, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrEmpty(_typeFilter) || tag.DataType == _typeFilter) &&
+            (string.IsNullOrEmpty(_statusFilter) || GetTagStatus(tag) == _statusFilter)
+        ).ToList();
+    }
+
+    private string GetTagStatus(TagViewModel tag)
+    {
+        return tag.Quality switch
+        {
+            "Good" => "Active",
+            "Bad" => "Error",
+            _ => "Inactive"
+        };
+    }
+
+    private void StartSimulation()
+    {
+        var timer = new System.Timers.Timer(2000);
+        timer.Elapsed += (sender, e) =>
+        {
+            InvokeAsync(() =>
+            {
+                // Simulate live data updates
+                var random = new Random();
+                foreach (var tag in _tags)
+                {
+                    if (tag.DataType == "Single")
+                    {
+                        var value = 20 + random.NextDouble() * 10;
+                        tag.Value = $"{value:F1}°C";
+                        tag.LastUpdate = DateTime.Now;
+                    }
+                    else if (tag.DataType == "Bool")
+                    {
+                        tag.Value = random.Next(0, 2) == 1 ? "True" : "False";
+                        tag.LastUpdate = DateTime.Now;
+                    }
+                }
+                StateHasChanged();
+            });
+        };
+        timer.Start();
+    }
+
+    private static string GetValueCssClass(string quality)
+    {
+        return quality switch
+        {
+            "Good" => "text-success",
+            "Bad" => "text-danger",
+            _ => "text-warning"
+        };
+    }
+
+    private static string GetQualityBadgeClass(string quality)
+    {
+        return quality switch
+        {
+            "Good" => "bg-success",
+            "Bad" => "bg-danger",
+            _ => "bg-warning"
+        };
+    }
+
+    private void ToggleSelectAll(ChangeEventArgs e)
+    {
+        var selectAll = (bool)(e.Value ?? false);
+        foreach (var tag in _filteredTags)
+        {
+            tag.Selected = selectAll;
+        }
+    }
+
+    private void ShowCreateTagModal()
+    {
+        // TODO: Implement create tag modal
+        Logger.LogInformation("Create tag modal requested");
+    }
+
+    private void EditTag(TagViewModel tag)
+    {
+        // TODO: Implement edit tag functionality
+        Logger.LogInformation("Edit tag: {TagName}", tag.Name);
+    }
+
+    private void TestTag(TagViewModel tag)
+    {
+        Logger.LogInformation("Testing tag: {TagName}", tag.Name);
+        // TODO: Implement tag testing
+    }
+
+    private void DeleteTag(TagViewModel tag)
+    {
+        _tags.Remove(tag);
+        FilterTags();
+        UpdateStatistics();
+        Logger.LogInformation("Deleted tag: {TagName}", tag.Name);
+    }
+
+    private void DeleteSelectedTags()
+    {
+        var selectedTags = _filteredTags.Where(t => t.Selected).ToList();
+        foreach (var tag in selectedTags)
+        {
+            _tags.Remove(tag);
+        }
+        FilterTags();
+        UpdateStatistics();
+        Logger.LogInformation("Deleted {Count} selected tags", selectedTags.Count);
+    }
+
+    private void ActivateSelectedTags()
+    {
+        var selectedTags = _filteredTags.Where(t => t.Selected);
+        foreach (var tag in selectedTags)
+        {
+            tag.Quality = "Good";
+        }
+        Logger.LogInformation("Activated selected tags");
+    }
+
+    private void DeactivateSelectedTags()
+    {
+        var selectedTags = _filteredTags.Where(t => t.Selected);
+        foreach (var tag in selectedTags)
+        {
+            tag.Quality = "Uncertain";
+        }
+        Logger.LogInformation("Deactivated selected tags");
+    }
+
+    private void ImportTags()
+    {
+        // TODO: Implement tag import
+        Logger.LogInformation("Import tags requested");
+    }
+
+    private void ExportTags()
+    {
+        // TODO: Implement tag export
+        Logger.LogInformation("Export tags requested");
+    }
+
+    public class TagViewModel
+    {
+        public string Name { get; set; } = "";
+        public string DataType { get; set; } = "";
+        public string Address { get; set; } = "";
+        public string DeviceName { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string Value { get; set; } = "";
+        public string Quality { get; set; } = "";
+        public DateTime LastUpdate { get; set; }
+        public bool Selected { get; set; }
+    }
+}
