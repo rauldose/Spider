@@ -109,3 +109,61 @@
 2025-08-28 13:47:25.173 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
 2025-08-28 13:47:25.209 +00:00 [WRN] Failed to determine the https port for redirect.
 2025-08-28 13:47:25.504 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 332.1901ms
+2025-08-28 15:23:01.979 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 15:23:02.071 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 15:23:02.076 +00:00 [INF] Saved 0 entities to in-memory store.
+2025-08-28 15:23:02.145 +00:00 [INF] Starting Spider ConnectionManagement API
+2025-08-28 15:23:02.159 +00:00 [INF] Started connection health monitoring service
+2025-08-28 15:23:02.201 +00:00 [INF] Now listening on: http://localhost:5005
+2025-08-28 15:23:02.201 +00:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-08-28 15:23:02.201 +00:00 [INF] Hosting environment: Development
+2025-08-28 15:23:02.201 +00:00 [INF] Content root path: /home/runner/work/Spider/Spider/src/BoundedContexts/ConnectionManagement/Spider.ConnectionManagement.API
+2025-08-28 15:26:45.039 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
+2025-08-28 15:26:45.074 +00:00 [WRN] Failed to determine the https port for redirect.
+2025-08-28 15:26:45.359 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 320.6119ms
+2025-08-28 15:26:45.372 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/api/connections/protocols - null null
+2025-08-28 15:26:45.378 +00:00 [INF] Executing endpoint 'Spider.ConnectionManagement.API.Controllers.ConnectionsController.GetAvailableProtocols (Spider.ConnectionManagement.API)'
+2025-08-28 15:26:45.387 +00:00 [INF] Route matched with {action = "GetAvailableProtocols", controller = "Connections"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[System.Collections.Generic.IEnumerable`1[System.String]]] GetAvailableProtocols() on controller Spider.ConnectionManagement.API.Controllers.ConnectionsController (Spider.ConnectionManagement.API).
+2025-08-28 15:26:45.394 +00:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.Dictionary`2+KeyCollection[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Type, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-08-28 15:26:45.399 +00:00 [INF] Executed action Spider.ConnectionManagement.API.Controllers.ConnectionsController.GetAvailableProtocols (Spider.ConnectionManagement.API) in 9.0535ms
+2025-08-28 15:26:45.399 +00:00 [INF] Executed endpoint 'Spider.ConnectionManagement.API.Controllers.ConnectionsController.GetAvailableProtocols (Spider.ConnectionManagement.API)'
+2025-08-28 15:26:45.400 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/api/connections/protocols - 200 null application/json; charset=utf-8 27.6493ms
+2025-08-28 15:26:45.404 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/api/connections - null null
+2025-08-28 15:26:45.405 +00:00 [INF] Executing endpoint 'Spider.ConnectionManagement.API.Controllers.ConnectionsController.GetAllConnections (Spider.ConnectionManagement.API)'
+2025-08-28 15:26:45.409 +00:00 [INF] Route matched with {action = "GetAllConnections", controller = "Connections"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[System.Collections.Generic.IEnumerable`1[Spider.ConnectionManagement.Application.DTOs.ConnectionDto]]] GetAllConnections() on controller Spider.ConnectionManagement.API.Controllers.ConnectionsController (Spider.ConnectionManagement.API).
+2025-08-28 15:26:45.453 +00:00 [INF] Executing OkObjectResult, writing value of type 'System.Linq.Enumerable+SelectListIterator`2[[Spider.ConnectionManagement.Domain.Entities.Connection, Spider.ConnectionManagement.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null],[Spider.ConnectionManagement.Application.DTOs.ConnectionDto, Spider.ConnectionManagement.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-08-28 15:26:45.477 +00:00 [INF] Executed action Spider.ConnectionManagement.API.Controllers.ConnectionsController.GetAllConnections (Spider.ConnectionManagement.API) in 68.2545ms
+2025-08-28 15:26:45.477 +00:00 [INF] Executed endpoint 'Spider.ConnectionManagement.API.Controllers.ConnectionsController.GetAllConnections (Spider.ConnectionManagement.API)'
+2025-08-28 15:26:45.477 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/api/connections - 200 null application/json; charset=utf-8 73.4088ms
+2025-08-28 15:26:45.494 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/api/connections/statistics - null null
+2025-08-28 15:26:45.495 +00:00 [INF] Executing endpoint 'Spider.ConnectionManagement.API.Controllers.ConnectionsController.GetConnectionStatistics (Spider.ConnectionManagement.API)'
+2025-08-28 15:26:45.499 +00:00 [INF] Route matched with {action = "GetConnectionStatistics", controller = "Connections"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[Spider.ConnectionManagement.Application.Queries.ConnectionStatisticsDto]] GetConnectionStatistics() on controller Spider.ConnectionManagement.API.Controllers.ConnectionsController (Spider.ConnectionManagement.API).
+2025-08-28 15:26:45.509 +00:00 [INF] Executing OkObjectResult, writing value of type 'Spider.ConnectionManagement.Application.Queries.ConnectionStatisticsDto'.
+2025-08-28 15:26:45.512 +00:00 [INF] Executed action Spider.ConnectionManagement.API.Controllers.ConnectionsController.GetConnectionStatistics (Spider.ConnectionManagement.API) in 13.543ms
+2025-08-28 15:26:45.512 +00:00 [INF] Executed endpoint 'Spider.ConnectionManagement.API.Controllers.ConnectionsController.GetConnectionStatistics (Spider.ConnectionManagement.API)'
+2025-08-28 15:26:45.513 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/api/connections/statistics - 200 null application/json; charset=utf-8 18.329ms
+2025-08-28 15:27:30.286 +00:00 [INF] Request starting HTTP/1.1 POST http://localhost:5005/api/connections/test - application/json; charset=utf-8 119
+2025-08-28 15:27:30.286 +00:00 [INF] Executing endpoint 'Spider.ConnectionManagement.API.Controllers.ConnectionsController.TestConnection (Spider.ConnectionManagement.API)'
+2025-08-28 15:27:30.296 +00:00 [INF] Route matched with {action = "TestConnection", controller = "Connections"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[System.Boolean]] TestConnection(Spider.ConnectionManagement.API.Controllers.TestConnectionRequest) on controller Spider.ConnectionManagement.API.Controllers.ConnectionsController (Spider.ConnectionManagement.API).
+2025-08-28 15:27:30.366 +00:00 [ERR] Connection test failed for Modbus to 192.168.1.100:502
+System.MissingMethodException: Constructor on type 'Spider.ConnectionManagement.Infrastructure.Drivers.ModbusDriver' not found.
+   at System.RuntimeType.CreateInstanceImpl(BindingFlags bindingAttr, Binder binder, Object[] args, CultureInfo culture)
+   at Spider.ConnectionManagement.Infrastructure.Drivers.ProtocolDriverFactory.CreateDriver(String protocolType) in /home/runner/work/Spider/Spider/src/BoundedContexts/ConnectionManagement/Spider.ConnectionManagement.Infrastructure/Drivers/ProtocolDriverFactory.cs:line 38
+   at Spider.ConnectionManagement.Application.Handlers.TestConnectionCommandHandler.Handle(TestConnectionCommand request, CancellationToken cancellationToken) in /home/runner/work/Spider/Spider/src/BoundedContexts/ConnectionManagement/Spider.ConnectionManagement.Application/Handlers/AdditionalConnectionCommandHandlers.cs:line 128
+2025-08-28 15:27:30.373 +00:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType1`2[[System.Boolean, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-08-28 15:27:30.376 +00:00 [INF] Executed action Spider.ConnectionManagement.API.Controllers.ConnectionsController.TestConnection (Spider.ConnectionManagement.API) in 79.2847ms
+2025-08-28 15:27:30.376 +00:00 [INF] Executed endpoint 'Spider.ConnectionManagement.API.Controllers.ConnectionsController.TestConnection (Spider.ConnectionManagement.API)'
+2025-08-28 15:27:30.376 +00:00 [INF] Request finished HTTP/1.1 POST http://localhost:5005/api/connections/test - 200 null application/json; charset=utf-8 90.6791ms
+2025-08-28 15:28:59.618 +00:00 [INF] Application is shutting down...
+2025-08-28 15:30:26.666 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 15:30:26.810 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 15:30:26.820 +00:00 [INF] Saved 0 entities to in-memory store.
+2025-08-28 15:30:26.918 +00:00 [INF] Starting Spider ConnectionManagement API
+2025-08-28 15:30:26.934 +00:00 [INF] Started connection health monitoring service
+2025-08-28 15:30:26.981 +00:00 [INF] Now listening on: http://localhost:5005
+2025-08-28 15:30:26.981 +00:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-08-28 15:30:26.982 +00:00 [INF] Hosting environment: Development
+2025-08-28 15:30:26.982 +00:00 [INF] Content root path: /home/runner/work/Spider/Spider/src/BoundedContexts/ConnectionManagement/Spider.ConnectionManagement.API
+2025-08-28 15:30:54.523 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
+2025-08-28 15:30:54.558 +00:00 [WRN] Failed to determine the https port for redirect.
+2025-08-28 15:30:54.826 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 303.4714ms

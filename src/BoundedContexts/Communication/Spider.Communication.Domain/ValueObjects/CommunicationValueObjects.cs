@@ -1,4 +1,5 @@
 using Spider.Core.SharedKernel.Base;
+using System.Text.Json.Serialization;
 
 namespace Spider.Communication.Domain.ValueObjects;
 
@@ -27,8 +28,9 @@ public class LinkMetadata : ValueObject
         Tags = tags ?? new Dictionary<string, string>();
     }
 
-    // Parameterless constructor for EF Core
-    private LinkMetadata()
+    // Parameterless constructor for EF Core and JSON deserialization
+    [JsonConstructor]
+    public LinkMetadata()
     {
         Name = "Unknown";
         Description = string.Empty;
@@ -88,8 +90,9 @@ public class LinkConfiguration : ValueObject
         MaxRetryAttempts = maxRetryAttempts >= 0 ? maxRetryAttempts : throw new ArgumentException("Max retry attempts cannot be negative", nameof(maxRetryAttempts));
     }
 
-    // Parameterless constructor for EF Core
-    private LinkConfiguration()
+    // Parameterless constructor for EF Core and JSON deserialization  
+    [JsonConstructor]
+    public LinkConfiguration()
     {
         ConnectionString = "localhost:502";
         Parameters = new Dictionary<string, object>();
@@ -152,8 +155,9 @@ public class LinkHealth : ValueObject
         Metrics = metrics ?? new Dictionary<string, object>();
     }
 
-    // Parameterless constructor for EF Core
-    private LinkHealth()
+    // Parameterless constructor for EF Core and JSON deserialization
+    [JsonConstructor]
+    public LinkHealth()
     {
         IsHealthy = false;
         Status = "Unknown";

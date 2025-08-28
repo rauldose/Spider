@@ -266,6 +266,25 @@
                             <textarea class="form-control" rows="2" @bind="newLink.Description"></textarea>
                         </div>
 
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Host/IP Address *</label>
+                                    <input type="text" class="form-control" 
+                                           value="@GetConfigValue("Host")" 
+                                           @onchange="@(e => SetConfigValue("Host", e.Value?.ToString() ?? ""))">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Port *</label>
+                                    <input type="number" class="form-control" 
+                                           value="@GetConfigValue("Port")" 
+                                           @onchange="@(e => SetConfigValue("Port", e.Value?.ToString() ?? ""))">
+                                </div>
+                            </div>
+                        </div>
+
                         @if (newLink.ProtocolType == "Mock")
                         {
                             <div class="row">
@@ -283,27 +302,6 @@
                                         <input type="number" class="form-control" 
                                                value="@GetConfigValue("PollingInterval")" 
                                                @onchange="@(e => SetConfigValue("PollingInterval", e.Value?.ToString() ?? "1000"))">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label">Data Point Count</label>
-                                        <input type="number" class="form-control" 
-                                               value="@GetConfigValue("DataPointCount")" 
-                                               @onchange="@(e => SetConfigValue("DataPointCount", e.Value?.ToString() ?? "10"))">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label">Enable Random Values</label>
-                                        <select class="form-select" 
-                                                value="@GetConfigValue("EnableRandomValues")" 
-                                                @onchange="@(e => SetConfigValue("EnableRandomValues", e.Value?.ToString() ?? "true"))">
-                                            <option value="true">Yes</option>
-                                            <option value="false">No</option>
-                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -426,10 +424,10 @@
         { 
             Configuration = new Dictionary<string, object>
             {
+                ["Host"] = "192.168.1.100",
+                ["Port"] = 502,
                 ["DeviceId"] = "MockDevice01",
-                ["PollingInterval"] = 1000,
-                ["DataPointCount"] = 10,
-                ["EnableRandomValues"] = true
+                ["PollingInterval"] = 1000
             }
         };
         showCreateModal = true;

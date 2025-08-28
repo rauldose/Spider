@@ -228,6 +228,9 @@ public class CreateLinkFormModel
     
     public CreateLinkDto ToDto()
     {
+        // Build connection string based on protocol type
+        var connectionString = BuildConnectionString();
+        
         return new CreateLinkDto
         {
             Name = this.Name,
@@ -235,8 +238,33 @@ public class CreateLinkFormModel
             ProtocolType = this.ProtocolType,
             Configuration = new LinkConfigurationDto
             {
-                Parameters = this.Configuration
+                ConnectionString = connectionString,
+                Parameters = this.Configuration,
+                ConnectionTimeout = TimeSpan.FromSeconds(30),
+                ReadTimeout = TimeSpan.FromSeconds(5),
+                MaxRetries = 3,
+                EnableHeartbeat = true,
+                HeartbeatInterval = TimeSpan.FromSeconds(30)
             }
+        };
+    }
+    
+    private string BuildConnectionString()
+    {
+        var host = Configuration.TryGetValue("Host", out var hostVal) ? hostVal?.ToString() : "localhost";
+        var port = Configuration.TryGetValue("Port", out var portVal) ? portVal?.ToString() : "502";
+        
+        return ProtocolType?.ToLower() switch
+        {
+            "modbus" => $"modbus://tcp:{host}:{port}",
+            "opcua" => $"opc.tcp://{host}:{port}/",
+            "mqtt" => $"mqtt://{host}:{port}",
+            "ethernetip" => $"ethernetip://{host}:{port}",
+            "siemens" => $"siemens://{host}:{port}",
+            "omron" => $"omron://{host}:{port}",
+            "mitsubishi" => $"mitsubishi://{host}:{port}",
+            "mock" => $"mock://test:{port}",
+            _ => $"{ProtocolType?.ToLower()}://{host}:{port}"
         };
     }
 }
