@@ -369,6 +369,7 @@
         {
             ApplyFilters();
         }
+        await Task.CompletedTask;
     }
 
     private void SetSelectionMode(string mode)
@@ -482,7 +483,7 @@
             await OnDataPointsChanged.InvokeAsync(DataPoints);
             CloseEditModal();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Handle error
         }
@@ -500,7 +501,7 @@
                 _selectedDataPoints.Remove(dataPoint);
                 await OnDataPointsChanged.InvokeAsync(DataPoints);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Handle error
             }
@@ -524,7 +525,7 @@
                 _selectedDataPoints.Clear();
                 await OnDataPointsChanged.InvokeAsync(DataPoints);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Handle error
             }
