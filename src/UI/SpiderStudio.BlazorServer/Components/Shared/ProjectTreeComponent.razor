@@ -1,100 +1,162 @@
 @using Spider.DeviceManagement.Application.DTOs
+@using Spider.ProjectManagement.Application.DTOs
 @using SpiderStudio.BlazorServer.Services
 @inject DeviceManagementApiService DeviceApi
+@inject ProjectManagementApiService ProjectApi
 @inject NavigationManager Navigation
 @inject ILogger<ProjectTreeComponent> Logger
 
 <div class="project-tree">
-    <!-- Project Root -->
-    <div class="tree-node root-node">
-        <div class="tree-item" @onclick='() => ToggleNode("project")'>>
-            <i class="bi @(IsExpanded("project") ? "bi-folder2-open" : "bi-folder2") tree-icon"></i>
-            <span class="tree-text">Spider Project</span>
-        </div>
-        
-        @if (IsExpanded("project"))
+    @if (_projects.Any())
+    {
+        @foreach (var project in _projects.Where(p => p.ParentProjectId == null))
         {
-            <!-- Devices Node -->
+            @RenderProjectNode(project)
+        }
+    }
+    else
+    {
+        <!-- No projects message -->
+        <div class="tree-node">
+            <div class="tree-item">
+                <i class="bi bi-folder tree-icon"></i>
+                <span class="tree-text text-muted">No projects found</span>
+            </div>
             <div class="tree-children">
                 <div class="tree-node">
-                    <div class="tree-item" @onclick='() => ToggleNode("devices")'>>
-                        <i class="bi @(IsExpanded("devices") ? "bi-folder2-open" : "bi-folder2") tree-icon"></i>
-                        <span class="tree-text">Devices</span>
+                    <div class="tree-item" @onclick='() => NavigateToPath("/projects")'>
+                        <i class="bi bi-plus-circle tree-icon"></i>
+                        <span class="tree-text">Create Project</span>
                     </div>
-                    
-                    @if (IsExpanded("devices"))
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private RenderFragment RenderProjectNode(ProjectDto project) => __builder =>
+    {
+        <div class="tree-node">
+            <div class="tree-item @(IsSelected($"project-{project.Id}") ? "selected" : "")" @onclick='() => ToggleNode($"project-{project.Id}")'>
+                <i class="bi @(IsExpanded($"project-{project.Id}") ? "bi-folder2-open" : "bi-folder2") tree-icon"></i>
+                <span class="tree-text">@project.Name</span>
+                <span class="project-status @(project.Status.ToLower())">@project.Status[0]</span>
+            </div>
+            
+            @if (IsExpanded($"project-{project.Id}"))
+            {
+                <div class="tree-children">
+                    <!-- Child Projects -->
+                    @if (project.ChildProjects.Any())
                     {
-                        <div class="tree-children">
-                            @foreach (var device in _devices)
+                        <div class="tree-node">
+                            <div class="tree-item" @onclick='() => ToggleNode($"subprojects-{project.Id}")'>
+                                <i class="bi @(IsExpanded($"subprojects-{project.Id}") ? "bi-folder2-open" : "bi-folder2") tree-icon"></i>
+                                <span class="tree-text">Sub Projects (@project.ChildProjects.Count)</span>
+                            </div>
+                            @if (IsExpanded($"subprojects-{project.Id}"))
                             {
-                                <div class="tree-node device-node">
-                                    <div class="tree-item @(IsSelected($"device-{device.Id}") ? "selected" : "")" 
-                                         @onclick="() => SelectDevice(device)">
-                                        <i class="bi bi-cpu tree-icon"></i>
-                                        <span class="tree-text">@device.Name</span>
-                                        <span class="device-status @(device.Status == "Connected" ? "online" : "offline")"></span>
-                                    </div>
+                                <div class="tree-children">
+                                    @foreach (var childProject in project.ChildProjects)
+                                    {
+                                        @RenderProjectNode(childProject)
+                                    }
                                 </div>
                             }
                         </div>
                     }
-                </div>
 
-                <!-- APIs Node -->
-                <div class="tree-node">
-                    <div class="tree-item" @onclick='() => ToggleNode("apis")'>>
-                        <i class="bi @(IsExpanded("apis") ? "bi-folder2-open" : "bi-folder2") tree-icon"></i>
-                        <span class="tree-text">APIs</span>
-                    </div>
-                    
-                    @if (IsExpanded("apis"))
-                    {
-                        <div class="tree-children">
-                            <div class="tree-node">
-                                <div class="tree-item" @onclick='() => NavigateToPath("/devices")'>>
-                                    <i class="bi bi-gear tree-icon"></i>
-                                    <span class="tree-text">Device Management</span>
-                                </div>
-                            </div>
-                            <div class="tree-node">
-                                <div class="tree-item" @onclick='() => NavigateToPath("/drivers")'>>
-                                    <i class="bi bi-cpu tree-icon"></i>
-                                    <span class="tree-text">Driver Manager</span>
-                                </div>
-                            </div>
+                    <!-- Devices Node -->
+                    <div class="tree-node">
+                        <div class="tree-item" @onclick='() => ToggleNode($"devices-{project.Id}")'>
+                            <i class="bi @(IsExpanded($"devices-{project.Id}") ? "bi-folder2-open" : "bi-folder2") tree-icon"></i>
+                            <span class="tree-text">Devices</span>
                         </div>
-                    }
-                </div>
+                        
+                        @if (IsExpanded($"devices-{project.Id}"))
+                        {
+                            <div class="tree-children">
+                                @foreach (var device in _devices.Where(d => d.ProjectId == project.Id))
+                                {
+                                    <div class="tree-node device-node">
+                                        <div class="tree-item @(IsSelected($"device-{device.Id}") ? "selected" : "")" 
+                                             @onclick="() => SelectDevice(device)">
+                                            <i class="bi bi-cpu tree-icon"></i>
+                                            <span class="tree-text">@device.Name</span>
+                                            <span class="device-status @(device.Status == "Connected" ? "online" : "offline")"></span>
+                                        </div>
+                                    </div>
+                                }
+                                @if (!_devices.Any(d => d.ProjectId == project.Id))
+                                {
+                                    <div class="tree-node">
+                                        <div class="tree-item" @onclick='() => NavigateToPath("/devices")'>
+                                            <i class="bi bi-plus-circle tree-icon"></i>
+                                            <span class="tree-text text-muted">Add Device</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
 
-                <!-- Links Node -->
-                <div class="tree-node">
-                    <div class="tree-item" @onclick='() => ToggleNode("links")'>>
-                        <i class="bi @(IsExpanded("links") ? "bi-folder2-open" : "bi-folder2") tree-icon"></i>
-                        <span class="tree-text">Links</span>
-                    </div>
-                    
-                    @if (IsExpanded("links"))
-                    {
-                        <div class="tree-children">
-                            <div class="tree-node">
-                                <div class="tree-item" @onclick='() => NavigateToPath("/connections")'>>
-                                    <i class="bi bi-link tree-icon"></i>
-                                    <span class="tree-text">Connections</span>
-                                </div>
-                            </div>
-                            <div class="tree-node">
-                                <div class="tree-item" @onclick='() => NavigateToPath("/communication")'>>
-                                    <i class="bi bi-broadcast tree-icon"></i>
-                                    <span class="tree-text">Communication</span>
-                                </div>
-                            </div>
+                    <!-- Connections Node -->
+                    <div class="tree-node">
+                        <div class="tree-item" @onclick='() => ToggleNode($"connections-{project.Id}")'>
+                            <i class="bi @(IsExpanded($"connections-{project.Id}") ? "bi-folder2-open" : "bi-folder2") tree-icon"></i>
+                            <span class="tree-text">Connections</span>
                         </div>
-                    }
+                        
+                        @if (IsExpanded($"connections-{project.Id}"))
+                        {
+                            <div class="tree-children">
+                                <div class="tree-node">
+                                    <div class="tree-item" @onclick='() => NavigateToPath("/connections")'>
+                                        <i class="bi bi-link tree-icon"></i>
+                                        <span class="tree-text">Manage Connections</span>
+                                    </div>
+                                </div>
+                                <div class="tree-node">
+                                    <div class="tree-item" @onclick='() => NavigateToPath("/communication")'>
+                                        <i class="bi bi-broadcast tree-icon"></i>
+                                        <span class="tree-text">Communication</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Management Node -->
+                    <div class="tree-node">
+                        <div class="tree-item" @onclick='() => ToggleNode($"management-{project.Id}")'>
+                            <i class="bi @(IsExpanded($"management-{project.Id}") ? "bi-folder2-open" : "bi-folder2") tree-icon"></i>
+                            <span class="tree-text">Management</span>
+                        </div>
+                        
+                        @if (IsExpanded($"management-{project.Id}"))
+                        {
+                            <div class="tree-children">
+                                <div class="tree-node">
+                                    <div class="tree-item" @onclick='() => NavigateToPath("/drivers")'>
+                                        <i class="bi bi-cpu tree-icon"></i>
+                                        <span class="tree-text">Drivers</span>
+                                    </div>
+                                </div>
+                                <div class="tree-node">
+                                    <div class="tree-item" @onclick='() => NavigateToPath("/tags")'>
+                                        <i class="bi bi-tag tree-icon"></i>
+                                        <span class="tree-text">Tags</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
                 </div>
-            </div>
-        }
-    </div>
-</div>
+            }
+        </div>
+    };
+}
 
 <style>
 .project-tree {
@@ -154,7 +216,32 @@
     box-shadow: 0 0 4px #10b981;
 }
 
-.device-status.offline {
+.project-status {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    margin-left: auto;
+    font-size: 8px;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    line-height: 12px;
+    flex-shrink: 0;
+}
+
+.project-status.active {
+    background: #10b981;
+}
+
+.project-status.draft {
+    background: #3b82f6;
+}
+
+.project-status.inactive {
+    background: #f59e0b;
+}
+
+.project-status.archived {
     background: #6b7280;
 }
 
@@ -164,21 +251,57 @@
 </style>
 
 @code {
+    private List<ProjectDto> _projects = new();
     private List<DeviceDto> _devices = new();
-    private HashSet<string> _expandedNodes = new() { "project", "devices" };
+    private HashSet<string> _expandedNodes = new();
     private string? _selectedNode;
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadProjects();
         await LoadDevices();
+    }
+
+    public async Task RefreshAsync()
+    {
+        await LoadProjects();
+        await LoadDevices();
+        StateHasChanged();
+    }
+
+    private async Task LoadProjects()
+    {
+        try
+        {
+            _projects = (await ProjectApi.GetAllProjectsAsync()).ToList();
+            
+            // Auto-expand first project if available
+            if (_projects.Any() && !_expandedNodes.Any())
+            {
+                var firstProject = _projects.First();
+                _expandedNodes.Add($"project-{firstProject.Id}");
+            }
+            
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load projects for tree view");
+        }
     }
 
     private async Task LoadDevices()
     {
         try
         {
-            var projectId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-            _devices = (await DeviceApi.GetDevicesByProjectAsync(projectId)).ToList();
+            // Load devices for all projects
+            var allDevices = new List<DeviceDto>();
+            foreach (var project in _projects)
+            {
+                var projectDevices = await DeviceApi.GetDevicesByProjectAsync(project.Id);
+                allDevices.AddRange(projectDevices);
+            }
+            _devices = allDevices;
             StateHasChanged();
         }
         catch (Exception ex)

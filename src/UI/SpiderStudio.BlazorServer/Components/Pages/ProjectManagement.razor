@@ -255,15 +255,33 @@
                     <button type="button" class="btn-close" @onclick="HideCreateProjectForm"></button>
                 </div>
                 <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            @_errorMessage
+                        </div>
+                    }
+                    
                     <form @onsubmit="CreateProject" @onsubmit:preventDefault="true">
                         <div class="mb-3">
                             <label for="projectName" class="form-label">Project Name *</label>
-                            <input type="text" class="form-control" id="projectName" @bind="_newProject.Name" required>
+                            <input type="text" class="form-control @(_validationErrors.ContainsKey("Name") ? "is-invalid" : "")" 
+                                   id="projectName" @bind="_newProject.Name" required>
+                            @if (_validationErrors.ContainsKey("Name"))
+                            {
+                                <div class="invalid-feedback">@_validationErrors["Name"]</div>
+                            }
                         </div>
                         
                         <div class="mb-3">
                             <label for="projectDescription" class="form-label">Description *</label>
-                            <textarea class="form-control" id="projectDescription" rows="3" @bind="_newProject.Description" required></textarea>
+                            <textarea class="form-control @(_validationErrors.ContainsKey("Description") ? "is-invalid" : "")" 
+                                      id="projectDescription" rows="3" @bind="_newProject.Description" required></textarea>
+                            @if (_validationErrors.ContainsKey("Description"))
+                            {
+                                <div class="invalid-feedback">@_validationErrors["Description"]</div>
+                            }
                         </div>
 
                         <div class="mb-3">
@@ -279,7 +297,12 @@
 
                         <div class="mb-3">
                             <label for="createdBy" class="form-label">Created By *</label>
-                            <input type="text" class="form-control" id="createdBy" @bind="_newProject.CreatedBy" required>
+                            <input type="text" class="form-control @(_validationErrors.ContainsKey("CreatedBy") ? "is-invalid" : "")" 
+                                   id="createdBy" @bind="_newProject.CreatedBy" required>
+                            @if (_validationErrors.ContainsKey("CreatedBy"))
+                            {
+                                <div class="invalid-feedback">@_validationErrors["CreatedBy"]</div>
+                            }
                         </div>
 
                         <h6>Configuration Settings</h6>
@@ -356,6 +379,8 @@
     private bool _creating = false;
     private int _retentionDays = 30;
     private Guid? _editingProjectId = null;
+    private string? _errorMessage = null;
+    private Dictionary<string, string> _validationErrors = new();
 
     private CreateProjectFormModel _newProject = new();
 
@@ -406,6 +431,8 @@
         _newProject = new CreateProjectFormModel();
         _retentionDays = 30;
         _editingProjectId = null;
+        _errorMessage = null;
+        _validationErrors.Clear();
         _showCreateForm = true;
     }
 
@@ -414,14 +441,22 @@
         _showCreateForm = false;
         _newProject = new CreateProjectFormModel();
         _editingProjectId = null;
+        _errorMessage = null;
+        _validationErrors.Clear();
     }
 
     private async Task CreateProject()
     {
-        if (string.IsNullOrWhiteSpace(_newProject.Name) || 
-            string.IsNullOrWhiteSpace(_newProject.Description) || 
-            string.IsNullOrWhiteSpace(_newProject.CreatedBy))
+        // Clear previous errors
+        _errorMessage = null;
+        _validationErrors.Clear();
+        
+        // Validate form
+        if (!ValidateForm())
+        {
+            StateHasChanged();
             return;
+        }
 
         _creating = true;
         StateHasChanged();
@@ -459,6 +494,11 @@
 
                     await ProjectApi.UpdateProjectConfigurationAsync(_editingProjectId.Value, configUpdateDto);
                 }
+                else
+                {
+                    _errorMessage = "Failed to update project. Please check your inputs and try again.";
+                    return;
+                }
             }
             else
             {
@@ -481,20 +521,78 @@
                     _newProject.CreatedBy
                 );
 
-                await ProjectApi.CreateProjectAsync(createDto);
+                var result = await ProjectApi.CreateProjectAsync(createDto);
+                if (result == null)
+                {
+                    _errorMessage = "Failed to create project. Please check your inputs and try again.";
+                    return;
+                }
             }
             
             await LoadData();
             HideCreateProjectForm();
+            
+            // Notify parent components to refresh
+            await NotifyProjectTreeRefresh();
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error creating/updating project");
+            _errorMessage = $"An error occurred: {ex.Message}";
         }
         finally
         {
             _creating = false;
             StateHasChanged();
+        }
+    }
+
+    private bool ValidateForm()
+    {
+        bool isValid = true;
+        
+        if (string.IsNullOrWhiteSpace(_newProject.Name))
+        {
+            _validationErrors["Name"] = "Project name is required.";
+            isValid = false;
+        }
+        else if (_newProject.Name.Length < 2)
+        {
+            _validationErrors["Name"] = "Project name must be at least 2 characters long.";
+            isValid = false;
+        }
+        
+        if (string.IsNullOrWhiteSpace(_newProject.Description))
+        {
+            _validationErrors["Description"] = "Project description is required.";
+            isValid = false;
+        }
+        else if (_newProject.Description.Length < 10)
+        {
+            _validationErrors["Description"] = "Project description must be at least 10 characters long.";
+            isValid = false;
+        }
+        
+        if (string.IsNullOrWhiteSpace(_newProject.CreatedBy))
+        {
+            _validationErrors["CreatedBy"] = "Created by field is required.";
+            isValid = false;
+        }
+        
+        return isValid;
+    }
+
+    private async Task NotifyProjectTreeRefresh()
+    {
+        try
+        {
+            // Use JavaScript to trigger tree refresh if needed
+            // This is a simple approach - in a real app you might use a proper event bus
+            Logger.LogInformation("Project created/updated - tree should refresh");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Could not notify tree refresh");
         }
     }
 

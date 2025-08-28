@@ -179,3 +179,15 @@ System.MissingMethodException: Constructor on type 'Spider.ConnectionManagement.
 2025-08-28 16:01:21.787 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
 2025-08-28 16:01:21.821 +00:00 [WRN] Failed to determine the https port for redirect.
 2025-08-28 16:01:22.131 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 344.7584ms
+2025-08-28 16:29:52.621 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 16:29:52.718 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 16:29:52.724 +00:00 [INF] Saved 0 entities to in-memory store.
+2025-08-28 16:29:52.824 +00:00 [INF] Starting Spider ConnectionManagement API
+2025-08-28 16:29:52.840 +00:00 [INF] Started connection health monitoring service
+2025-08-28 16:29:52.889 +00:00 [INF] Now listening on: http://localhost:5005
+2025-08-28 16:29:52.890 +00:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-08-28 16:29:52.890 +00:00 [INF] Hosting environment: Development
+2025-08-28 16:29:52.890 +00:00 [INF] Content root path: /home/runner/work/Spider/Spider/src/BoundedContexts/ConnectionManagement/Spider.ConnectionManagement.API
+2025-08-28 16:30:30.115 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
+2025-08-28 16:30:30.149 +00:00 [WRN] Failed to determine the https port for redirect.
+2025-08-28 16:30:30.454 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 340.3013ms

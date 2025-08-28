@@ -68,7 +68,7 @@
         <!-- Left Panel: Project Tree -->
         <div class="project-panel">
             <div class="tree-container">
-                <ProjectTreeComponent />
+                <ProjectTreeComponent @ref="_projectTreeComponent" />
             </div>
             <div class="tree-toolbar">
                 <button class="tree-btn" title="Add" @onclick="ShowCreateProjectModal">
@@ -103,6 +103,14 @@
                     <button type="button" class="btn-close" @onclick="HideCreateProjectModal"></button>
                 </div>
                 <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            @_errorMessage
+                        </div>
+                    }
+                    
                     <div class="mb-3">
                         <label class="form-label">Project Name</label>
                         <input type="text" class="form-control" @bind="_newProjectName" placeholder="Enter project name" />
@@ -128,26 +136,46 @@
 </div>
 
 @code {
+    private ProjectTreeComponent? _projectTreeComponent;
     private bool _showCreateProjectModal = false;
     private string _newProjectName = "";
     private string _newProjectDescription = "";
+    private string? _errorMessage = null;
 
     private void ShowCreateProjectModal()
     {
         _showCreateProjectModal = true;
         _newProjectName = "";
         _newProjectDescription = "";
+        _errorMessage = null;
         StateHasChanged();
     }
 
     private void HideCreateProjectModal()
     {
         _showCreateProjectModal = false;
+        _errorMessage = null;
         StateHasChanged();
     }
 
     private async Task CreateProject()
     {
+        _errorMessage = null;
+        
+        if (string.IsNullOrWhiteSpace(_newProjectName))
+        {
+            _errorMessage = "Project name is required.";
+            StateHasChanged();
+            return;
+        }
+        
+        if (_newProjectName.Length < 2)
+        {
+            _errorMessage = "Project name must be at least 2 characters long.";
+            StateHasChanged();
+            return;
+        }
+
         try
         {
             var createProjectDto = new CreateProjectDto(
@@ -162,21 +190,26 @@
             
             if (createdProject != null)
             {
-                // Success - you could add a toast notification here
-                await JSRuntime.InvokeVoidAsync("alert", $"Project '{createdProject.Name}' created successfully!");
                 HideCreateProjectModal();
                 
-                // You could refresh the project tree here if it was showing projects
+                // Refresh the project tree
+                if (_projectTreeComponent != null)
+                {
+                    await _projectTreeComponent.RefreshAsync();
+                }
+                
                 StateHasChanged();
             }
             else
             {
-                await JSRuntime.InvokeVoidAsync("alert", "Failed to create project. Please try again.");
+                _errorMessage = "Failed to create project. Please check your inputs and try again.";
+                StateHasChanged();
             }
         }
         catch (Exception ex)
         {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error creating project: {ex.Message}");
+            _errorMessage = $"Error creating project: {ex.Message}";
+            StateHasChanged();
         }
     }
 
