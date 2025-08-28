@@ -4,7 +4,7 @@
 @inject DataAcquisitionApiService DataApi
 @inject IJSRuntime JSRuntime
 
-<div class="tags-tab">
+<div class="tags-tab" @onkeydown="OnKeyDown" tabindex="0" style="outline: none;">
     <!-- Filter Panel -->
     <div class="card mb-4">
         <div class="card-header">
@@ -149,7 +149,9 @@
                             @foreach (var (dataPoint, index) in _filteredDataPoints.Select((dp, i) => (dp, i)))
                             {
                                 <tr class="@(GetRowClass(dataPoint))" @onclick="() => ToggleSelection(dataPoint)" 
-                                    @ondblclick="() => EditDataPoint(dataPoint)">
+                                    @ondblclick="() => EditDataPoint(dataPoint)"
+                                    @oncontextmenu="@((e) => ShowContextMenu(e, dataPoint))"
+                                    @oncontextmenu:preventDefault="true">
                                     <td>
                                         <input type="checkbox" class="form-check-input" 
                                                checked="@_selectedDataPoints.Contains(dataPoint)" 
@@ -247,6 +249,57 @@
     </div>
 }
 
+<!-- Context Menu -->
+@if (_showContextMenu)
+{
+    <div class="position-fixed bg-white border shadow rounded p-2" 
+         style="left: @(_contextMenuX)px; top: @(_contextMenuY)px; z-index: 1050; min-width: 200px;"
+         @onclick:stopPropagation="true">
+        <div class="d-flex flex-column">
+            <button type="button" class="btn btn-sm btn-outline-primary mb-1" 
+                    @onclick="() => EditContextDataPoint()">
+                <i class="bi bi-pencil me-2"></i>Edit
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-info mb-1" 
+                    @onclick="() => DuplicateContextDataPoint()">
+                <i class="bi bi-copy me-2"></i>Duplicate
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary mb-1" 
+                    @onclick="() => CopyContextDataPoint()">
+                <i class="bi bi-clipboard me-2"></i>Copy
+            </button>
+            @if (_clipboard.Any())
+            {
+                <button type="button" class="btn btn-sm btn-outline-secondary mb-1" 
+                        @onclick="() => PasteAtContext()">
+                    <i class="bi bi-clipboard-plus me-2"></i>Paste
+                </button>
+            }
+            <hr class="my-1" />
+            <button type="button" class="btn btn-sm btn-outline-warning mb-1" 
+                    @onclick="() => ToggleMonitoring()">
+                <i class="bi bi-eye me-2"></i>Toggle Monitoring
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-success mb-1" 
+                    @onclick="() => ForceRead()">
+                <i class="bi bi-arrow-clockwise me-2"></i>Force Read
+            </button>
+            <hr class="my-1" />
+            <button type="button" class="btn btn-sm btn-outline-danger" 
+                    @onclick="() => DeleteContextDataPoint()">
+                <i class="bi bi-trash me-2"></i>Delete
+            </button>
+        </div>
+    </div>
+}
+
+<!-- Click outside to close context menu -->
+@if (_showContextMenu)
+{
+    <div class="position-fixed w-100 h-100" style="top: 0; left: 0; z-index: 1040;" 
+         @onclick="HideContextMenu"></div>
+}
+
 @code {
     [Parameter] public Guid DeviceId { get; set; }
     [Parameter] public List<DataPointDto> DataPoints { get; set; } = new();
@@ -265,6 +318,12 @@
     
     private bool _showEditModal = false;
     private DataPointDto? _editingDataPoint;
+
+    // Context menu state
+    private bool _showContextMenu = false;
+    private DataPointDto? _contextMenuDataPoint;
+    private int _contextMenuX = 0;
+    private int _contextMenuY = 0;
 
     private IEnumerable<DataPointDto> _filteredDataPoints => FilterDataPoints();
 
@@ -501,14 +560,62 @@
 
     private async Task ImportDataPoints()
     {
-        // TODO: Implement import functionality
-        await JSRuntime.InvokeVoidAsync("alert", "Import functionality coming soon!");
+        try
+        {
+            // For now, show a message about the expected format
+            await JSRuntime.InvokeVoidAsync("alert", 
+                "Import Format:\n" +
+                "CSV: Name,Address,DataType,Description,ScanInterval\n" +
+                "JSON: Array of DataPoint objects\n\n" +
+                "Example CSV:\n" +
+                "Temperature,40001,Float,Room Temperature,1000\n" +
+                "Pressure,40002,Float,System Pressure,1000");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Import error: {ex.Message}");
+        }
     }
 
     private async Task ExportDataPoints()
     {
-        // TODO: Implement export functionality
-        await JSRuntime.InvokeVoidAsync("alert", "Export functionality coming soon!");
+        try
+        {
+            var dataToExport = _selectedDataPoints.Any() ? _selectedDataPoints : _filteredDataPoints;
+            
+            if (!dataToExport.Any())
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "No data points to export");
+                return;
+            }
+
+            // Create CSV content
+            var csvContent = "Name,Address,DataType,Description,ScanInterval,LastValue,Quality,LastScan\n";
+            
+            foreach (var dp in dataToExport)
+            {
+                csvContent += $"\"{dp.Name}\",\"{dp.Address}\",\"{dp.DataType}\",\"{dp.Description ?? ""}\",{dp.ScanInterval},\"{dp.LastValue ?? ""}\",\"{dp.LastValueQuality ?? ""}\",\"{dp.LastScanTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? ""}\"\n";
+            }
+
+            // Download as CSV file
+            var fileName = $"DataPoints_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            var base64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(csvContent));
+            var dataUrl = $"data:text/csv;base64,{base64}";
+
+            await JSRuntime.InvokeVoidAsync("eval", 
+                "(() => {" +
+                $"const link = document.createElement('a');" +
+                $"link.href = '{dataUrl}';" +
+                $"link.download = '{fileName}';" +
+                $"link.click();" +
+                "})()");
+
+            await JSRuntime.InvokeVoidAsync("alert", $"Exported {dataToExport.Count()} data points to {fileName}");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Export error: {ex.Message}");
+        }
     }
 
     private void CloseEditModal()
@@ -516,6 +623,170 @@
         _showEditModal = false;
         _editingDataPoint = null;
         StateHasChanged();
+    }
+
+    // Context menu methods
+    private void ShowContextMenu(MouseEventArgs e, DataPointDto dataPoint)
+    {
+        _contextMenuDataPoint = dataPoint;
+        _contextMenuX = (int)e.ClientX;
+        _contextMenuY = (int)e.ClientY;
+        _showContextMenu = true;
+        StateHasChanged();
+    }
+
+    private void HideContextMenu()
+    {
+        _showContextMenu = false;
+        _contextMenuDataPoint = null;
+        StateHasChanged();
+    }
+
+    private void EditContextDataPoint()
+    {
+        if (_contextMenuDataPoint != null)
+        {
+            EditDataPoint(_contextMenuDataPoint);
+        }
+        HideContextMenu();
+    }
+
+    private void DuplicateContextDataPoint()
+    {
+        if (_contextMenuDataPoint != null)
+        {
+            DuplicateDataPoint(_contextMenuDataPoint);
+        }
+        HideContextMenu();
+    }
+
+    private void CopyContextDataPoint()
+    {
+        if (_contextMenuDataPoint != null)
+        {
+            _clipboard.Clear();
+            _clipboard.Add(_contextMenuDataPoint);
+        }
+        HideContextMenu();
+    }
+
+    private void PasteAtContext()
+    {
+        PasteDataPoints();
+        HideContextMenu();
+    }
+
+    private async Task ToggleMonitoring()
+    {
+        // TODO: Implement monitoring toggle
+        await JSRuntime.InvokeVoidAsync("alert", "Monitoring toggle functionality coming soon!");
+        HideContextMenu();
+    }
+
+    private async Task ForceRead()
+    {
+        // TODO: Implement force read
+        await JSRuntime.InvokeVoidAsync("alert", "Force read functionality coming soon!");
+        HideContextMenu();
+    }
+
+    private async Task DeleteContextDataPoint()
+    {
+        if (_contextMenuDataPoint != null)
+        {
+            await DeleteDataPoint(_contextMenuDataPoint);
+        }
+        HideContextMenu();
+    }
+
+    private void DuplicateDataPoint(DataPointDto dataPoint)
+    {
+        var duplicateDataPoint = new DataPointDto(
+            Guid.Empty,
+            $"{dataPoint.Name}_Copy",
+            dataPoint.Description,
+            dataPoint.Address,
+            dataPoint.DataType,
+            DeviceId,
+            dataPoint.IsEnabled,
+            dataPoint.ScanInterval,
+            null,
+            "Good",
+            null);
+        DataPoints.Add(duplicateDataPoint);
+        StateHasChanged();
+    }
+
+    // Keyboard shortcuts
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.CtrlKey)
+        {
+            switch (e.Key.ToLower())
+            {
+                case "a": // Ctrl+A - Select All
+                    _selectAll = true;
+                    _selectedDataPoints.UnionWith(_filteredDataPoints);
+                    StateHasChanged();
+                    break;
+                    
+                case "c": // Ctrl+C - Copy
+                    if (_selectedDataPoints.Any())
+                    {
+                        _clipboard = _selectedDataPoints.ToList();
+                        await JSRuntime.InvokeVoidAsync("alert", $"Copied {_clipboard.Count} data points to clipboard");
+                    }
+                    break;
+                    
+                case "v": // Ctrl+V - Paste
+                    if (_clipboard.Any())
+                    {
+                        PasteDataPoints();
+                        await JSRuntime.InvokeVoidAsync("alert", $"Pasted {_clipboard.Count} data points");
+                    }
+                    break;
+                    
+                case "n": // Ctrl+N - New
+                    AddDataPoint();
+                    break;
+            }
+        }
+        else
+        {
+            switch (e.Key)
+            {
+                case "Delete": // Delete selected
+                    if (_selectedDataPoints.Any())
+                    {
+                        await RemoveSelected();
+                    }
+                    break;
+                    
+                case "F2": // Edit selected (if single selection)
+                    if (_selectedDataPoints.Count == 1)
+                    {
+                        EditDataPoint(_selectedDataPoints.First());
+                    }
+                    break;
+                    
+                case "Escape": // Clear selection or close modals
+                    if (_showEditModal)
+                    {
+                        CloseEditModal();
+                    }
+                    else if (_showContextMenu)
+                    {
+                        HideContextMenu();
+                    }
+                    else
+                    {
+                        _selectedDataPoints.Clear();
+                        _selectAll = false;
+                        StateHasChanged();
+                    }
+                    break;
+            }
+        }
     }
 
     private string GetRowClass(DataPointDto dataPoint)

@@ -1,0 +1,285 @@
+@using Spider.ProjectManagement.Application.DTOs
+@using Spider.DeviceManagement.Application.DTOs
+@using SpiderStudio.BlazorServer.Services
+@inject ProjectManagementApiService ProjectApi
+@inject DeviceManagementApiService DeviceApi
+@inject NavigationManager Navigation
+
+<div class="project-tree">
+    <!-- Project Tree Header -->
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="bi bi-folder-fill me-2"></i>Project Explorer
+                </h6>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-primary" 
+                            @onclick="RefreshTree" title="Refresh">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-success" 
+                            @onclick="ExpandAll" title="Expand All">
+                        <i class="bi bi-plus-square"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" 
+                            @onclick="CollapseAll" title="Collapse All">
+                        <i class="bi bi-dash-square"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;">
+            @if (_loading)
+            {
+                <div class="text-center p-3">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                    <small class="text-muted ms-2">Loading projects...</small>
+                </div>
+            }
+            else if (_projects.Any())
+            {
+                <div class="list-group list-group-flush">
+                    @foreach (var project in _projects.Where(p => p.Id != Guid.Empty))
+                    {
+                        <div class="project-node">
+                            @RenderProjectNode(project, 0)
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center p-3">
+                    <i class="bi bi-folder-x text-muted" style="font-size: 2rem;"></i>
+                    <p class="text-muted mt-2">No projects found</p>
+                    <button type="button" class="btn btn-sm btn-primary" 
+                            @onclick="@(() => Navigation.NavigateTo("/projects"))">>
+                        Create Project
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<ProjectDto> _projects = new();
+    private Dictionary<Guid, List<DeviceDto>> _projectDevices = new();
+    private HashSet<Guid> _expandedProjects = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProjectTree();
+    }
+
+    private async Task LoadProjectTree()
+    {
+        try
+        {
+            _loading = true;
+            StateHasChanged();
+
+            _projects = (await ProjectApi.GetAllProjectsAsync()).ToList();
+            
+            // Load devices for each project
+            foreach (var project in _projects)
+            {
+                var devices = await DeviceApi.GetDevicesByProjectAsync(project.Id);
+                _projectDevices[project.Id] = devices.ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            // Handle error
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private RenderFragment RenderProjectNode(ProjectDto project, int depth)
+    {
+        var isExpanded = _expandedProjects.Contains(project.Id);
+        var hasDevices = _projectDevices.ContainsKey(project.Id) && _projectDevices[project.Id].Any();
+        var childProjects = _projects.Where(p => p.Id != project.Id).ToList(); // Simplified for now
+        
+        return @<div>
+            <div class="list-group-item list-group-item-action d-flex align-items-center py-2"
+                 style="padding-left: @((depth + 1) * 20)px; cursor: pointer;"
+                 @onclick="() => ToggleProject(project.Id)">
+                
+                @if (hasDevices)
+                {
+                    <i class="bi @(isExpanded ? "bi-chevron-down" : "bi-chevron-right") me-2 text-muted"></i>
+                }
+                else
+                {
+                    <span style="width: 14px; margin-right: 8px;"></span>
+                }
+                
+                <i class="bi @GetProjectIcon(project) me-2 @GetProjectIconColor(project)"></i>
+                
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-medium">@project.Name</span>
+                        <div class="d-flex align-items-center">
+                            @if (hasDevices)
+                            {
+                                <span class="badge bg-info me-2">@_projectDevices[project.Id].Count devices</span>
+                            }
+                            <span class="badge bg-@GetStatusBadgeClass(project.Status)">@project.Status</span>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(project.Description))
+                    {
+                        <small class="text-muted">@project.Description</small>
+                    }
+                </div>
+            </div>
+            
+            @if (isExpanded && hasDevices)
+            {
+                <div class="device-list">
+                    @foreach (var device in _projectDevices[project.Id])
+                    {
+                        @RenderDeviceNode(device, depth + 1)
+                    }
+                </div>
+            }
+        </div>;
+    }
+
+    private RenderFragment RenderDeviceNode(DeviceDto device, int depth)
+    {
+        return @<div class="list-group-item list-group-item-action d-flex align-items-center py-2"
+                     style="padding-left: @((depth + 1) * 20)px; cursor: pointer; background: #f8f9fa;"
+                     @onclick="() => NavigateToDevice(device.Id)"
+                     title="Click to view device details">
+            
+            <span style="width: 14px; margin-right: 8px;"></span>
+            <i class="bi @GetDeviceIcon(device) me-2 @GetDeviceIconColor(device)"></i>
+            
+            <div class="flex-grow-1">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>@device.Name</span>
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-secondary me-2">@device.Protocol</span>
+                        <span class="badge bg-@GetDeviceStatusBadgeClass(device.Status)">@device.Status</span>
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(device.Description))
+                {
+                    <small class="text-muted">@device.Description</small>
+                }
+                @if (device.LastConnectedAt.HasValue)
+                {
+                    <small class="text-muted d-block">Last: @device.LastConnectedAt.Value.ToString("yyyy-MM-dd HH:mm")</small>
+                }
+            </div>
+        </div>;
+    }
+
+    private void ToggleProject(Guid projectId)
+    {
+        if (_expandedProjects.Contains(projectId))
+            _expandedProjects.Remove(projectId);
+        else
+            _expandedProjects.Add(projectId);
+        
+        StateHasChanged();
+    }
+
+    private void NavigateToDevice(Guid deviceId)
+    {
+        Navigation.NavigateTo($"/device-detail/{deviceId}");
+    }
+
+    private async Task RefreshTree()
+    {
+        await LoadProjectTree();
+    }
+
+    private void ExpandAll()
+    {
+        _expandedProjects.UnionWith(_projects.Select(p => p.Id));
+        StateHasChanged();
+    }
+
+    private void CollapseAll()
+    {
+        _expandedProjects.Clear();
+        StateHasChanged();
+    }
+
+    private string GetProjectIcon(ProjectDto project)
+    {
+        return project.Status.ToLower() switch
+        {
+            "active" => "bi-folder-fill",
+            "inactive" => "bi-folder",
+            "archived" => "bi-archive",
+            _ => "bi-folder"
+        };
+    }
+
+    private string GetProjectIconColor(ProjectDto project)
+    {
+        return project.Status.ToLower() switch
+        {
+            "active" => "text-success",
+            "inactive" => "text-secondary",
+            "archived" => "text-warning",
+            _ => "text-primary"
+        };
+    }
+
+    private string GetDeviceIcon(DeviceDto device)
+    {
+        return device.Protocol.ToLower() switch
+        {
+            "modbus" => "bi-cpu",
+            "opcua" => "bi-gear",
+            "mqtt" => "bi-wifi",
+            "siemens" => "bi-diagram-3",
+            "omron" => "bi-box",
+            _ => "bi-device-hdd"
+        };
+    }
+
+    private string GetDeviceIconColor(DeviceDto device)
+    {
+        return device.Status.ToLower() switch
+        {
+            "connected" => "text-success",
+            "disconnected" => "text-danger",
+            "connecting" => "text-warning",
+            _ => "text-secondary"
+        };
+    }
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status.ToLower() switch
+        {
+            "active" => "success",
+            "inactive" => "secondary",
+            "archived" => "warning",
+            _ => "primary"
+        };
+    }
+
+    private string GetDeviceStatusBadgeClass(string status)
+    {
+        return status.ToLower() switch
+        {
+            "connected" => "success",
+            "disconnected" => "danger",
+            "connecting" => "warning",
+            _ => "secondary"
+        };
+    }
+}
