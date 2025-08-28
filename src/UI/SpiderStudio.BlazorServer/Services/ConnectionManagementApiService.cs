@@ -299,12 +299,28 @@ public class ConnectionManagementApiService
     {
         try
         {
-            var response = await _httpClient.GetAsync("/api/connections/health", cancellationToken);
+            // Try the standard health endpoint first
+            var response = await _httpClient.GetAsync("/health", cancellationToken);
+            if (response.IsSuccessStatusCode)
+                return true;
+                
+            // Fallback to API-specific health endpoint
+            response = await _httpClient.GetAsync("/api/connections/health", cancellationToken);
             return response.IsSuccessStatusCode;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning("Connection Management API is unavailable: {Message}", ex.Message);
+            return false;
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            _logger.LogWarning("Connection Management API health check timed out");
+            return false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking Connection Management API health");
+            _logger.LogError(ex, "Unexpected error checking Connection Management API health");
             return false;
         }
     }

@@ -186,12 +186,28 @@ public class CommunicationApiService
     {
         try
         {
-            var response = await _httpClient.GetAsync("api/communication/health");
+            // Try the standard health endpoint first
+            var response = await _httpClient.GetAsync("/health");
+            if (response.IsSuccessStatusCode)
+                return true;
+                
+            // Fallback to API-specific health endpoint
+            response = await _httpClient.GetAsync("api/communication/health");
             return response.IsSuccessStatusCode;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning("Communication API is unavailable: {Message}", ex.Message);
+            return false;
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            _logger.LogWarning("Communication API health check timed out");
+            return false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking communication service health");
+            _logger.LogError(ex, "Unexpected error checking communication service health");
             return false;
         }
     }

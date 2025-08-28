@@ -10,35 +10,40 @@ builder.Services.AddRazorComponents()
 // Add Spider Studio services
 builder.Services.AddSingleton<DriverManagerService>();
 
-// Add HTTP clients for DDD APIs
+// Add HTTP clients for DDD APIs with resilience policies
 builder.Services.AddHttpClient<DeviceManagementApiService>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("ApiBaseUrls:DeviceManagement") ?? "http://localhost:5001");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(5); // Short timeout for health checks
 });
 
 builder.Services.AddHttpClient<DataAcquisitionApiService>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("ApiBaseUrls:DataAcquisition") ?? "http://localhost:5003");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(5);
 });
 
 builder.Services.AddHttpClient<ConnectionManagementApiService>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("ApiBaseUrls:ConnectionManagement") ?? "http://localhost:5005");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(5);
 });
 
 builder.Services.AddHttpClient<ProjectManagementApiService>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("ApiBaseUrls:ProjectManagement") ?? "http://localhost:5007");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(5);
 });
 
 builder.Services.AddHttpClient<CommunicationApiService>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("ApiBaseUrls:Communication") ?? "http://localhost:5009");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(5);
 });
 
 var app = builder.Build();

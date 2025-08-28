@@ -242,12 +242,28 @@ public class ProjectManagementApiService
     {
         try
         {
-            var response = await _httpClient.GetAsync("/api/projects/health", cancellationToken);
+            // Try the standard health endpoint first
+            var response = await _httpClient.GetAsync("/health", cancellationToken);
+            if (response.IsSuccessStatusCode)
+                return true;
+                
+            // Fallback to API-specific health endpoint
+            response = await _httpClient.GetAsync("/api/projects/health", cancellationToken);
             return response.IsSuccessStatusCode;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning("Project Management API is unavailable: {Message}", ex.Message);
+            return false;
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            _logger.LogWarning("Project Management API health check timed out");
+            return false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking Project Management API health");
+            _logger.LogError(ex, "Unexpected error checking Project Management API health");
             return false;
         }
     }

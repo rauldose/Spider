@@ -111,12 +111,28 @@ public class DeviceManagementApiService
     {
         try
         {
-            var response = await _httpClient.GetAsync("/api/devices/health", cancellationToken);
+            // Try the standard health endpoint first
+            var response = await _httpClient.GetAsync("/health", cancellationToken);
+            if (response.IsSuccessStatusCode)
+                return true;
+                
+            // Fallback to API-specific health endpoint
+            response = await _httpClient.GetAsync("/api/devices/health", cancellationToken);
             return response.IsSuccessStatusCode;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning("Device Management API is unavailable: {Message}", ex.Message);
+            return false;
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            _logger.LogWarning("Device Management API health check timed out");
+            return false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking Device Management API health");
+            _logger.LogError(ex, "Unexpected error checking Device Management API health");
             return false;
         }
     }

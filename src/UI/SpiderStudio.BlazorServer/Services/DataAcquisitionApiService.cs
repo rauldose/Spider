@@ -113,12 +113,28 @@ public class DataAcquisitionApiService
     {
         try
         {
-            var response = await _httpClient.GetAsync("/api/datapoints/health", cancellationToken);
+            // Try the standard health endpoint first
+            var response = await _httpClient.GetAsync("/health", cancellationToken);
+            if (response.IsSuccessStatusCode)
+                return true;
+                
+            // Fallback to API-specific health endpoint
+            response = await _httpClient.GetAsync("/api/datapoints/health", cancellationToken);
             return response.IsSuccessStatusCode;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning("Data Acquisition API is unavailable: {Message}", ex.Message);
+            return false;
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            _logger.LogWarning("Data Acquisition API health check timed out");
+            return false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking Data Acquisition API health");
+            _logger.LogError(ex, "Unexpected error checking Data Acquisition API health");
             return false;
         }
     }

@@ -17,23 +17,23 @@
 <PageTitle>Spider Studio - Modern IoT Platform</PageTitle>
 
 <div class="container-fluid">
-    <div class="row mb-4">
+    <div class="row mb-3">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h1 class="display-4 text-primary">🕷️ Spider Studio</h1>
-                    <p class="lead">Modern IoT Device Collection Platform</p>
+                    <h1 class="display-5 text-primary mb-1">🕷️ Spider Studio</h1>
+                    <p class="text-muted mb-0">Industrial IoT Data Collection Platform</p>
                 </div>
-                <div>
-                    <button class="btn btn-success me-2" @onclick="ConnectAllDrivers" disabled="@_isConnecting">
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success" @onclick="ConnectAllDrivers" disabled="@_isConnecting">
                         @if (_isConnecting)
                         {
-                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
                         }
-                        Connect All
+                        <i class="bi bi-play-circle me-1"></i>Connect All
                     </button>
-                    <button class="btn btn-outline-secondary" @onclick="DisconnectAllDrivers">
-                        Disconnect All
+                    <button class="btn btn-outline-danger" @onclick="DisconnectAllDrivers">
+                        <i class="bi bi-stop-circle me-1"></i>Disconnect All
                     </button>
                 </div>
             </div>
@@ -44,78 +44,81 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">🏗️ Modern DDD Architecture Status</h5>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="RefreshApiStatus">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                    </button>
                 </div>
-                <div class="card-body">
-                    <div class="row">
+                <div class="card-body p-3">
+                    <div class="row g-3">
                         <div class="col-md-2">
-                            <div class="card @(_deviceApiHealthy ? "border-success" : "border-danger")">
-                                <div class="card-body text-center">
-                                    <i class="bi bi-device-hdd" style="font-size: 2rem; color: @(_deviceApiHealthy ? "#28a745" : "#dc3545");"></i>
-                                    <h6 class="mt-2">Device Management</h6>
-                                    <span class="badge @(_deviceApiHealthy ? "bg-success" : "bg-danger")">
-                                        @(_deviceApiHealthy ? "Healthy" : "Unavailable")
-                                    </span>
-                                    <div class="mt-2">
-                                        <small class="text-muted">Devices: <strong>@_deviceCount</strong></small>
-                                    </div>
+                            <div class="status-card @(_deviceApiHealthy ? "healthy" : "unhealthy")">
+                                <i class="bi bi-hdd-stack text-primary" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2 mb-1">Device Management</h6>
+                                <span class="badge @(_deviceApiHealthy ? "bg-success" : "bg-danger") mb-2">
+                                    @(_deviceApiHealthy ? "Healthy" : "Unavailable")
+                                </span>
+                                <div class="small text-muted">
+                                    <strong>@_deviceCount</strong> Devices
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-2">
-                            <div class="card @(_dataApiHealthy ? "border-success" : "border-danger")">
-                                <div class="card-body text-center">
-                                    <i class="bi bi-graph-up" style="font-size: 2rem; color: @(_dataApiHealthy ? "#28a745" : "#dc3545");"></i>
-                                    <h6 class="mt-2">Data Acquisition</h6>
-                                    <span class="badge @(_dataApiHealthy ? "bg-success" : "bg-danger")">
-                                        @(_dataApiHealthy ? "Healthy" : "Unavailable")
-                                    </span>
-                                    <div class="mt-2">
-                                        <small class="text-muted">Data Points: <strong>@_dataPointCount</strong></small>
-                                    </div>
+                            <div class="status-card @(_dataApiHealthy ? "healthy" : "unhealthy")">
+                                <i class="bi bi-graph-up-arrow text-info" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2 mb-1">Data Acquisition</h6>
+                                <span class="badge @(_dataApiHealthy ? "bg-success" : "bg-danger") mb-2">
+                                    @(_dataApiHealthy ? "Healthy" : "Unavailable")
+                                </span>
+                                <div class="small text-muted">
+                                    <strong>@_dataPointCount</strong> Data Points
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-2">
-                            <div class="card @(_connectionApiHealthy ? "border-success" : "border-danger")">
-                                <div class="card-body text-center">
-                                    <i class="bi bi-link-45deg" style="font-size: 2rem; color: @(_connectionApiHealthy ? "#28a745" : "#dc3545");"></i>
-                                    <h6 class="mt-2">Connection Management</h6>
-                                    <span class="badge @(_connectionApiHealthy ? "bg-success" : "bg-danger")">
-                                        @(_connectionApiHealthy ? "Healthy" : "Unavailable")
-                                    </span>
-                                    <div class="mt-2">
-                                        <small class="text-muted">Connected: <strong>@(_connectionStats?.ConnectedCount ?? 0)</strong>/@(_connectionStats?.TotalConnections ?? 0)</small>
-                                    </div>
+                            <div class="status-card @(_connectionApiHealthy ? "healthy" : "unhealthy")">
+                                <i class="bi bi-diagram-3 text-warning" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2 mb-1">Connection Management</h6>
+                                <span class="badge @(_connectionApiHealthy ? "bg-success" : "bg-danger") mb-2">
+                                    @(_connectionApiHealthy ? "Healthy" : "Unavailable")
+                                </span>
+                                <div class="small text-muted">
+                                    <strong>@(_connectionStats?.ConnectedCount ?? 0)</strong>/@(_connectionStats?.TotalConnections ?? 0) Connected
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-2">
-                            <div class="card @(_projectApiHealthy ? "border-success" : "border-danger")">
-                                <div class="card-body text-center">
-                                    <i class="bi bi-folder2" style="font-size: 2rem; color: @(_projectApiHealthy ? "#28a745" : "#dc3545");"></i>
-                                    <h6 class="mt-2">Project Management</h6>
-                                    <span class="badge @(_projectApiHealthy ? "bg-success" : "bg-danger")">
-                                        @(_projectApiHealthy ? "Healthy" : "Unavailable")
-                                    </span>
-                                    <div class="mt-2">
-                                        <small class="text-muted">Active: <strong>@(_projectStats?.ActiveProjects ?? 0)</strong>/@(_projectStats?.TotalProjects ?? 0)</small>
-                                    </div>
+                            <div class="status-card @(_projectApiHealthy ? "healthy" : "unhealthy")">
+                                <i class="bi bi-folder-check text-success" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2 mb-1">Project Management</h6>
+                                <span class="badge @(_projectApiHealthy ? "bg-success" : "bg-danger") mb-2">
+                                    @(_projectApiHealthy ? "Healthy" : "Unavailable")
+                                </span>
+                                <div class="small text-muted">
+                                    <strong>@(_projectStats?.ActiveProjects ?? 0)</strong>/@(_projectStats?.TotalProjects ?? 0) Active
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-2">
-                            <div class="card @(_communicationApiHealthy ? "border-success" : "border-danger")">
-                                <div class="card-body text-center">
-                                    <i class="bi bi-broadcast" style="font-size: 2rem; color: @(_communicationApiHealthy ? "#28a745" : "#dc3545");"></i>
-                                    <h6 class="mt-2">Communication</h6>
-                                    <span class="badge @(_communicationApiHealthy ? "bg-success" : "bg-danger")">
-                                        @(_communicationApiHealthy ? "Healthy" : "Unavailable")
-                                    </span>
-                                    <div class="mt-2">
-                                        <small class="text-muted">Links: <strong>@(_communicationStats?.ConnectedLinks ?? 0)</strong>/@(_communicationStats?.TotalLinks ?? 0)</small>
-                                    </div>
+                            <div class="status-card @(_communicationApiHealthy ? "healthy" : "unhealthy")">
+                                <i class="bi bi-broadcast-pin text-danger" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2 mb-1">Communication</h6>
+                                <span class="badge @(_communicationApiHealthy ? "bg-success" : "bg-danger") mb-2">
+                                    @(_communicationApiHealthy ? "Healthy" : "Unavailable")
+                                </span>
+                                <div class="small text-muted">
+                                    <strong>@(_communicationStats?.ConnectedLinks ?? 0)</strong>/@(_communicationStats?.TotalLinks ?? 0) Links
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="status-card healthy">
+                                <i class="bi bi-cpu text-primary" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2 mb-1">System Status</h6>
+                                <span class="badge bg-success mb-2">Operational</span>
+                                <div class="small text-muted">
+                                    <strong>@_drivers.Count</strong> Drivers
                                 </div>
                             </div>
                         </div>
@@ -123,40 +126,26 @@
                     
                     @if (_connectionStats != null && _connectionApiHealthy)
                     {
-                        <hr>
-                        <div class="row">
-                            <div class="col-md-3">
-                                <div class="text-center">
-                                    <div class="h4 text-success">@_connectionStats.HealthyCount</div>
-                                    <small class="text-muted">Healthy Connections</small>
-                                </div>
+                        <hr class="my-3">
+                        <div class="row text-center">
+                            <div class="col-3">
+                                <div class="h4 text-success mb-1">@_connectionStats.HealthyCount</div>
+                                <small class="text-muted">Healthy</small>
                             </div>
-                            <div class="col-md-3">
-                                <div class="text-center">
-                                    <div class="h4 text-warning">@_connectionStats.UnhealthyCount</div>
-                                    <small class="text-muted">Unhealthy</small>
-                                </div>
+                            <div class="col-3">
+                                <div class="h4 text-warning mb-1">@_connectionStats.UnhealthyCount</div>
+                                <small class="text-muted">Unhealthy</small>
                             </div>
-                            <div class="col-md-3">
-                                <div class="text-center">
-                                    <div class="h4 text-danger">@_connectionStats.FailedCount</div>
-                                    <small class="text-muted">Failed</small>
-                                </div>
+                            <div class="col-3">
+                                <div class="h4 text-danger mb-1">@_connectionStats.FailedCount</div>
+                                <small class="text-muted">Failed</small>
                             </div>
-                            <div class="col-md-3">
-                                <div class="text-center">
-                                    <div class="h4 text-info">@_connectionStats.AverageResponseTime.ToString("F1")ms</div>
-                                    <small class="text-muted">Avg Response</small>
-                                </div>
+                            <div class="col-3">
+                                <div class="h4 text-info mb-1">@_connectionStats.AverageResponseTime.ToString("F0")ms</div>
+                                <small class="text-muted">Avg Response</small>
                             </div>
                         </div>
                     }
-                    
-                    <div class="d-flex justify-content-end mt-3">
-                        <button class="btn btn-outline-secondary btn-sm" @onclick="RefreshApiStatus">
-                            <i class="bi bi-arrow-clockwise me-2"></i>Refresh Status
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
@@ -165,21 +154,27 @@
     <div class="row">
         <div class="col-lg-8">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Driver Overview</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">Driver Overview</h6>
+                    @if (!_drivers.Any())
+                    {
+                        <button class="btn btn-primary btn-sm" @onclick="NavigateToDrivers">
+                            <i class="bi bi-plus-circle me-1"></i>Configure Drivers
+                        </button>
+                    }
                 </div>
-                <div class="card-body">
+                <div class="card-body p-2">
                     @if (_drivers.Any())
                     {
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <table class="table table-sm table-hover mb-0">
                                 <thead>
                                     <tr>
-                                        <th>Name</th>
-                                        <th>Protocol</th>
-                                        <th>Status</th>
-                                        <th>Capabilities</th>
-                                        <th>Actions</th>
+                                        <th style="width: 25%;">Driver</th>
+                                        <th style="width: 20%;">Protocol</th>
+                                        <th style="width: 15%;">Status</th>
+                                        <th style="width: 25%;">Capabilities</th>
+                                        <th style="width: 15%;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -187,11 +182,23 @@
                                     {
                                         <tr>
                                             <td>
-                                                <strong>@driver.Metadata.Name</strong><br>
-                                                <small class="text-muted">@driver.Metadata.Version</small>
+                                                <div class="d-flex align-items-center">
+                                                    <i class="bi bi-cpu me-2 text-primary"></i>
+                                                    <div>
+                                                        <div class="fw-semibold">@driver.Metadata.Name</div>
+                                                        <small class="text-muted">v@driver.Metadata.Version</small>
+                                                    </div>
+                                                </div>
                                             </td>
                                             <td>
-                                                <span class="badge bg-info">@string.Join(", ", driver.Metadata.SupportedProtocols)</span>
+                                                @foreach (var protocol in driver.Metadata.SupportedProtocols.Take(2))
+                                                {
+                                                    <span class="badge bg-info me-1">@protocol</span>
+                                                }
+                                                @if (driver.Metadata.SupportedProtocols.Count() > 2)
+                                                {
+                                                    <span class="badge bg-secondary">+@(driver.Metadata.SupportedProtocols.Count() - 2)</span>
+                                                }
                                             </td>
                                             <td>
                                                 <span class="badge @GetStatusBadgeClass(driver.Status)">
@@ -199,15 +206,22 @@
                                                 </span>
                                             </td>
                                             <td>
-                                                <small>@string.Join(", ", GetCapabilityNames(driver.Capabilities))</small>
+                                                <div class="d-flex gap-1">
+                                                    @foreach (var capability in GetCapabilityNames(driver.Capabilities).Take(3))
+                                                    {
+                                                        <span class="badge bg-light text-dark">@capability</span>
+                                                    }
+                                                </div>
                                             </td>
                                             <td>
-                                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => TestDriver(driver)">
-                                                    Test
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveDriver(driver.Metadata.Name)">
-                                                    Remove
-                                                </button>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-outline-primary" @onclick="() => TestDriver(driver)" title="Test Driver">
+                                                        <i class="bi bi-play"></i>
+                                                    </button>
+                                                    <button class="btn btn-outline-danger" @onclick="() => RemoveDriver(driver.Metadata.Name)" title="Remove Driver">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     }
@@ -217,13 +231,10 @@
                     }
                     else
                     {
-                        <div class="text-center py-5">
-                            <i class="bi bi-inbox" style="font-size: 3rem; color: #6c757d;"></i>
-                            <h5 class="mt-3 text-muted">No drivers configured</h5>
-                            <p class="text-muted">Add drivers to start collecting IoT data</p>
-                            <button class="btn btn-primary" @onclick="@(() => AddProductionDriver("Modbus"))">
-                                Configure Drivers
-                            </button>
+                        <div class="text-center py-4">
+                            <i class="bi bi-cpu" style="font-size: 3rem; color: #6c757d;"></i>
+                            <h6 class="mt-3 text-muted">No drivers configured</h6>
+                            <p class="text-muted small">Configure drivers to start collecting IoT data</p>
                         </div>
                     }
                 </div>
@@ -233,34 +244,32 @@
         <div class="col-lg-4">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">System Status</h5>
+                    <h6 class="card-title mb-0">System Status</h6>
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
+                <div class="card-body p-3">
+                    <div class="row g-3 text-center">
                         <div class="col-6">
-                            <div class="text-center">
-                                <div class="h2 text-primary">@_drivers.Count</div>
-                                <div class="text-muted">Total Drivers</div>
-                            </div>
+                            <div class="h3 text-primary mb-1">@_drivers.Count</div>
+                            <div class="small text-muted">Total Drivers</div>
                         </div>
                         <div class="col-6">
-                            <div class="text-center">
-                                <div class="h2 text-success">@_connectedCount</div>
-                                <div class="text-muted">Connected</div>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <hr>
-                            <h6>Protocol Distribution</h6>
-                            @foreach (var protocol in _protocolStats)
-                            {
-                                <div class="d-flex justify-content-between">
-                                    <span>@protocol.Key</span>
-                                    <span class="badge bg-secondary">@protocol.Value</span>
-                                </div>
-                            }
+                            <div class="h3 text-success mb-1">@_connectedCount</div>
+                            <div class="small text-muted">Connected</div>
                         </div>
                     </div>
+                    
+                    @if (_protocolStats.Any())
+                    {
+                        <hr class="my-3">
+                        <h6 class="small text-muted mb-2">PROTOCOL DISTRIBUTION</h6>
+                        @foreach (var protocol in _protocolStats.Take(5))
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="small">@protocol.Key</span>
+                                <span class="badge bg-secondary">@protocol.Value</span>
+                            </div>
+                        }
+                    }
                 </div>
             </div>
 
@@ -268,15 +277,15 @@
             {
                 <div class="card mt-3">
                     <div class="card-header">
-                        <h6 class="card-title mb-0">Recent Test Results</h6>
+                        <h6 class="card-title mb-0">Recent Tests</h6>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-3">
                         @foreach (var result in _testResults.TakeLast(5))
                         {
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <small>@result.Key</small>
+                                <small class="text-truncate me-2">@result.Key</small>
                                 <span class="badge @(result.Value ? "bg-success" : "bg-danger")">
-                                    @(result.Value ? "✓" : "✗")
+                                    <i class="bi @(result.Value ? "bi-check" : "bi-x")"></i>
                                 </span>
                             </div>
                         }
@@ -377,52 +386,26 @@
     {
         try
         {
-            // Check API health
-            _deviceApiHealthy = await DeviceApi.CheckHealthAsync();
-            _dataApiHealthy = await DataApi.CheckHealthAsync();
-            _connectionApiHealthy = await ConnectionApi.CheckHealthAsync();
-            _projectApiHealthy = await ProjectApi.IsHealthyAsync();
-            _communicationApiHealthy = await CommunicationApi.IsHealthyAsync();
-
-            // Get device count (using demo project ID)
-            if (_deviceApiHealthy)
+            // Check all APIs concurrently with timeout
+            var healthCheckTasks = new[]
             {
-                var projectId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-                var devices = await DeviceApi.GetDevicesByProjectAsync(projectId);
-                _deviceCount = devices.Count();
-            }
+                CheckApiHealth(() => DeviceApi.CheckHealthAsync(), "Device Management"),
+                CheckApiHealth(() => DataApi.CheckHealthAsync(), "Data Acquisition"),
+                CheckApiHealth(() => ConnectionApi.CheckHealthAsync(), "Connection Management"),
+                CheckApiHealth(() => ProjectApi.IsHealthyAsync(), "Project Management"),
+                CheckApiHealth(() => CommunicationApi.IsHealthyAsync(), "Communication")
+            };
 
-            // Get data point count (sum across all devices)
-            if (_dataApiHealthy && _deviceCount > 0)
-            {
-                var projectId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-                var devices = await DeviceApi.GetDevicesByProjectAsync(projectId);
-                int totalDataPoints = 0;
-                foreach (var device in devices)
-                {
-                    var dataPoints = await DataApi.GetDataPointsByDeviceAsync(device.Id);
-                    totalDataPoints += dataPoints.Count();
-                }
-                _dataPointCount = totalDataPoints;
-            }
+            var healthResults = await Task.WhenAll(healthCheckTasks);
+            
+            _deviceApiHealthy = healthResults[0];
+            _dataApiHealthy = healthResults[1];
+            _connectionApiHealthy = healthResults[2];
+            _projectApiHealthy = healthResults[3];
+            _communicationApiHealthy = healthResults[4];
 
-            // Get connection statistics
-            if (_connectionApiHealthy)
-            {
-                _connectionStats = await ConnectionApi.GetConnectionStatisticsAsync();
-            }
-
-            // Get project statistics
-            if (_projectApiHealthy)
-            {
-                _projectStats = await ProjectApi.GetProjectStatisticsAsync();
-            }
-
-            // Get communication statistics
-            if (_communicationApiHealthy)
-            {
-                _communicationStats = await CommunicationApi.GetStatisticsAsync();
-            }
+            // Get additional data only if APIs are healthy to avoid exceptions
+            await GetApiStatistics();
 
             StateHasChanged();
         }
@@ -430,6 +413,112 @@
         {
             Logger.LogError(ex, "Error refreshing API status");
         }
+    }
+
+    private async Task<bool> CheckApiHealth(Func<Task<bool>> healthCheck, string apiName)
+    {
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+            return await healthCheck();
+        }
+        catch (OperationCanceledException)
+        {
+            Logger.LogWarning("{ApiName} API health check timed out", apiName);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "{ApiName} API is unavailable", apiName);
+            return false;
+        }
+    }
+
+    private async Task GetApiStatistics()
+    {
+        // Get device count (using demo project ID) 
+        if (_deviceApiHealthy)
+        {
+            try
+            {
+                var projectId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+                var devices = await DeviceApi.GetDevicesByProjectAsync(projectId);
+                _deviceCount = devices.Count();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to get device count");
+                _deviceCount = 0;
+            }
+        }
+
+        // Get data point count
+        if (_dataApiHealthy && _deviceCount > 0)
+        {
+            try
+            {
+                var projectId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+                var devices = await DeviceApi.GetDevicesByProjectAsync(projectId);
+                int totalDataPoints = 0;
+                foreach (var device in devices.Take(5)) // Limit to avoid timeouts
+                {
+                    var dataPoints = await DataApi.GetDataPointsByDeviceAsync(device.Id);
+                    totalDataPoints += dataPoints.Count();
+                }
+                _dataPointCount = totalDataPoints;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to get data point count");
+                _dataPointCount = 0;
+            }
+        }
+
+        // Get statistics from healthy APIs
+        if (_connectionApiHealthy)
+        {
+            try
+            {
+                _connectionStats = await ConnectionApi.GetConnectionStatisticsAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to get connection statistics");
+                _connectionStats = null;
+            }
+        }
+
+        if (_projectApiHealthy)
+        {
+            try
+            {
+                _projectStats = await ProjectApi.GetProjectStatisticsAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to get project statistics");
+                _projectStats = null;
+            }
+        }
+
+        if (_communicationApiHealthy)
+        {
+            try
+            {
+                _communicationStats = await CommunicationApi.GetStatisticsAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to get communication statistics");
+                _communicationStats = null;
+            }
+        }
+    }
+
+    private void NavigateToDrivers()
+    {
+        // In production, this should use NavigationManager
+        Logger.LogInformation("Navigate to drivers configuration page");
     }
 
     private async Task TestDriver(IDriver driver)
