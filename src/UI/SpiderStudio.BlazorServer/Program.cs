@@ -15,35 +15,35 @@ builder.Services.AddHttpClient<DeviceManagementApiService>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("ApiBaseUrls:DeviceManagement") ?? "http://localhost:5001");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
-    client.Timeout = TimeSpan.FromSeconds(5); // Short timeout for health checks
+    client.Timeout = TimeSpan.FromSeconds(30); // Increased timeout for better reliability
 });
 
 builder.Services.AddHttpClient<DataAcquisitionApiService>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("ApiBaseUrls:DataAcquisition") ?? "http://localhost:5003");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
-    client.Timeout = TimeSpan.FromSeconds(5);
+    client.Timeout = TimeSpan.FromSeconds(30);
 });
 
 builder.Services.AddHttpClient<ConnectionManagementApiService>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("ApiBaseUrls:ConnectionManagement") ?? "http://localhost:5005");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
-    client.Timeout = TimeSpan.FromSeconds(5);
+    client.Timeout = TimeSpan.FromSeconds(30);
 });
 
 builder.Services.AddHttpClient<ProjectManagementApiService>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("ApiBaseUrls:ProjectManagement") ?? "http://localhost:5007");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
-    client.Timeout = TimeSpan.FromSeconds(5);
+    client.Timeout = TimeSpan.FromSeconds(30);
 });
 
 builder.Services.AddHttpClient<CommunicationApiService>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("ApiBaseUrls:Communication") ?? "http://localhost:5009");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
-    client.Timeout = TimeSpan.FromSeconds(5);
+    client.Timeout = TimeSpan.FromSeconds(30);
 });
 
 var app = builder.Build();

@@ -3,8 +3,12 @@
 @using SpiderStudio.BlazorServer.Services
 @inject NavigationManager Navigation
 @inject DeviceManagementApiService DeviceApi
+@inject DataAcquisitionApiService DataApi
+@inject ConnectionManagementApiService ConnectionApi
 @inject ProjectManagementApiService ProjectApi
+@inject CommunicationApiService CommunicationApi
 @inject ILogger<Home> Logger
+@implements IDisposable
 
 <PageTitle>Spider Studio - Home</PageTitle>
 
@@ -34,8 +38,10 @@
             <div class="card text-center">
                 <div class="card-body">
                     <h5 class="card-title">Device Management</h5>
-                    <span class="badge bg-warning">Unavailable</span>
-                    <p class="card-text mt-2">Devices: 0</p>
+                    <span class="badge @(apiStatus.DeviceManagement ? "bg-success" : "bg-danger")">
+                        @(apiStatus.DeviceManagement ? "Healthy" : "Unavailable")
+                    </span>
+                    <p class="card-text mt-2">Devices: @deviceCount</p>
                 </div>
             </div>
         </div>
@@ -43,8 +49,10 @@
             <div class="card text-center">
                 <div class="card-body">
                     <h5 class="card-title">Data Acquisition</h5>
-                    <span class="badge bg-warning">Unavailable</span>
-                    <p class="card-text mt-2">Data Points: 0</p>
+                    <span class="badge @(apiStatus.DataAcquisition ? "bg-success" : "bg-danger")">
+                        @(apiStatus.DataAcquisition ? "Healthy" : "Unavailable")
+                    </span>
+                    <p class="card-text mt-2">Data Points: @dataPointCount</p>
                 </div>
             </div>
         </div>
@@ -52,8 +60,10 @@
             <div class="card text-center">
                 <div class="card-body">
                     <h5 class="card-title">Connection Management</h5>
-                    <span class="badge bg-warning">Unavailable</span>
-                    <p class="card-text mt-2">Connected: 0/0</p>
+                    <span class="badge @(apiStatus.ConnectionManagement ? "bg-success" : "bg-danger")">
+                        @(apiStatus.ConnectionManagement ? "Healthy" : "Unavailable")
+                    </span>
+                    <p class="card-text mt-2">Connected: @connectedCount/@totalConnections</p>
                 </div>
             </div>
         </div>
@@ -61,8 +71,10 @@
             <div class="card text-center">
                 <div class="card-body">
                     <h5 class="card-title">Project Management</h5>
-                    <span class="badge bg-warning">Unavailable</span>
-                    <p class="card-text mt-2">Active: 0/0</p>
+                    <span class="badge @(apiStatus.ProjectManagement ? "bg-success" : "bg-danger")">
+                        @(apiStatus.ProjectManagement ? "Healthy" : "Unavailable")
+                    </span>
+                    <p class="card-text mt-2">Active: @activeProjects/@totalProjects</p>
                 </div>
             </div>
         </div>
@@ -70,8 +82,10 @@
             <div class="card text-center">
                 <div class="card-body">
                     <h5 class="card-title">Communication</h5>
-                    <span class="badge bg-warning">Unavailable</span>
-                    <p class="card-text mt-2">Links: 0/0</p>
+                    <span class="badge @(apiStatus.Communication ? "bg-success" : "bg-danger")">
+                        @(apiStatus.Communication ? "Healthy" : "Unavailable")
+                    </span>
+                    <p class="card-text mt-2">Links: @communicationLinks/@totalLinks</p>
                 </div>
             </div>
         </div>
@@ -81,11 +95,11 @@
                     <h5 class="card-title">System Status</h5>
                     <div class="row">
                         <div class="col-6">
-                            <h3 class="text-primary">0</h3>
+                            <h3 class="text-primary">@totalDrivers</h3>
                             <small>Total Drivers</small>
                         </div>
                         <div class="col-6">
-                            <h3 class="text-success">0</h3>
+                            <h3 class="text-success">@connectedDrivers</h3>
                             <small>Connected</small>
                         </div>
                     </div>
@@ -146,22 +160,155 @@
 
 @code {
     private readonly DateTime _startTime = DateTime.Now;
-
-    private void ConnectAll()
+    
+    // API Status tracking
+    private ApiStatusModel apiStatus = new();
+    
+    // Data counters
+    private int deviceCount = 0;
+    private int dataPointCount = 0;
+    private int connectedCount = 0;
+    private int totalConnections = 0;
+    private int activeProjects = 0;
+    private int totalProjects = 0;
+    private int communicationLinks = 0;
+    private int totalLinks = 0;
+    private int totalDrivers = 0;
+    private int connectedDrivers = 0;
+    
+    // Auto-refresh timer
+    private Timer? _refreshTimer;
+    
+    protected override async Task OnInitializedAsync()
     {
-        Logger.LogInformation("Connect All requested");
-        // Implementation for connecting all drivers
+        await RefreshApiStatus();
+        
+        // Set up auto-refresh every 10 seconds
+        _refreshTimer = new Timer(async _ => await InvokeAsync(async () =>
+        {
+            await RefreshApiStatus();
+            StateHasChanged();
+        }), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+    }
+    
+    private async Task RefreshApiStatus()
+    {
+        try
+        {
+            Logger.LogInformation("Refreshing API status...");
+            
+            // Check all API health status
+            var deviceHealthTask = DeviceApi.CheckHealthAsync();
+            var dataHealthTask = DataApi.CheckHealthAsync();
+            var connectionHealthTask = ConnectionApi.CheckHealthAsync();
+            var projectHealthTask = ProjectApi.IsHealthyAsync();
+            var communicationHealthTask = CommunicationApi.IsHealthyAsync();
+            
+            await Task.WhenAll(deviceHealthTask, dataHealthTask, connectionHealthTask, projectHealthTask, communicationHealthTask);
+            
+            apiStatus.DeviceManagement = await deviceHealthTask;
+            apiStatus.DataAcquisition = await dataHealthTask;
+            apiStatus.ConnectionManagement = await connectionHealthTask;
+            apiStatus.ProjectManagement = await projectHealthTask;
+            apiStatus.Communication = await communicationHealthTask;
+            
+            // Get data counts if APIs are healthy
+            if (apiStatus.DeviceManagement)
+            {
+                await LoadDeviceData();
+            }
+            
+            if (apiStatus.ProjectManagement)
+            {
+                await LoadProjectData();
+            }
+            
+            Logger.LogInformation("API status refresh completed");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error refreshing API status");
+        }
+    }
+    
+    private async Task LoadDeviceData()
+    {
+        try
+        {
+            // Get devices for default project (we'll use empty guid for now)
+            var devices = await DeviceApi.GetDevicesByProjectAsync(Guid.Empty);
+            deviceCount = devices.Count();
+            Logger.LogInformation("Loaded {DeviceCount} devices", deviceCount);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load device data");
+            deviceCount = 0;
+        }
+    }
+    
+    private async Task LoadProjectData()
+    {
+        try
+        {
+            var projects = await ProjectApi.GetAllProjectsAsync();
+            totalProjects = projects.Count();
+            activeProjects = projects.Count(p => p.Status == "Active");
+            Logger.LogInformation("Loaded {TotalProjects} projects, {ActiveProjects} active", totalProjects, activeProjects);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load project data");
+            totalProjects = 0;
+            activeProjects = 0;
+        }
     }
 
-    private void DisconnectAll()
+    private async void ConnectAll()
+    {
+        Logger.LogInformation("Connect All requested");
+        try
+        {
+            await RefreshApiStatus();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error during Connect All operation");
+        }
+    }
+
+    private async void DisconnectAll()
     {
         Logger.LogInformation("Disconnect All requested");
-        // Implementation for disconnecting all drivers
+        try
+        {
+            await RefreshApiStatus();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error during Disconnect All operation");
+        }
     }
 
     private string GetUptime()
     {
         var uptime = DateTime.Now - _startTime;
         return $"{uptime.Hours:D2}:{uptime.Minutes:D2}:{uptime.Seconds:D2}";
+    }
+    
+    public void Dispose()
+    {
+        _refreshTimer?.Dispose();
+    }
+    
+    private class ApiStatusModel
+    {
+        public bool DeviceManagement { get; set; }
+        public bool DataAcquisition { get; set; }
+        public bool ConnectionManagement { get; set; }
+        public bool ProjectManagement { get; set; }
+        public bool Communication { get; set; }
     }
 }
