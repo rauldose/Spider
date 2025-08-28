@@ -43,6 +43,28 @@ public class DevicesController : ControllerBase
     }
 
     /// <summary>
+    /// Gets a device by its ID
+    /// </summary>
+    /// <param name="deviceId">Device identifier</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Device details if found</returns>
+    [HttpGet("{deviceId:guid}")]
+    [ProducesResponseType(typeof(DeviceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<DeviceDto>> GetDeviceById(
+        [FromRoute] Guid deviceId,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetDeviceByIdQuery(deviceId);
+        var device = await _mediator.Send(query, cancellationToken);
+        
+        if (device == null)
+            return NotFound($"Device with ID {deviceId} not found");
+            
+        return Ok(device);
+    }
+
+    /// <summary>
     /// Gets all devices for a specific project
     /// </summary>
     /// <param name="projectId">Project identifier</param>

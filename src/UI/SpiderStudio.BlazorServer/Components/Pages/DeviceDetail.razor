@@ -641,16 +641,30 @@
             if (_device != null)
             {
                 await LoadDeviceTags();
-                StateHasChanged();
+            }
+            else
+            {
+                // Device not found, create a sample device
+                _device = new DeviceDto
+                {
+                    Id = DeviceId,
+                    Name = "Sample Device",
+                    Protocol = "Modbus",
+                    ConnectionString = "192.168.1.100:502",
+                    IsEnabled = true,
+                    Status = "Disconnected",
+                    ProjectId = Guid.Parse("00000000-0000-0000-0000-000000000001")
+                };
+                LoadSampleTags();
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Handle error - device not found, create a sample device
+            // Handle error - API not available, create a sample device
             _device = new DeviceDto
             {
                 Id = DeviceId,
-                Name = "Sample Device",
+                Name = "Sample Device (Offline)",
                 Protocol = "Modbus",
                 ConnectionString = "192.168.1.100:502",
                 IsEnabled = true,
@@ -658,6 +672,10 @@
                 ProjectId = Guid.Parse("00000000-0000-0000-0000-000000000001")
             };
             LoadSampleTags();
+        }
+        finally
+        {
+            StateHasChanged();
         }
     }
 
