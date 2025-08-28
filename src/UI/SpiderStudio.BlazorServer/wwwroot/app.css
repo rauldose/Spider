@@ -339,3 +339,90 @@ label {
     right: 12px;
     top: 8px;
 }
+
+/* Dark Theme Modal Styles */
+.modal {
+    color: #fafafa;
+}
+
+.modal-content {
+    background-color: #2d3748 !important;
+    border: 1px solid #555 !important;
+    border-radius: 4px !important;
+    color: #fafafa !important;
+}
+
+.modal-header {
+    background-color: #374151 !important;
+    border-bottom: 1px solid #555 !important;
+    color: #fafafa !important;
+    padding: 12px 16px !important;
+}
+
+.modal-title {
+    color: #fafafa !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+}
+
+.modal-body {
+    background-color: #2d3748 !important;
+    color: #fafafa !important;
+    padding: 16px !important;
+}
+
+.modal-footer {
+    background-color: #374151 !important;
+    border-top: 1px solid #555 !important;
+    padding: 12px 16px !important;
+}
+
+.btn-close {
+    background: transparent !important;
+    border: none !important;
+    color: #fafafa !important;
+    opacity: 0.8 !important;
+    font-size: 16px !important;
+    width: 24px !important;
+    height: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.btn-close:hover {
+    opacity: 1 !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.btn-close::before {
+    content: "×" !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+}
+
+/* Alert styling for dark theme */
+.alert {
+    border: 1px solid #555 !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    padding: 8px 12px !important;
+}
+
+.alert-danger {
+    background-color: rgba(220, 38, 38, 0.2) !important;
+    border-color: #dc2626 !important;
+    color: #fca5a5 !important;
+}
+
+.alert-success {
+    background-color: rgba(16, 185, 129, 0.2) !important;
+    border-color: #10b981 !important;
+    color: #6ee7b7 !important;
+}
+
+.alert-warning {
+    background-color: rgba(245, 158, 11, 0.2) !important;
+    border-color: #f59e0b !important;
+    color: #fcd34d !important;
+}
