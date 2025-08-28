@@ -1,174 +1,346 @@
-@page "/devices/{DeviceId}"
-@using Spider.DeviceManagement.Application.Commands
+@page "/device/{deviceId:guid}"
 @using Spider.DeviceManagement.Application.DTOs
-@using Spider.DataAcquisition.Application.DTOs
 @using SpiderStudio.BlazorServer.Services
 @inject DeviceManagementApiService DeviceApi
-@inject DataAcquisitionApiService DataApi
-@inject CommunicationApiService CommApi
 @inject NavigationManager Navigation
-@inject ILogger<DeviceDetail> Logger
 
-<PageTitle>Device Details - @(_device?.Name ?? "Loading") - Spider Studio</PageTitle>
+<PageTitle>Device - @(_device?.Name ?? "Loading...")</PageTitle>
 
-<div class="container-fluid">
-    @if (_loading)
+<!-- WPF-like Device Detail Interface -->
+<div class="device-detail-container">
+    @if (_device != null)
     {
-        <div class="d-flex justify-content-center align-items-center" style="height: 400px;">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
+        <!-- Device Configuration Tabs -->
+        <div class="device-tabs">
+            <div class="tab-header">
+                <button class="tab-button @(_activeTab == "communication" ? "active" : "")" 
+                        @onclick='() => SetActiveTab("communication")'>>
+                    Communication
+                </button>
+                <button class="tab-button @(_activeTab == "tags" ? "active" : "")" 
+                        @onclick='() => SetActiveTab("tags")'>>
+                    Tags
+                </button>
             </div>
-        </div>
-    }
-    else if (_device == null)
-    {
-        <div class="alert alert-danger">
-            <h4>Device Not Found</h4>
-            <p>The requested device could not be found.</p>
-            <button class="btn btn-primary" @onclick="NavigateBack">
-                <i class="bi bi-arrow-left me-2"></i>Back to Devices
-            </button>
+
+            <div class="tab-content">
+                @if (_activeTab == "communication")
+                {
+                    <div class="communication-panel">
+                        <div class="config-row">
+                            <label class="config-label">Protocol:</label>
+                            <select class="config-input" @bind="_device.Protocol">
+                                <option value="Modbus">Modbus TCP</option>
+                                <option value="OpcUa">OPC UA</option>
+                                <option value="Mqtt">MQTT</option>
+                                <option value="Siemens">Siemens S7</option>
+                                <option value="Omron">Omron FINS</option>
+                            </select>
+                        </div>
+                        
+                        <div class="config-row">
+                            <label class="config-label">Connection String:</label>
+                            <input type="text" class="config-input" @bind="_device.ConnectionString" 
+                                   placeholder="e.g., 192.168.1.10:502" />
+                        </div>
+                        
+                        <div class="config-row">
+                            <label class="config-label">Timeout (ms):</label>
+                            <input type="number" class="config-input" value="5000" />
+                        </div>
+
+                        <div class="config-actions">
+                            <button class="action-btn primary" @onclick="TestConnection">
+                                <i class="bi bi-play-circle"></i> Test Connection
+                            </button>
+                            <button class="action-btn secondary" @onclick="SaveDevice">
+                                <i class="bi bi-floppy"></i> Save
+                            </button>
+                        </div>
+                    </div>
+                }
+                else if (_activeTab == "tags")
+                {
+                    <div class="tags-panel">
+                        <div class="tags-toolbar">
+                            <button class="tool-btn" @onclick="AddTag">
+                                <i class="bi bi-plus"></i> Add
+                            </button>
+                            <button class="tool-btn" @onclick="RemoveTag">
+                                <i class="bi bi-dash"></i> Remove
+                            </button>
+                            <button class="tool-btn" @onclick="ImportTags">
+                                <i class="bi bi-download"></i> Import
+                            </button>
+                            <button class="tool-btn" @onclick="ExportTags">
+                                <i class="bi bi-upload"></i> Export
+                            </button>
+                        </div>
+
+                        <div class="tags-grid">
+                            <div class="grid-header">
+                                <div class="grid-cell">Name</div>
+                                <div class="grid-cell">Type</div>
+                                <div class="grid-cell">Address</div>
+                                <div class="grid-cell">Value</div>
+                                <div class="grid-cell">Quality</div>
+                            </div>
+                            @foreach (var tag in _tags)
+                            {
+                                <div class="grid-row">
+                                    <div class="grid-cell">@tag.Name</div>
+                                    <div class="grid-cell">@tag.DataType</div>
+                                    <div class="grid-cell">@tag.Address</div>
+                                    <div class="grid-cell">@tag.Value</div>
+                                    <div class="grid-cell">
+                                        <span class="quality-indicator @tag.Quality.ToLower()">@tag.Quality</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
         </div>
     }
     else
     {
-        <!-- Header -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <nav aria-label="breadcrumb">
-                            <ol class="breadcrumb">
-                                <li class="breadcrumb-item">
-                                    <a href="/devices" class="text-decoration-none">Device Management</a>
-                                </li>
-                                <li class="breadcrumb-item active">@_device.Name</li>
-                            </ol>
-                        </nav>
-                        <h1 class="h3">🔧 @_device.Name</h1>
-                        <p class="text-muted">@_device.Description</p>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-secondary" @onclick="RefreshDevice">
-                            <i class="bi bi-arrow-clockwise me-2"></i>Refresh
-                        </button>
-                        <button class="btn btn-success" @onclick="SaveChanges" disabled="@_isSaving">
-                            @if (_isSaving)
-                            {
-                                <span class="spinner-border spinner-border-sm me-2"></span>
-                            }
-                            else
-                            {
-                                <i class="bi bi-floppy me-2"></i>
-                            }
-                            Save Changes
-                        </button>
-                        <button class="btn btn-outline-danger" @onclick="NavigateBack">
-                            <i class="bi bi-x-circle me-2"></i>Close
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Device Status Card -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <div class="d-flex align-items-center">
-                                    <div class="status-indicator me-3">
-                                        <i class="bi @(_device.IsEnabled ? "bi-check-circle text-success" : "bi-x-circle text-danger") fs-4"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0">Status</h6>
-                                        <small class="text-muted">@(_device.IsEnabled ? "Enabled" : "Disabled")</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div>
-                                    <h6 class="mb-0">Protocol</h6>
-                                    <small class="text-muted">@_device.Protocol</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div>
-                                    <h6 class="mb-0">Last Activity</h6>
-                                    <small class="text-muted">@(_device.LastConnectedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "Never")</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div>
-                                    <h6 class="mb-0">Data Points</h6>
-                                    <small class="text-muted">@_dataPoints.Count items</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tabbed Interface -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header p-0">
-                        <ul class="nav nav-tabs card-header-tabs" role="tablist">
-                            <li class="nav-item">
-                                <button class="nav-link @(_activeTab == "communication" ? "active" : "")" 
-                                        @onclick="@(() => SetActiveTab("communication"))" 
-                                        type="button">
-                                    <i class="bi bi-wifi me-2"></i>Communication
-                                </button>
-                            </li>
-                            <li class="nav-item">
-                                <button class="nav-link @(_activeTab == "tags" ? "active" : "")" 
-                                        @onclick="@(() => SetActiveTab("tags"))" 
-                                        type="button">
-                                    <i class="bi bi-tags me-2"></i>Data Points
-                                </button>
-                            </li>
-                            <li class="nav-item">
-                                <button class="nav-link @(_activeTab == "monitoring" ? "active" : "")" 
-                                        @onclick="@(() => SetActiveTab("monitoring"))" 
-                                        type="button">
-                                    <i class="bi bi-graph-up me-2"></i>Monitoring
-                                </button>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="card-body p-4">
-                        @if (_activeTab == "communication")
-                        {
-                            <CommunicationTabComponent Device="_device" OnDeviceChanged="OnDeviceChanged" />
-                        }
-                        else if (_activeTab == "tags")
-                        {
-                            <TagsTabComponent DeviceId="_device.Id" DataPoints="_dataPoints" OnDataPointsChanged="OnDataPointsChanged" />
-                        }
-                        else if (_activeTab == "monitoring")
-                        {
-                            <MonitoringTabComponent Device="_device" DataPoints="_dataPoints" />
-                        }
-                    </div>
-                </div>
-            </div>
+        <div class="loading-panel">
+            <div class="spinner-border" role="status"></div>
+            <span class="ms-2">Loading device...</span>
         </div>
     }
 </div>
 
-@code {
-    [Parameter] public string DeviceId { get; set; } = string.Empty;
+<style>
+.device-detail-container {
+    height: 100%;
+    background: rgba(229, 229, 229, 0.06);
+    display: flex;
+    flex-direction: column;
+}
 
+/* Device Tabs */
+.device-tabs {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.tab-header {
+    display: flex;
+    border-bottom: 1px solid #555;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.tab-button {
+    padding: 8px 20px;
+    background: transparent;
+    border: none;
+    color: #fafafa;
+    cursor: pointer;
+    font-size: 12px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.tab-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.tab-button.active {
+    background: rgba(255, 255, 255, 0.1);
+    border-bottom-color: #3b82f6;
+}
+
+.tab-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* Communication Panel */
+.communication-panel {
+    max-width: 600px;
+}
+
+.config-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+    gap: 12px;
+}
+
+.config-label {
+    width: 120px;
+    font-size: 12px;
+    color: #fafafa;
+    font-weight: bold;
+}
+
+.config-input {
+    flex: 1;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #555;
+    border-radius: 3px;
+    color: #fafafa;
+    font-size: 12px;
+}
+
+.config-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.config-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+/* Tags Panel */
+.tags-panel {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.tags-toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #555;
+}
+
+.tool-btn {
+    padding: 4px 12px;
+    background: transparent;
+    border: 1px solid #555;
+    color: #fafafa;
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+}
+
+.tool-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #3b82f6;
+}
+
+.tags-grid {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid #555;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.grid-header {
+    display: grid;
+    grid-template-columns: 1fr 80px 120px 80px 80px;
+    background: rgba(0, 0, 0, 0.4);
+    border-bottom: 1px solid #555;
+}
+
+.grid-row {
+    display: grid;
+    grid-template-columns: 1fr 80px 120px 80px 80px;
+    border-bottom: 1px solid #333;
+}
+
+.grid-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.grid-cell {
+    padding: 6px 8px;
+    font-size: 11px;
+    color: #fafafa;
+    border-right: 1px solid #333;
+    display: flex;
+    align-items: center;
+}
+
+.grid-header .grid-cell {
+    font-weight: bold;
+    text-transform: uppercase;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.quality-indicator {
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-size: 10px;
+}
+
+.quality-indicator.good {
+    background: #10b981;
+    color: white;
+}
+
+.quality-indicator.bad {
+    background: #dc2626;
+    color: white;
+}
+
+.quality-indicator.uncertain {
+    background: #f59e0b;
+    color: white;
+}
+
+/* Loading Panel */
+.loading-panel {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fafafa;
+}
+
+/* Action Buttons */
+.action-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.action-btn.primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.action-btn.primary:hover {
+    background: #2563eb;
+}
+
+.action-btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fafafa;
+    border: 1px solid #555;
+}
+
+.action-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+</style>
+
+@code {
+    [Parameter] public Guid DeviceId { get; set; }
+    
     private DeviceDto? _device;
-    private List<DataPointDto> _dataPoints = new();
-    private bool _loading = true;
-    private bool _isSaving = false;
     private string _activeTab = "communication";
+    private List<TagData> _tags = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -179,73 +351,26 @@
     {
         try
         {
-            _loading = true;
-            StateHasChanged();
-
-            if (Guid.TryParse(DeviceId, out var deviceGuid))
-            {
-                _device = await DeviceApi.GetDeviceByIdAsync(deviceGuid);
-                if (_device != null)
-                {
-                    await LoadDataPoints();
-                }
-            }
+            _device = await DeviceApi.GetDeviceByIdAsync(DeviceId);
+            LoadSampleTags();
         }
-        catch (Exception ex)
+        catch
         {
-            Logger.LogError(ex, "Error loading device {DeviceId}", DeviceId);
-        }
-        finally
-        {
-            _loading = false;
-            StateHasChanged();
+            // Handle error - device not found
+            Navigation.NavigateTo("/");
         }
     }
 
-    private async Task LoadDataPoints()
+    private void LoadSampleTags()
     {
-        try
+        _tags = new List<TagData>
         {
-            if (_device != null)
-            {
-                var response = await DataApi.GetDataPointsByDeviceAsync(_device.Id);
-                _dataPoints = response?.ToList() ?? new List<DataPointDto>();
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error loading data points for device {DeviceId}", DeviceId);
-        }
-    }
-
-    private async Task RefreshDevice()
-    {
-        await LoadDevice();
-    }
-
-    private async Task SaveChanges()
-    {
-        try
-        {
-            _isSaving = true;
-            StateHasChanged();
-
-            if (_device != null)
-            {
-                // Update device if needed
-                // await DeviceApi.UpdateDeviceAsync(_device.Id, updateCommand);
-                await Task.CompletedTask; // Placeholder for actual save operation
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error saving device changes");
-        }
-        finally
-        {
-            _isSaving = false;
-            StateHasChanged();
-        }
+            new("Temperature", "Float", "40001", "23.5", "Good"),
+            new("Pressure", "Int16", "40002", "1250", "Good"),
+            new("FlowRate", "Float", "40003", "45.2", "Good"),
+            new("Status", "Bool", "00001", "true", "Good"),
+            new("Alarm", "Bool", "00002", "false", "Good")
+        };
     }
 
     private void SetActiveTab(string tab)
@@ -254,20 +379,35 @@
         StateHasChanged();
     }
 
-    private void OnDeviceChanged(DeviceDto updatedDevice)
+    private async Task TestConnection()
     {
-        _device = updatedDevice;
-        StateHasChanged();
+        // TODO: Implement actual connection test
     }
 
-    private void OnDataPointsChanged(List<DataPointDto> updatedDataPoints)
+    private async Task SaveDevice()
     {
-        _dataPoints = updatedDataPoints;
-        StateHasChanged();
+        // TODO: Implement device save
     }
 
-    private void NavigateBack()
+    private void AddTag()
     {
-        Navigation.NavigateTo("/devices");
+        // TODO: Implement add tag
     }
+
+    private void RemoveTag()
+    {
+        // TODO: Implement remove tag
+    }
+
+    private void ImportTags()
+    {
+        // TODO: Implement import tags
+    }
+
+    private void ExportTags()
+    {
+        // TODO: Implement export tags
+    }
+
+    public record TagData(string Name, string DataType, string Address, string Value, string Quality);
 }

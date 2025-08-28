@@ -1,592 +1,449 @@
 ﻿@page "/"
-@using Spider.Drivers.Core.Abstractions
-@using Spider.Drivers.Core.Models
+@using Spider.DeviceManagement.Application.DTOs
 @using SpiderStudio.BlazorServer.Services
-@using Spider.ConnectionManagement.Application.DTOs
-@using Spider.ConnectionManagement.Application.Queries
-@using Spider.ProjectManagement.Application.DTOs
-@using Spider.Communication.Application.DTOs
-@inject DriverManagerService DriverManager
 @inject DeviceManagementApiService DeviceApi
-@inject DataAcquisitionApiService DataApi
-@inject ConnectionManagementApiService ConnectionApi
-@inject ProjectManagementApiService ProjectApi
-@inject CommunicationApiService CommunicationApi
-@inject ILogger<Home> Logger
+@inject NavigationManager Navigation
 
-<PageTitle>Spider Studio - Modern IoT Platform</PageTitle>
+<PageTitle>Spider Studio</PageTitle>
 
-<div class="container-fluid">
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="display-5 text-primary mb-1">🕷️ Spider Studio</h1>
-                    <p class="text-muted mb-0">Industrial IoT Data Collection Platform</p>
-                </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-success" @onclick="ConnectAllDrivers" disabled="@_isConnecting">
-                        @if (_isConnecting)
-                        {
-                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                        }
-                        <i class="bi bi-play-circle me-1"></i>Connect All
-                    </button>
-                    <button class="btn btn-outline-danger" @onclick="DisconnectAllDrivers">
-                        <i class="bi bi-stop-circle me-1"></i>Disconnect All
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modern DDD API Status Dashboard -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">🏗️ Modern DDD Architecture Status</h5>
-                    <button class="btn btn-outline-secondary btn-sm" @onclick="RefreshApiStatus">
-                        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
-                    </button>
-                </div>
-                <div class="card-body p-3">
-                    <div class="row g-3">
-                        <div class="col-md-2">
-                            <div class="status-card @(_deviceApiHealthy ? "healthy" : "unhealthy")">
-                                <i class="bi bi-hdd-stack text-primary" style="font-size: 2rem;"></i>
-                                <h6 class="mt-2 mb-1">Device Management</h6>
-                                <span class="badge @(_deviceApiHealthy ? "bg-success" : "bg-danger") mb-2">
-                                    @(_deviceApiHealthy ? "Healthy" : "Unavailable")
-                                </span>
-                                <div class="small text-muted">
-                                    <strong>@_deviceCount</strong> Devices
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="status-card @(_dataApiHealthy ? "healthy" : "unhealthy")">
-                                <i class="bi bi-graph-up-arrow text-info" style="font-size: 2rem;"></i>
-                                <h6 class="mt-2 mb-1">Data Acquisition</h6>
-                                <span class="badge @(_dataApiHealthy ? "bg-success" : "bg-danger") mb-2">
-                                    @(_dataApiHealthy ? "Healthy" : "Unavailable")
-                                </span>
-                                <div class="small text-muted">
-                                    <strong>@_dataPointCount</strong> Data Points
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="status-card @(_connectionApiHealthy ? "healthy" : "unhealthy")">
-                                <i class="bi bi-diagram-3 text-warning" style="font-size: 2rem;"></i>
-                                <h6 class="mt-2 mb-1">Connection Management</h6>
-                                <span class="badge @(_connectionApiHealthy ? "bg-success" : "bg-danger") mb-2">
-                                    @(_connectionApiHealthy ? "Healthy" : "Unavailable")
-                                </span>
-                                <div class="small text-muted">
-                                    <strong>@(_connectionStats?.ConnectedCount ?? 0)</strong>/@(_connectionStats?.TotalConnections ?? 0) Connected
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="status-card @(_projectApiHealthy ? "healthy" : "unhealthy")">
-                                <i class="bi bi-folder-check text-success" style="font-size: 2rem;"></i>
-                                <h6 class="mt-2 mb-1">Project Management</h6>
-                                <span class="badge @(_projectApiHealthy ? "bg-success" : "bg-danger") mb-2">
-                                    @(_projectApiHealthy ? "Healthy" : "Unavailable")
-                                </span>
-                                <div class="small text-muted">
-                                    <strong>@(_projectStats?.ActiveProjects ?? 0)</strong>/@(_projectStats?.TotalProjects ?? 0) Active
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="status-card @(_communicationApiHealthy ? "healthy" : "unhealthy")">
-                                <i class="bi bi-broadcast-pin text-danger" style="font-size: 2rem;"></i>
-                                <h6 class="mt-2 mb-1">Communication</h6>
-                                <span class="badge @(_communicationApiHealthy ? "bg-success" : "bg-danger") mb-2">
-                                    @(_communicationApiHealthy ? "Healthy" : "Unavailable")
-                                </span>
-                                <div class="small text-muted">
-                                    <strong>@(_communicationStats?.ConnectedLinks ?? 0)</strong>/@(_communicationStats?.TotalLinks ?? 0) Links
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="status-card healthy">
-                                <i class="bi bi-cpu text-primary" style="font-size: 2rem;"></i>
-                                <h6 class="mt-2 mb-1">System Status</h6>
-                                <span class="badge bg-success mb-2">Operational</span>
-                                <div class="small text-muted">
-                                    <strong>@_drivers.Count</strong> Drivers
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    @if (_connectionStats != null && _connectionApiHealthy)
-                    {
-                        <hr class="my-3">
-                        <div class="row text-center">
-                            <div class="col-3">
-                                <div class="h4 text-success mb-1">@_connectionStats.HealthyCount</div>
-                                <small class="text-muted">Healthy</small>
-                            </div>
-                            <div class="col-3">
-                                <div class="h4 text-warning mb-1">@_connectionStats.UnhealthyCount</div>
-                                <small class="text-muted">Unhealthy</small>
-                            </div>
-                            <div class="col-3">
-                                <div class="h4 text-danger mb-1">@_connectionStats.FailedCount</div>
-                                <small class="text-muted">Failed</small>
-                            </div>
-                            <div class="col-3">
-                                <div class="h4 text-info mb-1">@_connectionStats.AverageResponseTime.ToString("F0")ms</div>
-                                <small class="text-muted">Avg Response</small>
-                            </div>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h6 class="card-title mb-0">Driver Overview</h6>
-                    @if (!_drivers.Any())
-                    {
-                        <button class="btn btn-primary btn-sm" @onclick="NavigateToDrivers">
-                            <i class="bi bi-plus-circle me-1"></i>Configure Drivers
-                        </button>
-                    }
-                </div>
-                <div class="card-body p-2">
-                    @if (_drivers.Any())
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-sm table-hover mb-0">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 25%;">Driver</th>
-                                        <th style="width: 20%;">Protocol</th>
-                                        <th style="width: 15%;">Status</th>
-                                        <th style="width: 25%;">Capabilities</th>
-                                        <th style="width: 15%;">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var driver in _drivers)
-                                    {
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    <i class="bi bi-cpu me-2 text-primary"></i>
-                                                    <div>
-                                                        <div class="fw-semibold">@driver.Metadata.Name</div>
-                                                        <small class="text-muted">v@driver.Metadata.Version</small>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                @foreach (var protocol in driver.Metadata.SupportedProtocols.Take(2))
-                                                {
-                                                    <span class="badge bg-info me-1">@protocol</span>
-                                                }
-                                                @if (driver.Metadata.SupportedProtocols.Count() > 2)
-                                                {
-                                                    <span class="badge bg-secondary">+@(driver.Metadata.SupportedProtocols.Count() - 2)</span>
-                                                }
-                                            </td>
-                                            <td>
-                                                <span class="badge @GetStatusBadgeClass(driver.Status)">
-                                                    @driver.Status.Name
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div class="d-flex gap-1">
-                                                    @foreach (var capability in GetCapabilityNames(driver.Capabilities).Take(3))
-                                                    {
-                                                        <span class="badge bg-light text-dark">@capability</span>
-                                                    }
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div class="btn-group btn-group-sm">
-                                                    <button class="btn btn-outline-primary" @onclick="() => TestDriver(driver)" title="Test Driver">
-                                                        <i class="bi bi-play"></i>
-                                                    </button>
-                                                    <button class="btn btn-outline-danger" @onclick="() => RemoveDriver(driver.Metadata.Name)" title="Remove Driver">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="text-center py-4">
-                            <i class="bi bi-cpu" style="font-size: 3rem; color: #6c757d;"></i>
-                            <h6 class="mt-3 text-muted">No drivers configured</h6>
-                            <p class="text-muted small">Configure drivers to start collecting IoT data</p>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="card-title mb-0">System Status</h6>
-                </div>
-                <div class="card-body p-3">
-                    <div class="row g-3 text-center">
-                        <div class="col-6">
-                            <div class="h3 text-primary mb-1">@_drivers.Count</div>
-                            <div class="small text-muted">Total Drivers</div>
-                        </div>
-                        <div class="col-6">
-                            <div class="h3 text-success mb-1">@_connectedCount</div>
-                            <div class="small text-muted">Connected</div>
-                        </div>
-                    </div>
-                    
-                    @if (_protocolStats.Any())
-                    {
-                        <hr class="my-3">
-                        <h6 class="small text-muted mb-2">PROTOCOL DISTRIBUTION</h6>
-                        @foreach (var protocol in _protocolStats.Take(5))
-                        {
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="small">@protocol.Key</span>
-                                <span class="badge bg-secondary">@protocol.Value</span>
-                            </div>
-                        }
-                    }
-                </div>
+<!-- Compact WPF-like Device Detail Interface -->
+<div class="device-detail-container">
+    @if (_selectedDevice != null)
+    {
+        <!-- Device Configuration Tabs -->
+        <div class="device-tabs">
+            <div class="tab-header">
+                <button class="tab-button @(_activeTab == "communication" ? "active" : "")" 
+                        @onclick='() => SetActiveTab("communication")'>>
+                    Communication
+                </button>
+                <button class="tab-button @(_activeTab == "tags" ? "active" : "")" 
+                        @onclick='() => SetActiveTab("tags")'>>
+                    Tags
+                </button>
             </div>
 
-            @if (_testResults.Any())
-            {
-                <div class="card mt-3">
-                    <div class="card-header">
-                        <h6 class="card-title mb-0">Recent Tests</h6>
+            <div class="tab-content">
+                @if (_activeTab == "communication")
+                {
+                    <div class="communication-panel">
+                        <div class="config-row">
+                            <label class="config-label">Protocol:</label>
+                            <select class="config-input" @bind="_selectedDevice.Protocol">
+                                <option value="Modbus">Modbus TCP</option>
+                                <option value="OpcUa">OPC UA</option>
+                                <option value="Mqtt">MQTT</option>
+                                <option value="Siemens">Siemens S7</option>
+                                <option value="Omron">Omron FINS</option>
+                            </select>
+                        </div>
+                        
+                        <div class="config-row">
+                            <label class="config-label">Connection String:</label>
+                            <input type="text" class="config-input" @bind="_selectedDevice.ConnectionString" 
+                                   placeholder="e.g., 192.168.1.10:502" />
+                        </div>
+                        
+                        <div class="config-row">
+                            <label class="config-label">Timeout (ms):</label>
+                            <input type="number" class="config-input" value="5000" />
+                        </div>
+
+                        <div class="config-actions">
+                            <button class="action-btn primary" @onclick="TestConnection">
+                                <i class="bi bi-play-circle"></i> Test Connection
+                            </button>
+                            <button class="action-btn secondary" @onclick="SaveDevice">
+                                <i class="bi bi-floppy"></i> Save
+                            </button>
+                        </div>
                     </div>
-                    <div class="card-body p-3">
-                        @foreach (var result in _testResults.TakeLast(5))
-                        {
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <small class="text-truncate me-2">@result.Key</small>
-                                <span class="badge @(result.Value ? "bg-success" : "bg-danger")">
-                                    <i class="bi @(result.Value ? "bi-check" : "bi-x")"></i>
-                                </span>
+                }
+                else if (_activeTab == "tags")
+                {
+                    <div class="tags-panel">
+                        <div class="tags-toolbar">
+                            <button class="tool-btn" @onclick="AddTag">
+                                <i class="bi bi-plus"></i> Add
+                            </button>
+                            <button class="tool-btn" @onclick="RemoveTag">
+                                <i class="bi bi-dash"></i> Remove
+                            </button>
+                            <button class="tool-btn" @onclick="ImportTags">
+                                <i class="bi bi-download"></i> Import
+                            </button>
+                            <button class="tool-btn" @onclick="ExportTags">
+                                <i class="bi bi-upload"></i> Export
+                            </button>
+                        </div>
+
+                        <div class="tags-grid">
+                            <div class="grid-header">
+                                <div class="grid-cell">Name</div>
+                                <div class="grid-cell">Type</div>
+                                <div class="grid-cell">Address</div>
+                                <div class="grid-cell">Value</div>
+                                <div class="grid-cell">Quality</div>
                             </div>
-                        }
+                            @foreach (var tag in _tags)
+                            {
+                                <div class="grid-row">
+                                    <div class="grid-cell">@tag.Name</div>
+                                    <div class="grid-cell">@tag.DataType</div>
+                                    <div class="grid-cell">@tag.Address</div>
+                                    <div class="grid-cell">@tag.Value</div>
+                                    <div class="grid-cell">
+                                        <span class="quality-indicator @tag.Quality.ToLower()">@tag.Quality</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
                     </div>
-                </div>
-            }
+                }
+            </div>
         </div>
-    </div>
+    }
+    else
+    {
+        <!-- Welcome Message -->
+        <div class="welcome-panel">
+            <div class="welcome-content">
+                <i class="bi bi-cpu-fill welcome-icon"></i>
+                <h3>Spider Studio</h3>
+                <p>Select a device from the project tree to configure communication settings and data points.</p>
+                <button class="action-btn primary" @onclick="CreateSampleDevice">
+                    <i class="bi bi-plus-circle"></i> Create Sample Device
+                </button>
+            </div>
+        </div>
+    }
 </div>
 
+<style>
+.device-detail-container {
+    height: 100%;
+    background: rgba(229, 229, 229, 0.06);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Device Tabs */
+.device-tabs {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.tab-header {
+    display: flex;
+    border-bottom: 1px solid #555;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.tab-button {
+    padding: 8px 20px;
+    background: transparent;
+    border: none;
+    color: #fafafa;
+    cursor: pointer;
+    font-size: 12px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.tab-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.tab-button.active {
+    background: rgba(255, 255, 255, 0.1);
+    border-bottom-color: #3b82f6;
+}
+
+.tab-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* Communication Panel */
+.communication-panel {
+    max-width: 600px;
+}
+
+.config-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+    gap: 12px;
+}
+
+.config-label {
+    width: 120px;
+    font-size: 12px;
+    color: #fafafa;
+    font-weight: bold;
+}
+
+.config-input {
+    flex: 1;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #555;
+    border-radius: 3px;
+    color: #fafafa;
+    font-size: 12px;
+}
+
+.config-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.config-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+/* Tags Panel */
+.tags-panel {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.tags-toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #555;
+}
+
+.tool-btn {
+    padding: 4px 12px;
+    background: transparent;
+    border: 1px solid #555;
+    color: #fafafa;
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+}
+
+.tool-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #3b82f6;
+}
+
+.tags-grid {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid #555;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.grid-header {
+    display: grid;
+    grid-template-columns: 1fr 80px 120px 80px 80px;
+    background: rgba(0, 0, 0, 0.4);
+    border-bottom: 1px solid #555;
+}
+
+.grid-row {
+    display: grid;
+    grid-template-columns: 1fr 80px 120px 80px 80px;
+    border-bottom: 1px solid #333;
+}
+
+.grid-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.grid-cell {
+    padding: 6px 8px;
+    font-size: 11px;
+    color: #fafafa;
+    border-right: 1px solid #333;
+    display: flex;
+    align-items: center;
+}
+
+.grid-header .grid-cell {
+    font-weight: bold;
+    text-transform: uppercase;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.quality-indicator {
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-size: 10px;
+}
+
+.quality-indicator.good {
+    background: #10b981;
+    color: white;
+}
+
+.quality-indicator.bad {
+    background: #dc2626;
+    color: white;
+}
+
+.quality-indicator.uncertain {
+    background: #f59e0b;
+    color: white;
+}
+
+/* Welcome Panel */
+.welcome-panel {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.welcome-content {
+    text-align: center;
+    color: #fafafa;
+}
+
+.welcome-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.7;
+}
+
+.welcome-content h3 {
+    margin-bottom: 1rem;
+    font-weight: bold;
+}
+
+.welcome-content p {
+    margin-bottom: 2rem;
+    opacity: 0.8;
+}
+
+/* Action Buttons */
+.action-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.action-btn.primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.action-btn.primary:hover {
+    background: #2563eb;
+}
+
+.action-btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fafafa;
+    border: 1px solid #555;
+}
+
+.action-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+</style>
+
 @code {
-    private List<IDriver> _drivers = new();
-    private bool _isConnecting = false;
-    private int _connectedCount = 0;
-    private Dictionary<string, int> _protocolStats = new();
-    private List<KeyValuePair<string, bool>> _testResults = new();
-    
-    // Modern DDD API status
-    private bool _deviceApiHealthy = false;
-    private bool _dataApiHealthy = false;
-    private bool _connectionApiHealthy = false;
-    private bool _projectApiHealthy = false;
-    private bool _communicationApiHealthy = false;
-    private int _deviceCount = 0;
-    private int _dataPointCount = 0;
-    private ConnectionStatisticsDto? _connectionStats;
-    private ProjectStatisticsDto? _projectStats;
-    private CommunicationStatisticsDto? _communicationStats;
+    private DeviceDto? _selectedDevice;
+    private string _activeTab = "communication";
+    private List<TagData> _tags = new();
 
     protected override async Task OnInitializedAsync()
     {
-        DriverManager.DriversChanged += OnDriversChanged;
-        RefreshDriverList();
-        await RefreshApiStatus();
+        await LoadSampleData();
     }
 
-    private void OnDriversChanged(object? sender, EventArgs e)
+    private async Task LoadSampleData()
     {
-        InvokeAsync(() =>
-        {
-            RefreshDriverList();
-            StateHasChanged();
-        });
-    }
-
-    private void RefreshDriverList()
-    {
-        _drivers = DriverManager.GetDrivers().ToList();
-        _connectedCount = _drivers.Count(d => d.Status == DriverStatus.Connected);
-        
-        _protocolStats = _drivers
-            .SelectMany(d => d.Metadata.SupportedProtocols, (driver, protocol) => protocol)
-            .GroupBy(protocol => protocol)
-            .ToDictionary(g => g.Key, g => g.Count());
-    }
-
-    private async Task ConnectAllDrivers()
-    {
-        _isConnecting = true;
-        StateHasChanged();
-
+        // Load first device as selected by default
         try
         {
-            // In production, this should use proper driver configurations from settings
-            var driverConfigurations = new Dictionary<string, DriverConfiguration>();
+            var projectId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+            var devices = await DeviceApi.GetDevicesByProjectAsync(projectId);
+            _selectedDevice = devices.FirstOrDefault();
             
-            // For now, create sample configurations for available drivers
-            foreach (var driver in DriverManager.GetDrivers())
+            if (_selectedDevice != null)
             {
-                // This should come from user configuration or settings
-                var configuration = new DriverConfiguration("modbus://localhost:502");
-                driverConfigurations[driver.Metadata.Name] = configuration;
+                LoadSampleTags();
             }
-            
-            var results = await DriverManager.ConnectDriversAsync(driverConfigurations);
-            Logger.LogInformation("Connected {Count} drivers", results.Count(r => r.Value));
-            RefreshDriverList();
         }
-        catch (Exception ex)
+        catch
         {
-            Logger.LogError(ex, "Error connecting drivers");
-        }
-        finally
-        {
-            _isConnecting = false;
-            StateHasChanged();
+            // Handle error
         }
     }
 
-    private async Task DisconnectAllDrivers()
+    private void LoadSampleTags()
     {
-        await DriverManager.ShutdownAllAsync();
-        RefreshDriverList();
-        StateHasChanged();
-    }
-
-    private async Task RefreshApiStatus()
-    {
-        try
+        _tags = new List<TagData>
         {
-            // Check all APIs concurrently with timeout
-            var healthCheckTasks = new[]
-            {
-                CheckApiHealth(() => DeviceApi.CheckHealthAsync(), "Device Management"),
-                CheckApiHealth(() => DataApi.CheckHealthAsync(), "Data Acquisition"),
-                CheckApiHealth(() => ConnectionApi.CheckHealthAsync(), "Connection Management"),
-                CheckApiHealth(() => ProjectApi.IsHealthyAsync(), "Project Management"),
-                CheckApiHealth(() => CommunicationApi.IsHealthyAsync(), "Communication")
-            };
-
-            var healthResults = await Task.WhenAll(healthCheckTasks);
-            
-            _deviceApiHealthy = healthResults[0];
-            _dataApiHealthy = healthResults[1];
-            _connectionApiHealthy = healthResults[2];
-            _projectApiHealthy = healthResults[3];
-            _communicationApiHealthy = healthResults[4];
-
-            // Get additional data only if APIs are healthy to avoid exceptions
-            await GetApiStatistics();
-
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error refreshing API status");
-        }
-    }
-
-    private async Task<bool> CheckApiHealth(Func<Task<bool>> healthCheck, string apiName)
-    {
-        try
-        {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-            return await healthCheck();
-        }
-        catch (OperationCanceledException)
-        {
-            Logger.LogWarning("{ApiName} API health check timed out", apiName);
-            return false;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogWarning(ex, "{ApiName} API is unavailable", apiName);
-            return false;
-        }
-    }
-
-    private async Task GetApiStatistics()
-    {
-        // Get device count (using demo project ID) 
-        if (_deviceApiHealthy)
-        {
-            try
-            {
-                var projectId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-                var devices = await DeviceApi.GetDevicesByProjectAsync(projectId);
-                _deviceCount = devices.Count();
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Failed to get device count");
-                _deviceCount = 0;
-            }
-        }
-
-        // Get data point count
-        if (_dataApiHealthy && _deviceCount > 0)
-        {
-            try
-            {
-                var projectId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-                var devices = await DeviceApi.GetDevicesByProjectAsync(projectId);
-                int totalDataPoints = 0;
-                foreach (var device in devices.Take(5)) // Limit to avoid timeouts
-                {
-                    var dataPoints = await DataApi.GetDataPointsByDeviceAsync(device.Id);
-                    totalDataPoints += dataPoints.Count();
-                }
-                _dataPointCount = totalDataPoints;
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Failed to get data point count");
-                _dataPointCount = 0;
-            }
-        }
-
-        // Get statistics from healthy APIs
-        if (_connectionApiHealthy)
-        {
-            try
-            {
-                _connectionStats = await ConnectionApi.GetConnectionStatisticsAsync();
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Failed to get connection statistics");
-                _connectionStats = null;
-            }
-        }
-
-        if (_projectApiHealthy)
-        {
-            try
-            {
-                _projectStats = await ProjectApi.GetProjectStatisticsAsync();
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Failed to get project statistics");
-                _projectStats = null;
-            }
-        }
-
-        if (_communicationApiHealthy)
-        {
-            try
-            {
-                _communicationStats = await CommunicationApi.GetStatisticsAsync();
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Failed to get communication statistics");
-                _communicationStats = null;
-            }
-        }
-    }
-
-    private void NavigateToDrivers()
-    {
-        // In production, this should use NavigationManager
-        Logger.LogInformation("Navigate to drivers configuration page");
-    }
-
-    private async Task TestDriver(IDriver driver)
-    {
-        try
-        {
-            if (driver is IReadableDriver readableDriver)
-            {
-                var request = new ReadRequest("40001", "Int16");
-                var result = await readableDriver.ReadAsync(request);
-                _testResults.Add(new KeyValuePair<string, bool>(driver.Metadata.Name, result.Success));
-                
-                Logger.LogInformation("Test result for {Driver}: {Result}", driver.Metadata.Name, result.Success);
-            }
-            else
-            {
-                _testResults.Add(new KeyValuePair<string, bool>(driver.Metadata.Name, false));
-                Logger.LogWarning("Driver {Driver} does not support reading", driver.Metadata.Name);
-            }
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error testing driver {Driver}", driver.Metadata.Name);
-            _testResults.Add(new KeyValuePair<string, bool>(driver.Metadata.Name, false));
-            StateHasChanged();
-        }
-    }
-
-    private void RemoveDriver(string driverName)
-    {
-        DriverManager.RemoveDriver(driverName);
-    }
-
-    private void AddProductionDriver(string protocolType)
-    {
-        // Use proper driver factory to create production drivers
-        // This should be replaced with proper driver configuration UI
-        Logger.LogInformation("Driver registration should be done through proper configuration, not UI demo buttons");
-    }
-
-    private static string GetStatusBadgeClass(DriverStatus status)
-    {
-        return status.Name switch
-        {
-            "Connected" => "bg-success",
-            "Connecting" or "Initializing" => "bg-warning", 
-            "Disconnected" or "Uninitialized" => "bg-secondary",
-            "Error" => "bg-danger",
-            "Ready" => "bg-info",
-            _ => "bg-secondary"
+            new("Temperature", "Float", "40001", "23.5", "Good"),
+            new("Pressure", "Int16", "40002", "1250", "Good"),
+            new("FlowRate", "Float", "40003", "45.2", "Good"),
+            new("Status", "Bool", "00001", "true", "Good"),
+            new("Alarm", "Bool", "00002", "false", "Good")
         };
     }
 
-    private static IEnumerable<string> GetCapabilityNames(DriverCapabilities capabilities)
+    private void SetActiveTab(string tab)
     {
-        var names = new List<string>();
-        
-        if (capabilities.SupportsReading) names.Add("Read");
-        if (capabilities.SupportsWriting) names.Add("Write");
-        if (capabilities.SupportsSubscriptions) names.Add("Subscribe");
-        if (capabilities.SupportsRealTime) names.Add("Real-time");
-        
-        return names;
+        _activeTab = tab;
+        StateHasChanged();
     }
 
-    public void Dispose()
+    private async Task TestConnection()
     {
-        DriverManager.DriversChanged -= OnDriversChanged;
+        // TODO: Implement actual connection test
     }
+
+    private async Task SaveDevice()
+    {
+        // TODO: Implement device save
+    }
+
+    private void AddTag()
+    {
+        // TODO: Implement add tag
+    }
+
+    private void RemoveTag()
+    {
+        // TODO: Implement remove tag
+    }
+
+    private void ImportTags()
+    {
+        // TODO: Implement import tags
+    }
+
+    private void ExportTags()
+    {
+        // TODO: Implement export tags
+    }
+
+    private void CreateSampleDevice()
+    {
+        Navigation.NavigateTo("/devices");
+    }
+
+    public record TagData(string Name, string DataType, string Address, string Value, string Quality);
 }
