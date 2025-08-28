@@ -59,3 +59,41 @@
 2025-08-28 10:14:38.054 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/api/connections/health - null null
 2025-08-28 10:14:38.060 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/api/connections/health - 404 0 null 5.7569ms
 2025-08-28 10:14:38.065 +00:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5005/api/connections/health, Response status code: 404
+2025-08-28 11:25:14.341 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 11:25:14.458 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 11:25:14.464 +00:00 [INF] Saved 0 entities to in-memory store.
+2025-08-28 11:25:14.528 +00:00 [INF] Starting Spider ConnectionManagement API
+2025-08-28 11:25:14.539 +00:00 [INF] Started connection health monitoring service
+2025-08-28 11:25:14.571 +00:00 [INF] Now listening on: http://localhost:5005
+2025-08-28 11:25:14.571 +00:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-08-28 11:25:14.571 +00:00 [INF] Hosting environment: Development
+2025-08-28 11:25:14.571 +00:00 [INF] Content root path: /home/runner/work/Spider/Spider/src/BoundedContexts/ConnectionManagement/Spider.ConnectionManagement.API
+2025-08-28 11:25:31.871 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
+2025-08-28 11:25:31.905 +00:00 [WRN] Failed to determine the https port for redirect.
+2025-08-28 11:25:32.227 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 356.502ms
+2025-08-28 11:25:32.694 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/api/connections/health - null null
+2025-08-28 11:25:32.698 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/api/connections/health - 404 0 null 3.9215ms
+2025-08-28 11:25:32.701 +00:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5005/api/connections/health, Response status code: 404
+2025-08-28 11:25:34.058 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
+2025-08-28 11:25:34.106 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 48.1018ms
+2025-08-28 11:26:18.173 +00:00 [INF] Application is shutting down...
+2025-08-28 11:26:47.379 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 11:26:47.952 +00:00 [WRN] The property 'ConnectionParameters.ExtendedProperties' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-08-28 11:26:48.026 +00:00 [INF] Saved 0 entities to in-memory store.
+2025-08-28 11:26:48.403 +00:00 [INF] Starting Spider ConnectionManagement API
+2025-08-28 11:26:48.456 +00:00 [INF] Started connection health monitoring service
+2025-08-28 11:26:48.606 +00:00 [INF] Now listening on: http://localhost:5005
+2025-08-28 11:26:48.608 +00:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-08-28 11:26:48.609 +00:00 [INF] Hosting environment: Development
+2025-08-28 11:26:48.611 +00:00 [INF] Content root path: /home/runner/work/Spider/Spider/src/BoundedContexts/ConnectionManagement/Spider.ConnectionManagement.API
+2025-08-28 11:27:26.108 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
+2025-08-28 11:27:26.143 +00:00 [WRN] Failed to determine the https port for redirect.
+2025-08-28 11:27:26.412 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 304.8981ms
+2025-08-28 11:27:26.866 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/api/connections/health - null null
+2025-08-28 11:27:26.870 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/api/connections/health - 404 0 null 4.4465ms
+2025-08-28 11:27:26.874 +00:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5005/api/connections/health, Response status code: 404
+2025-08-28 11:27:28.138 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/health - null null
+2025-08-28 11:27:28.170 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/health - 200 null application/json 32.1333ms
+2025-08-28 11:27:36.083 +00:00 [INF] Request starting HTTP/1.1 GET http://localhost:5005/api/connections/health - null null
+2025-08-28 11:27:36.085 +00:00 [INF] Request finished HTTP/1.1 GET http://localhost:5005/api/connections/health - 404 0 null 1.8884ms
+2025-08-28 11:27:36.085 +00:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5005/api/connections/health, Response status code: 404
