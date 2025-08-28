@@ -466,12 +466,17 @@
             Theme = "light",
             AutoStartMonitoring = true,
             ShowNotifications = true,
+            StartMinimized = false,
+            AutoSave = true,
+            AutoSaveInterval = 300,
             DefaultTimeout = 5000,
             RetryAttempts = 3,
+            MaxRetryAttempts = 5,
             ConnectionPoolSize = 10,
             HeartbeatInterval = 30,
             EnableKeepAlive = true,
             EnableAutoReconnect = true,
+            EnableCompression = false,
             DatabaseConnectionString = "Data Source=spider.db;Version=3;",
             DatabaseTimeout = 60,
             DatabasePoolSize = 20,
@@ -485,6 +490,7 @@
             LogRetentionDays = 30,
             EnableFileLogging = true,
             EnableConsoleLogging = true,
+            EnableRemoteLogging = false,
             SessionTimeout = 60,
             MaxLoginAttempts = 5,
             PasswordMinLength = 8,
@@ -492,19 +498,32 @@
             RequireStrongPasswords = true,
             EnableTwoFactorAuth = false,
             EnableAuditLogging = true,
+            EnableEncryption = false,
+            RequireAuthentication = false,
+            PasswordExpiry = 90,
+            TwoFactorAuth = false,
             WorkerThreads = 4,
             QueueSize = 1000,
             CacheSize = 100,
             CacheTtl = 15,
             EnableCaching = true,
             EnablePerformanceCounters = true,
+            BackgroundProcesses = 2,
+            EnableMultithreading = true,
+            MemoryLimit = 512,
+            EnableProfiling = false,
+            MaxConcurrentConnections = 100,
             BackupDirectory = "./backups",
             BackupInterval = 24,
             BackupRetentionDays = 30,
             MaxBackupFiles = 10,
             CompressionLevel = "Optimal",
             EnableAutoBackup = true,
-            EnableBackupNotification = true
+            EnableBackupNotification = true,
+            AutoBackup = true,
+            BackupLocation = "./backups",
+            MaxBackups = 10,
+            CompressBackups = true
         };
     }
 
@@ -679,12 +698,93 @@
             Logger.LogInformation("Backup restoration simulation completed");
             
             // Simulate restoration by reloading current settings
-            LoadSettings();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error restoring from backup");
+        }
+    }
+
+    private void ResetToDefaults()
+    {
+        try
+        {
+            // Reset to default settings
+            _settings = new SettingsModel
+            {
+                ApplicationName = "Spider Studio",
+                UpdateInterval = 1000,
+                Language = "en",
+                Theme = "light",
+                AutoStartMonitoring = true,
+                ShowNotifications = true,
+                StartMinimized = false,
+                AutoSave = true,
+                AutoSaveInterval = 300,
+                DefaultTimeout = 5000,
+                RetryAttempts = 3,
+                MaxRetryAttempts = 5,
+                ConnectionPoolSize = 10,
+                HeartbeatInterval = 30,
+                EnableKeepAlive = true,
+                EnableAutoReconnect = true,
+                EnableCompression = false,
+                DatabaseConnectionString = "Data Source=spider.db;Version=3;",
+                DatabaseTimeout = 60,
+                DatabasePoolSize = 20,
+                BatchSize = 1000,
+                DataRetentionDays = 30,
+                EnableDataCompression = true,
+                LogLevel = "Information",
+                LogFileSizeLimit = 50,
+                LogFilePath = "./logs",
+                MaxLogFiles = 10,
+                LogRetentionDays = 30,
+                EnableFileLogging = true,
+                EnableConsoleLogging = true,
+                EnableRemoteLogging = false,
+                SessionTimeout = 60,
+                MaxLoginAttempts = 5,
+                PasswordMinLength = 8,
+                AccountLockoutMinutes = 15,
+                RequireStrongPasswords = true,
+                EnableTwoFactorAuth = false,
+                EnableAuditLogging = true,
+                EnableEncryption = false,
+                RequireAuthentication = false,
+                PasswordExpiry = 90,
+                TwoFactorAuth = false,
+                WorkerThreads = 4,
+                QueueSize = 1000,
+                CacheSize = 100,
+                CacheTtl = 15,
+                EnableCaching = true,
+                EnablePerformanceCounters = true,
+                BackgroundProcesses = 2,
+                EnableMultithreading = true,
+                MemoryLimit = 512,
+                EnableProfiling = false,
+                MaxConcurrentConnections = 100,
+                BackupDirectory = "./backups",
+                BackupInterval = 24,
+                BackupRetentionDays = 30,
+                MaxBackupFiles = 10,
+                CompressionLevel = "Optimal",
+                EnableAutoBackup = true,
+                EnableBackupNotification = true,
+                AutoBackup = true,
+                BackupLocation = "./backups",
+                MaxBackups = 10,
+                CompressBackups = true
+            };
+            
+            _hasUnsavedChanges = true;
+            Logger.LogInformation("Settings reset to defaults");
             StateHasChanged();
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error restoring backup");
+            Logger.LogError(ex, "Error resetting settings to defaults");
         }
     }
 
@@ -697,14 +797,19 @@
         public string Theme { get; set; } = "";
         public bool AutoStartMonitoring { get; set; }
         public bool ShowNotifications { get; set; }
+        public bool StartMinimized { get; set; }
+        public bool AutoSave { get; set; }
+        public int AutoSaveInterval { get; set; }
 
         // Communication
         public int DefaultTimeout { get; set; }
         public int RetryAttempts { get; set; }
+        public int MaxRetryAttempts { get; set; }
         public int ConnectionPoolSize { get; set; }
         public int HeartbeatInterval { get; set; }
         public bool EnableKeepAlive { get; set; }
         public bool EnableAutoReconnect { get; set; }
+        public bool EnableCompression { get; set; }
 
         // Database
         public string DatabaseConnectionString { get; set; } = "";
@@ -722,6 +827,7 @@
         public int LogRetentionDays { get; set; }
         public bool EnableFileLogging { get; set; }
         public bool EnableConsoleLogging { get; set; }
+        public bool EnableRemoteLogging { get; set; }
 
         // Security
         public int SessionTimeout { get; set; }
@@ -731,6 +837,10 @@
         public bool RequireStrongPasswords { get; set; }
         public bool EnableTwoFactorAuth { get; set; }
         public bool EnableAuditLogging { get; set; }
+        public bool EnableEncryption { get; set; }
+        public bool RequireAuthentication { get; set; }
+        public int PasswordExpiry { get; set; }
+        public bool TwoFactorAuth { get; set; }
 
         // Performance
         public int WorkerThreads { get; set; }
@@ -739,6 +849,11 @@
         public int CacheTtl { get; set; }
         public bool EnableCaching { get; set; }
         public bool EnablePerformanceCounters { get; set; }
+        public int BackgroundProcesses { get; set; }
+        public bool EnableMultithreading { get; set; }
+        public int MemoryLimit { get; set; }
+        public bool EnableProfiling { get; set; }
+        public int MaxConcurrentConnections { get; set; }
 
         // Backup
         public string BackupDirectory { get; set; } = "";
@@ -748,5 +863,9 @@
         public string CompressionLevel { get; set; } = "";
         public bool EnableAutoBackup { get; set; }
         public bool EnableBackupNotification { get; set; }
+        public bool AutoBackup { get; set; }
+        public string BackupLocation { get; set; } = "";
+        public int MaxBackups { get; set; }
+        public bool CompressBackups { get; set; }
     }
 }
