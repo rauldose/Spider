@@ -5,6 +5,7 @@
 @inject ProjectManagementApiService ProjectApi
 @inject NavigationManager Navigation
 @inject ILogger<ProjectTreeComponent> Logger
+@implements IDisposable
 
 <div class="project-tree">
     @if (_projects.Any())
@@ -255,11 +256,15 @@
     private List<DeviceDto> _devices = new();
     private HashSet<string> _expandedNodes = new();
     private string? _selectedNode;
+    private Timer? _refreshTimer;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadProjects();
         await LoadDevices();
+        
+        // Set up auto-refresh timer to check for changes every 10 seconds
+        _refreshTimer = new Timer(async _ => await RefreshAsync(), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
     }
 
     public async Task RefreshAsync()
@@ -267,6 +272,11 @@
         await LoadProjects();
         await LoadDevices();
         StateHasChanged();
+    }
+    
+    public void Dispose()
+    {
+        _refreshTimer?.Dispose();
     }
 
     private async Task LoadProjects()

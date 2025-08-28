@@ -65,6 +65,21 @@ public class DevicesController : ControllerBase
     }
 
     /// <summary>
+    /// Gets all devices
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of all devices</returns>
+    [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<DeviceDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<DeviceDto>>> GetAllDevices(
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetAllDevicesQuery();
+        var devices = await _mediator.Send(query, cancellationToken);
+        return Ok(devices);
+    }
+
+    /// <summary>
     /// Gets all devices for a specific project
     /// </summary>
     /// <param name="projectId">Project identifier</param>

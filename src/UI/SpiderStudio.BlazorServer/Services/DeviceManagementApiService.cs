@@ -55,6 +55,31 @@ public class DeviceManagementApiService
     }
 
     /// <summary>
+    /// Gets all devices
+    /// </summary>
+    public async Task<IEnumerable<DeviceDto>> GetAllDevicesAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("/api/devices", cancellationToken);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                return JsonSerializer.Deserialize<IEnumerable<DeviceDto>>(json, _jsonOptions) ?? Enumerable.Empty<DeviceDto>();
+            }
+            
+            _logger.LogError("Failed to get all devices. Status: {StatusCode}", response.StatusCode);
+            return Enumerable.Empty<DeviceDto>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all devices");
+            return Enumerable.Empty<DeviceDto>();
+        }
+    }
+
+    /// <summary>
     /// Gets devices by project ID
     /// </summary>
     public async Task<IEnumerable<DeviceDto>> GetDevicesByProjectAsync(Guid projectId, CancellationToken cancellationToken = default)
