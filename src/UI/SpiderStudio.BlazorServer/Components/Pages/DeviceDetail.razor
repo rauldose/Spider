@@ -92,6 +92,13 @@
                             <button class="tool-btn" @onclick="ExportTags">
                                 <i class="bi bi-upload"></i> Export
                             </button>
+                            <div class="simulation-toggle">
+                                <input type="checkbox" id="deviceSimToggle" @bind="_useSimulation" />
+                                <label for="deviceSimToggle" class="toggle-label">
+                                    <i class="bi @(_useSimulation ? "bi-cpu" : "bi-hdd-network")"></i>
+                                    @(_useSimulation ? "Sim" : "Real")
+                                </label>
+                            </div>
                         </div>
 
                         <div class="tags-grid">
@@ -599,6 +606,34 @@
 .modal-btn.secondary:hover {
     background: rgba(255, 255, 255, 0.2);
 }
+
+/* Simulation Toggle Styles */
+.simulation-toggle {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 15px;
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    border: 1px solid #555;
+}
+
+.simulation-toggle input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin-right: 6px;
+}
+
+.toggle-label {
+    font-size: 11px;
+    color: #fafafa;
+    cursor: pointer;
+    user-select: none;
+}
+
+.toggle-label i {
+    margin-right: 4px;
+}
 </style>
 
 @code {
@@ -617,6 +652,7 @@
     private string _newTagName = "";
     private string _newTagType = "Int16";
     private string _newTagAddress = "";
+    private bool _useSimulation = true; // Simulation toggle
 
     [Inject] private DriverManagerService DriverManager { get; set; } = null!;
 
@@ -892,19 +928,91 @@
     {
         try
         {
-            var driver = DriverManager.GetDriverByName(_device?.Name ?? "");
-            if (driver is Spider.Drivers.Core.Abstractions.IReadableDriver readableDriver)
+            if (_useSimulation)
             {
-                var request = new Spider.Drivers.Core.Models.ReadRequest(tag.Address, tag.DataType);
-                var result = await readableDriver.ReadAsync(request);
+                // Simulation mode - generate test values
+                await Task.Delay(500); // Simulate communication delay
                 
-                if (result.Success)
+                var random = new Random();
+                var newValue = tag.DataType switch
                 {
-                    // Update tag value
+                    "Float" => $"{(20 + random.NextDouble() * 10):F1}",
+                    "Int16" => random.Next(0, 1000).ToString(),
+                    "Int32" => random.Next(0, 10000).ToString(),
+                    "Bool" => (random.Next(0, 2) == 1).ToString().ToLower(),
+                    "String" => $"Test_{random.Next(100, 999)}",
+                    _ => random.Next(0, 100).ToString()
+                };
+                
+                var index = _tags.IndexOf(tag);
+                if (index >= 0)
+                {
+                    _tags[index] = tag with { Value = newValue, Quality = "Good" };
+                    StateHasChanged();
+                }
+            }
+            else
+            {
+                // Real device mode - use actual driver
+                var driver = DriverManager.GetDriverByName(_device?.Name ?? "");
+                
+                if (driver == null)
+                {
+                    // Try to create a driver for this device
+                    var protocol = _device?.Protocol ?? "Modbus";
+                    driver = await DriverManager.CreateDriverAsync(protocol);
+                    
+                    if (driver != null)
+                    {
+                        // Configure the driver
+                        var config = new Spider.Drivers.Core.Models.DriverConfiguration(
+                            connectionString: _device?.ConnectionString ?? "192.168.1.100:502",
+                            parameters: new Dictionary<string, object>
+                            {
+                                ["Host"] = "192.168.1.100",
+                                ["Port"] = 502,
+                                ["SlaveId"] = 1,
+                                ["Timeout"] = 5000
+                            });
+                        
+                        await driver.InitializeAsync(config);
+                        await DriverManager.RegisterDriverInstanceAsync(_device?.Name ?? "TestDevice", driver);
+                    }
+                }
+                
+                if (driver is Spider.Drivers.Core.Abstractions.IReadableDriver readableDriver)
+                {
+                    var request = new Spider.Drivers.Core.Models.ReadRequest(tag.Address, tag.DataType);
+                    var result = await readableDriver.ReadAsync(request);
+                    
+                    if (result.Success)
+                    {
+                        // Update tag value
+                        var index = _tags.IndexOf(tag);
+                        if (index >= 0)
+                        {
+                            _tags[index] = tag with { Value = result.Value?.ToString() ?? "null", Quality = result.DataQuality };
+                            StateHasChanged();
+                        }
+                    }
+                    else
+                    {
+                        // Read failed
+                        var index = _tags.IndexOf(tag);
+                        if (index >= 0)
+                        {
+                            _tags[index] = tag with { Value = "Read Failed", Quality = "Bad" };
+                            StateHasChanged();
+                        }
+                    }
+                }
+                else
+                {
+                    // Driver doesn't support reading, fall back to simulation
                     var index = _tags.IndexOf(tag);
                     if (index >= 0)
                     {
-                        _tags[index] = tag with { Value = result.Value?.ToString() ?? "null", Quality = result.DataQuality };
+                        _tags[index] = tag with { Quality = "Uncertain", Value = "Driver Error" };
                         StateHasChanged();
                     }
                 }
@@ -916,7 +1024,7 @@
             var index = _tags.IndexOf(tag);
             if (index >= 0)
             {
-                _tags[index] = tag with { Quality = "Bad" };
+                _tags[index] = tag with { Quality = "Bad", Value = "Error" };
                 StateHasChanged();
             }
             // Log the exception if needed

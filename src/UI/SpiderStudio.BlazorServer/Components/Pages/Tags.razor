@@ -4,6 +4,7 @@
 @using SpiderStudio.BlazorServer.Services
 @inject DeviceManagementApiService DeviceApi
 @inject DataAcquisitionApiService DataApi
+@inject DriverManagerService DriverManager
 @inject ILogger<Tags> Logger
 
 <PageTitle>Tags Management - Spider Studio</PageTitle>
@@ -23,9 +24,16 @@
                     <button class="btn btn-outline-secondary me-2" @onclick="ImportTags">
                         <i class="bi bi-upload me-2"></i>Import
                     </button>
-                    <button class="btn btn-outline-secondary" @onclick="ExportTags">
+                    <button class="btn btn-outline-secondary me-2" @onclick="ExportTags">
                         <i class="bi bi-download me-2"></i>Export
                     </button>
+                    <div class="form-check form-switch d-inline-block ms-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="simulationToggle" @bind="_useSimulation">
+                        <label class="form-check-label" for="simulationToggle">
+                            <i class="bi @(_useSimulation ? "bi-cpu" : "bi-hdd-network")"></i>
+                            @(_useSimulation ? "Simulation Mode" : "Real Device Mode")
+                        </label>
+                    </div>
                 </div>
             </div>
         </div>
@@ -160,8 +168,9 @@
                                         <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => EditTag(tag)">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <button class="btn btn-sm btn-outline-success me-1" @onclick="() => TestTag(tag)">
-                                            <i class="bi bi-play"></i>
+                                        <button class="btn btn-sm btn-outline-success me-1" @onclick="() => TestTag(tag)" disabled="@_isTestingTag">
+                                            <i class="bi @(_isTestingTag && _currentTestingTag == tag.Name ? "bi-arrow-clockwise spinning" : "bi-play")"></i>
+                                            @(_isTestingTag && _currentTestingTag == tag.Name ? "Testing..." : "Test")
                                         </button>
                                         <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteTag(tag)">
                                             <i class="bi bi-trash"></i>
@@ -213,6 +222,9 @@
     private string _searchFilter = "";
     private string _typeFilter = "";
     private string _statusFilter = "";
+    private bool _useSimulation = true; // Toggle for simulation vs real device mode
+    private bool _isTestingTag = false;
+    private string _currentTestingTag = "";
     
     private int _totalTags = 0;
     private int _activeTags = 0;
@@ -287,23 +299,36 @@
         {
             InvokeAsync(() =>
             {
-                // Simulate live data updates
-                var random = new Random();
-                foreach (var tag in _tags)
+                // Only simulate if simulation mode is enabled
+                if (_useSimulation)
                 {
-                    if (tag.DataType == "Single")
+                    // Simulate live data updates
+                    var random = new Random();
+                    foreach (var tag in _tags)
                     {
-                        var value = 20 + random.NextDouble() * 10;
-                        tag.Value = $"{value:F1}°C";
-                        tag.LastUpdate = DateTime.Now;
+                        if (tag.DataType == "Single" || tag.DataType == "Float")
+                        {
+                            var value = 20 + random.NextDouble() * 10;
+                            tag.Value = $"{value:F1}°C";
+                            tag.LastUpdate = DateTime.Now;
+                            tag.Quality = "Good";
+                        }
+                        else if (tag.DataType == "Bool")
+                        {
+                            tag.Value = random.Next(0, 2) == 1 ? "True" : "False";
+                            tag.LastUpdate = DateTime.Now;
+                            tag.Quality = "Good";
+                        }
+                        else if (tag.DataType.Contains("Int"))
+                        {
+                            var value = random.Next(0, 1000);
+                            tag.Value = value.ToString();
+                            tag.LastUpdate = DateTime.Now;
+                            tag.Quality = "Good";
+                        }
                     }
-                    else if (tag.DataType == "Bool")
-                    {
-                        tag.Value = random.Next(0, 2) == 1 ? "True" : "False";
-                        tag.LastUpdate = DateTime.Now;
-                    }
+                    StateHasChanged();
                 }
-                StateHasChanged();
             });
         };
         timer.Start();
@@ -377,39 +402,128 @@
 
     private async Task TestTag(TagViewModel tag)
     {
-        Logger.LogInformation("Testing tag: {TagName}", tag.Name);
+        Logger.LogInformation("Testing tag: {TagName} (Mode: {Mode})", tag.Name, _useSimulation ? "Simulation" : "Real Device");
         
         try
         {
-            // Simulate tag testing by reading from the device
+            _isTestingTag = true;
+            _currentTestingTag = tag.Name;
             tag.Quality = "Testing";
             StateHasChanged();
             
-            await Task.Delay(1000); // Simulate communication delay
+            await Task.Delay(500); // Brief delay for UI feedback
             
-            // Simulate successful test
-            tag.Value = tag.DataType switch
+            if (_useSimulation)
             {
-                "Single" => $"{(20 + Random.Shared.NextDouble() * 10):F1}°C",
-                "Bool" => Random.Shared.Next(0, 2) == 1 ? "True" : "False",
-                "UInt16" => Random.Shared.Next(0, 1000).ToString(),
-                "UInt32" => Random.Shared.Next(1000, 10000).ToString(),
-                "String" => $"TestValue_{Random.Shared.Next(100, 999)}",
-                _ => "OK"
-            };
+                // Simulate tag reading with random values
+                await TestTagSimulation(tag);
+            }
+            else
+            {
+                // Read from real device
+                await TestTagRealDevice(tag);
+            }
             
-            tag.Quality = "Good";
-            tag.LastUpdate = DateTime.Now;
-            StateHasChanged();
-            
-            Logger.LogInformation("Tag test successful: {TagName} = {Value}", tag.Name, tag.Value);
+            Logger.LogInformation("Tag test completed: {TagName} = {Value} (Quality: {Quality})", tag.Name, tag.Value, tag.Quality);
         }
         catch (Exception ex)
         {
             tag.Quality = "Bad";
             tag.Value = "Error";
-            StateHasChanged();
             Logger.LogError(ex, "Tag test failed: {TagName}", tag.Name);
+        }
+        finally
+        {
+            _isTestingTag = false;
+            _currentTestingTag = "";
+            StateHasChanged();
+        }
+    }
+
+    private async Task TestTagSimulation(TagViewModel tag)
+    {
+        await Task.Delay(500); // Simulate communication delay
+        
+        // Generate simulated values based on data type
+        tag.Value = tag.DataType switch
+        {
+            "Single" or "Float" => $"{(20 + Random.Shared.NextDouble() * 10):F1}°C",
+            "Bool" => Random.Shared.Next(0, 2) == 1 ? "True" : "False",
+            "UInt16" => Random.Shared.Next(0, 1000).ToString(),
+            "UInt32" => Random.Shared.Next(1000, 10000).ToString(),
+            "Int16" => Random.Shared.Next(-500, 500).ToString(),
+            "Int32" => Random.Shared.Next(-10000, 10000).ToString(),
+            "String" => $"Sim_{Random.Shared.Next(100, 999)}",
+            "DateTime" => DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+            _ => "OK"
+        };
+        
+        tag.Quality = "Good";
+        tag.LastUpdate = DateTime.Now;
+    }
+
+    private async Task TestTagRealDevice(TagViewModel tag)
+    {
+        try
+        {
+            // Try to find a driver for this device
+            var driver = DriverManager.GetDriverByName(tag.DeviceName);
+            
+            if (driver == null)
+            {
+                // Try to create a Modbus driver for testing
+                var modbusDriver = await DriverManager.CreateDriverAsync("Modbus");
+                if (modbusDriver != null)
+                {
+                    // Configure the driver with default settings
+                    var config = new DriverConfiguration(
+                        connectionString: "192.168.1.100:502", // Default Modbus TCP
+                        parameters: new Dictionary<string, object>
+                        {
+                            ["Host"] = "192.168.1.100",
+                            ["Port"] = 502,
+                            ["SlaveId"] = 1,
+                            ["Timeout"] = 5000
+                        });
+                    
+                    await modbusDriver.InitializeAsync(config);
+                    await DriverManager.RegisterDriverInstanceAsync(tag.DeviceName, modbusDriver);
+                    driver = modbusDriver;
+                }
+            }
+            
+            if (driver is IReadableDriver readableDriver)
+            {
+                var request = new ReadRequest(tag.Address, tag.DataType);
+                var result = await readableDriver.ReadAsync(request);
+                
+                if (result.Success)
+                {
+                    tag.Value = result.Value?.ToString() ?? "null";
+                    tag.Quality = result.DataQuality;
+                    tag.LastUpdate = DateTime.Now;
+                    Logger.LogInformation("Successfully read tag {TagName} from device: {Value}", tag.Name, tag.Value);
+                }
+                else
+                {
+                    tag.Quality = "Bad";
+                    tag.Value = "Read Failed";
+                    Logger.LogWarning("Failed to read tag {TagName}: {Error}", tag.Name, result.ErrorMessage);
+                }
+            }
+            else
+            {
+                // Driver doesn't support reading, fall back to simulation
+                Logger.LogWarning("Driver for {DeviceName} doesn't support reading, falling back to simulation", tag.DeviceName);
+                await TestTagSimulation(tag);
+                tag.Quality = "Uncertain"; // Mark as uncertain since it's simulated
+            }
+        }
+        catch (Exception ex)
+        {
+            tag.Quality = "Bad";
+            tag.Value = "Connection Error";
+            Logger.LogError(ex, "Error reading from real device for tag {TagName}", tag.Name);
         }
     }
 
@@ -542,3 +656,30 @@
         public bool Selected { get; set; }
     }
 }
+
+<style>
+    .spinning {
+        animation: spin 1s linear infinite;
+    }
+
+    @@keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .form-check-switch .form-check-input {
+        width: 2em;
+        height: 1em;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%2875, 181, 67, 0.25%29'/%3e%3c/svg%3e");
+    }
+
+    .form-check-switch .form-check-input:checked {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%28255,255,255,1.0%29'/%3e%3c/svg%3e");
+    }
+
+    .form-check-label {
+        margin-left: 0.5rem;
+        font-size: 0.9rem;
+        color: #495057;
+    }
+</style>
