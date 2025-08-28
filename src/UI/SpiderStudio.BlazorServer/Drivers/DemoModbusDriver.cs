@@ -103,6 +103,9 @@ public class DemoModbusDriver : IDriver, IReadableDriver, IWritableDriver, ISubs
 
         try
         {
+            // Simulate async operation
+            await Task.Delay(10, cancellationToken);
+            
             // Simulate reading value
             var value = GenerateSimulatedValue(request.Address);
             return ReadOperationResult.CreateSuccess(value);
@@ -138,6 +141,9 @@ public class DemoModbusDriver : IDriver, IReadableDriver, IWritableDriver, ISubs
 
         try
         {
+            // Simulate async write operation
+            await Task.Delay(5, cancellationToken);
+            
             // Simulate writing values
             _dataCache[request.Address] = request.Value;
             return WriteOperationResult.CreateSuccess();

@@ -336,18 +336,21 @@
     {
         // This would navigate to a data points page or show a modal
         Logger.LogInformation("Loading data points for device {DeviceId}", deviceId);
+        await Task.CompletedTask; // Placeholder for actual navigation or modal logic
     }
 
     private async Task TestConnection(DeviceDto device)
     {
         Logger.LogInformation("Testing connection for device {DeviceId}", device.Id);
         // Add connection test logic here
+        await Task.CompletedTask; // Placeholder for actual connection test
     }
 
     private async Task AddDataPoint(DeviceDto device)
     {
         Logger.LogInformation("Adding data point for device {DeviceId}", device.Id);
         // This would show a form to add data points
+        await Task.CompletedTask; // Placeholder for actual data point creation
     }
 
     private static string GetStatusBadgeClass(string status)

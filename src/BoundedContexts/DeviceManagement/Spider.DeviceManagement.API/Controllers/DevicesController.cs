@@ -16,6 +16,10 @@ public class DevicesController : ControllerBase
 {
     private readonly IMediator _mediator;
 
+    /// <summary>
+    /// Initializes a new instance of the DevicesController
+    /// </summary>
+    /// <param name="mediator">The mediator instance for CQRS operations</param>
     public DevicesController(IMediator mediator)
     {
         _mediator = mediator;

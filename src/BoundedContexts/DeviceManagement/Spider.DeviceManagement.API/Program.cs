@@ -15,6 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddHealthChecks();
 
 // Swagger configuration
 builder.Services.AddSwaggerGen(c =>
@@ -67,10 +68,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Device Management API v1"));
 }
 
-app.UseHttpsRedirection();
+// Remove HTTPS redirection in development to avoid 307 redirects
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseCors("AllowAll");
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 // Initialize database
 using (var scope = app.Services.CreateScope())

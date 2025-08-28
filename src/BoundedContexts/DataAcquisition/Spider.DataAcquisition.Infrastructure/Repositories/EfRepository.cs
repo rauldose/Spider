@@ -39,21 +39,22 @@ public class EfRepository<TEntity, TId> : IRepository<TEntity, TId>
         return await _context.Set<TEntity>().FirstOrDefaultAsync(predicate, cancellationToken);
     }
 
-    public async Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default)
+    public Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         var result = _context.Set<TEntity>().Add(entity);
-        return result.Entity;
+        return Task.FromResult(result.Entity);
     }
 
-    public async Task<TEntity> UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
+    public Task<TEntity> UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         _context.Entry(entity).State = EntityState.Modified;
-        return entity;
+        return Task.FromResult(entity);
     }
 
-    public async Task RemoveAsync(TEntity entity, CancellationToken cancellationToken = default)
+    public Task RemoveAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         _context.Set<TEntity>().Remove(entity);
+        return Task.CompletedTask;
     }
 
     public async Task RemoveAsync(TId id, CancellationToken cancellationToken = default)

@@ -13,6 +13,7 @@
 @inject ProjectManagementApiService ProjectApi
 @inject CommunicationApiService CommunicationApi
 @inject ILogger<Home> Logger
+@inject ILogger<SpiderStudio.BlazorServer.Drivers.DemoModbusDriver> DemoDriverLogger
 
 <PageTitle>Spider Studio - Modern IoT Platform</PageTitle>
 
@@ -455,7 +456,7 @@
 
     private void AddDemoDriver()
     {
-        var demoDriver = new SpiderStudio.BlazorServer.Drivers.DemoModbusDriver(Logger as ILogger<SpiderStudio.BlazorServer.Drivers.DemoModbusDriver>);
+        var demoDriver = new SpiderStudio.BlazorServer.Drivers.DemoModbusDriver(DemoDriverLogger);
         DriverManager.AddDriver(demoDriver);
     }
 

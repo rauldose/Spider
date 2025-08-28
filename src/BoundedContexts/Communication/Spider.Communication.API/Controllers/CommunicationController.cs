@@ -53,6 +53,9 @@ public class CommunicationController : ControllerBase
     {
         try
         {
+            // Simulate health check operations
+            await Task.Delay(1);
+            
             // Simple health check
             return Ok(new
             {
