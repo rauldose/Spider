@@ -1,4 +1,4 @@
-namespace Spider.Drivers.Communication.Interfaces;
+namespace Spider.Drivers.Communication.Models;
 
 /// <summary>
 /// Result of a PLC communication operation

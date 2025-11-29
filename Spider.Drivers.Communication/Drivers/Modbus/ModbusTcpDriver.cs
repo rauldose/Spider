@@ -272,23 +272,38 @@ public class ModbusTcpDriver : PlcDriverBase
         if (address.StartsWith("HR:", StringComparison.OrdinalIgnoreCase) || 
             address.StartsWith("hr:", StringComparison.OrdinalIgnoreCase))
         {
-            return (isWrite ? FunctionWriteMultipleRegisters : FunctionReadHoldingRegisters, 
-                    ushort.Parse(address[3..]));
+            if (!ushort.TryParse(address.Substring(3), out var hrAddr))
+            {
+                throw new ArgumentException($"Invalid holding register address: {address}");
+            }
+            return (isWrite ? FunctionWriteMultipleRegisters : FunctionReadHoldingRegisters, hrAddr);
         }
         if (address.StartsWith("IR:", StringComparison.OrdinalIgnoreCase) ||
             address.StartsWith("ir:", StringComparison.OrdinalIgnoreCase))
         {
-            return (FunctionReadInputRegisters, ushort.Parse(address[3..]));
+            if (!ushort.TryParse(address.Substring(3), out var irAddr))
+            {
+                throw new ArgumentException($"Invalid input register address: {address}");
+            }
+            return (FunctionReadInputRegisters, irAddr);
         }
         if (address.StartsWith("CS:", StringComparison.OrdinalIgnoreCase) ||
             address.StartsWith("cs:", StringComparison.OrdinalIgnoreCase))
         {
-            return (isWrite ? FunctionWriteSingleCoil : FunctionReadCoils, ushort.Parse(address[3..]));
+            if (!ushort.TryParse(address.Substring(3), out var csAddr))
+            {
+                throw new ArgumentException($"Invalid coil address: {address}");
+            }
+            return (isWrite ? FunctionWriteSingleCoil : FunctionReadCoils, csAddr);
         }
         if (address.StartsWith("IS:", StringComparison.OrdinalIgnoreCase) ||
             address.StartsWith("is:", StringComparison.OrdinalIgnoreCase))
         {
-            return (FunctionReadDiscreteInputs, ushort.Parse(address[3..]));
+            if (!ushort.TryParse(address.Substring(3), out var isAddr))
+            {
+                throw new ArgumentException($"Invalid discrete input address: {address}");
+            }
+            return (FunctionReadDiscreteInputs, isAddr);
         }
 
         // Standard Modbus address format

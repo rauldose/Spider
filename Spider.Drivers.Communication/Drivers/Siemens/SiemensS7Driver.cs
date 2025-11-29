@@ -25,6 +25,12 @@ public class SiemensS7Driver : PlcDriverBase
     private static readonly byte[] COTP_CR = { 0x11, 0xE0, 0x00, 0x00, 0x00, 0x01, 0x00, 0xC0, 0x01, 0x0A, 0xC1, 0x02, 0x01, 0x02, 0xC2, 0x02, 0x01, 0x00 };
     private static readonly byte[] S7_SETUP_COMM = { 0xF0, 0x00, 0x00, 0x01, 0x00, 0x01, 0x01, 0xE0 };
 
+    // S7 Memory Area Codes
+    private const byte AreaCodeDataBlock = 0x84;
+    private const byte AreaCodeMemory = 0x83;
+    private const byte AreaCodeInput = 0x81;
+    private const byte AreaCodeOutput = 0x82;
+
     #endregion
 
     #region Connection Methods
@@ -464,7 +470,7 @@ public class SiemensS7Driver : PlcDriverBase
         if (address.StartsWith("DB"))
         {
             // Data Block addressing
-            areaCode = 0x84; // DB area
+            areaCode = AreaCodeDataBlock;
 
             var parts = address.Split('.');
             if (parts.Length < 2)
@@ -472,7 +478,7 @@ public class SiemensS7Driver : PlcDriverBase
                 return OperationResult<(byte, ushort, int, byte, bool)>.Failure($"Invalid DB address format: {address}");
             }
 
-            if (!ushort.TryParse(parts[0][2..], out dbNumber))
+            if (!ushort.TryParse(parts[0].Substring(2), out dbNumber))
             {
                 return OperationResult<(byte, ushort, int, byte, bool)>.Failure($"Invalid DB number: {parts[0]}");
             }
@@ -482,28 +488,28 @@ public class SiemensS7Driver : PlcDriverBase
             {
                 // Bit address: DB10.DBX0.1
                 isBit = true;
-                if (!int.TryParse(typeAndAddress[3..], out startAddress) || !byte.TryParse(parts[2], out bitAddress))
+                if (!int.TryParse(typeAndAddress.Substring(3), out startAddress) || !byte.TryParse(parts[2], out bitAddress))
                 {
                     return OperationResult<(byte, ushort, int, byte, bool)>.Failure($"Invalid bit address: {address}");
                 }
             }
             else if (typeAndAddress.StartsWith("DBB"))
             {
-                if (!int.TryParse(typeAndAddress[3..], out startAddress))
+                if (!int.TryParse(typeAndAddress.Substring(3), out startAddress))
                 {
                     return OperationResult<(byte, ushort, int, byte, bool)>.Failure($"Invalid byte address: {address}");
                 }
             }
             else if (typeAndAddress.StartsWith("DBW"))
             {
-                if (!int.TryParse(typeAndAddress[3..], out startAddress))
+                if (!int.TryParse(typeAndAddress.Substring(3), out startAddress))
                 {
                     return OperationResult<(byte, ushort, int, byte, bool)>.Failure($"Invalid word address: {address}");
                 }
             }
             else if (typeAndAddress.StartsWith("DBD"))
             {
-                if (!int.TryParse(typeAndAddress[3..], out startAddress))
+                if (!int.TryParse(typeAndAddress.Substring(3), out startAddress))
                 {
                     return OperationResult<(byte, ushort, int, byte, bool)>.Failure($"Invalid dword address: {address}");
                 }
@@ -518,13 +524,13 @@ public class SiemensS7Driver : PlcDriverBase
             // Memory area addressing
             areaCode = address[0] switch
             {
-                'M' => 0x83, // Memory
-                'I' => 0x81, // Input
-                'Q' => 0x82, // Output
+                'M' => AreaCodeMemory,
+                'I' => AreaCodeInput,
+                'Q' => AreaCodeOutput,
                 _ => throw new ArgumentException($"Invalid area: {address[0]}")
             };
 
-            var rest = address[1..];
+            var rest = address.Substring(1);
 
             if (rest.Contains('.'))
             {
@@ -538,21 +544,21 @@ public class SiemensS7Driver : PlcDriverBase
             }
             else if (rest.StartsWith("B"))
             {
-                if (!int.TryParse(rest[1..], out startAddress))
+                if (!int.TryParse(rest.Substring(1), out startAddress))
                 {
                     return OperationResult<(byte, ushort, int, byte, bool)>.Failure($"Invalid memory byte address: {address}");
                 }
             }
             else if (rest.StartsWith("W"))
             {
-                if (!int.TryParse(rest[1..], out startAddress))
+                if (!int.TryParse(rest.Substring(1), out startAddress))
                 {
                     return OperationResult<(byte, ushort, int, byte, bool)>.Failure($"Invalid memory word address: {address}");
                 }
             }
             else if (rest.StartsWith("D"))
             {
-                if (!int.TryParse(rest[1..], out startAddress))
+                if (!int.TryParse(rest.Substring(1), out startAddress))
                 {
                     return OperationResult<(byte, ushort, int, byte, bool)>.Failure($"Invalid memory dword address: {address}");
                 }

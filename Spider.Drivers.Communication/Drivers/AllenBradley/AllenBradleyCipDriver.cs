@@ -31,6 +31,20 @@ public class AllenBradleyCipDriver : PlcDriverBase
     private const byte ServiceReadTagFragmented = 0x52;
     private const byte ServiceWriteTagFragmented = 0x53;
 
+    // CIP Data Types
+    private const ushort CipTypeBool = 0x00C1;
+    private const ushort CipTypeSint = 0x00C2; // 8-bit signed
+    private const ushort CipTypeInt = 0x00C3; // 16-bit signed
+    private const ushort CipTypeDint = 0x00C4; // 32-bit signed
+    private const ushort CipTypeLint = 0x00C5; // 64-bit signed
+    private const ushort CipTypeUsint = 0x00C6; // 8-bit unsigned
+    private const ushort CipTypeUint = 0x00C7; // 16-bit unsigned
+    private const ushort CipTypeUdint = 0x00C8; // 32-bit unsigned
+    private const ushort CipTypeUlint = 0x00C9; // 64-bit unsigned
+    private const ushort CipTypeReal = 0x00CA; // 32-bit float
+    private const ushort CipTypeLreal = 0x00CB; // 64-bit float
+    private const ushort CipTypeString = 0x00D0;
+
     #endregion
 
     #region Connection Methods
@@ -443,23 +457,6 @@ public class AllenBradleyCipDriver : PlcDriverBase
 
         return OperationResult.Success();
     }
-
-    #endregion
-
-    #region CIP Data Types
-
-    private const ushort CipTypeBool = 0x00C1;
-    private const ushort CipTypeSint = 0x00C2; // 8-bit signed
-    private const ushort CipTypeInt = 0x00C3; // 16-bit signed
-    private const ushort CipTypeDint = 0x00C4; // 32-bit signed
-    private const ushort CipTypeLint = 0x00C5; // 64-bit signed
-    private const ushort CipTypeUsint = 0x00C6; // 8-bit unsigned
-    private const ushort CipTypeUint = 0x00C7; // 16-bit unsigned
-    private const ushort CipTypeUdint = 0x00C8; // 32-bit unsigned
-    private const ushort CipTypeUlint = 0x00C9; // 64-bit unsigned
-    private const ushort CipTypeReal = 0x00CA; // 32-bit float
-    private const ushort CipTypeLreal = 0x00CB; // 64-bit float
-    private const ushort CipTypeString = 0x00D0;
 
     #endregion
 
