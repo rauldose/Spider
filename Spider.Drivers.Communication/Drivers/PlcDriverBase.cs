@@ -241,8 +241,30 @@ public abstract class PlcDriverBase : IPlcDriver
 
     public void Dispose()
     {
-        Dispose(true);
+        Dispose(disposing: true);
         GC.SuppressFinalize(this);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await DisposeAsyncCore().ConfigureAwait(false);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual async ValueTask DisposeAsyncCore()
+    {
+        if (_disposed) return;
+
+        if (_stream != null)
+        {
+            await _stream.DisposeAsync().ConfigureAwait(false);
+            _stream = null;
+        }
+
+        _client?.Dispose();
+        _client = null;
+        _communicationLock.Dispose();
+        _disposed = true;
     }
 
     protected virtual void Dispose(bool disposing)

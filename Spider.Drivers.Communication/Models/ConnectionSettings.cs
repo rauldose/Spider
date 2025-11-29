@@ -8,25 +8,25 @@ public class ConnectionSettings
     /// <summary>
     /// IP address or hostname of the PLC
     /// </summary>
-    public string IpAddress { get; set; } = string.Empty;
+    public required string IpAddress { get; init; }
 
     /// <summary>
     /// Port number for the connection
     /// </summary>
-    public int Port { get; set; }
+    public int Port { get; init; }
 
     /// <summary>
-    /// Connection timeout in milliseconds
+    /// Connection timeout in milliseconds (default: 5000ms)
     /// </summary>
-    public int ConnectTimeout { get; set; } = 5000;
+    public int ConnectTimeout { get; init; } = 5000;
 
     /// <summary>
-    /// Receive timeout in milliseconds
+    /// Receive timeout in milliseconds (default: 5000ms)
     /// </summary>
-    public int ReceiveTimeout { get; set; } = 5000;
+    public int ReceiveTimeout { get; init; } = 5000;
 
     /// <summary>
-    /// Send timeout in milliseconds
+    /// Send timeout in milliseconds (default: 5000ms)
     /// </summary>
-    public int SendTimeout { get; set; } = 5000;
+    public int SendTimeout { get; init; } = 5000;
 }

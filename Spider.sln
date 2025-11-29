@@ -205,6 +205,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpiderDeployService", "Depl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.Drivers.Communication", "Spider.Drivers.Communication\Spider.Drivers.Communication.csproj", "{A7D7E34C-4CEE-415D-AA2B-47E03A219E76}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spider.Drivers.Communication.Sample", "Spider.Drivers.Communication.Sample\Spider.Drivers.Communication.Sample.csproj", "{9FA3C2F9-3D69-4642-8F4C-5EBEC71257B4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1247,6 +1249,18 @@ Global
 		{A7D7E34C-4CEE-415D-AA2B-47E03A219E76}.Release|x64.Build.0 = Release|Any CPU
 		{A7D7E34C-4CEE-415D-AA2B-47E03A219E76}.Release|x86.ActiveCfg = Release|Any CPU
 		{A7D7E34C-4CEE-415D-AA2B-47E03A219E76}.Release|x86.Build.0 = Release|Any CPU
+		{9FA3C2F9-3D69-4642-8F4C-5EBEC71257B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9FA3C2F9-3D69-4642-8F4C-5EBEC71257B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9FA3C2F9-3D69-4642-8F4C-5EBEC71257B4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9FA3C2F9-3D69-4642-8F4C-5EBEC71257B4}.Debug|x64.Build.0 = Debug|Any CPU
+		{9FA3C2F9-3D69-4642-8F4C-5EBEC71257B4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9FA3C2F9-3D69-4642-8F4C-5EBEC71257B4}.Debug|x86.Build.0 = Debug|Any CPU
+		{9FA3C2F9-3D69-4642-8F4C-5EBEC71257B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9FA3C2F9-3D69-4642-8F4C-5EBEC71257B4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9FA3C2F9-3D69-4642-8F4C-5EBEC71257B4}.Release|x64.ActiveCfg = Release|Any CPU
+		{9FA3C2F9-3D69-4642-8F4C-5EBEC71257B4}.Release|x64.Build.0 = Release|Any CPU
+		{9FA3C2F9-3D69-4642-8F4C-5EBEC71257B4}.Release|x86.ActiveCfg = Release|Any CPU
+		{9FA3C2F9-3D69-4642-8F4C-5EBEC71257B4}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

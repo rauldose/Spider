@@ -12,6 +12,21 @@ namespace Spider.Drivers.Communication;
 public static class PlcDriverFactory
 {
     /// <summary>
+    /// Default port for Modbus TCP
+    /// </summary>
+    public const int DefaultModbusTcpPort = 502;
+
+    /// <summary>
+    /// Default port for Siemens S7
+    /// </summary>
+    public const int DefaultSiemensS7Port = 102;
+
+    /// <summary>
+    /// Default port for Allen-Bradley EtherNet/IP
+    /// </summary>
+    public const int DefaultAllenBradleyCipPort = 44818;
+
+    /// <summary>
     /// Create a Modbus TCP driver
     /// </summary>
     /// <param name="settings">Modbus TCP settings</param>
@@ -28,7 +43,7 @@ public static class PlcDriverFactory
     /// <param name="port">Port number (default: 502)</param>
     /// <param name="slaveId">Slave ID (default: 1)</param>
     /// <returns>A new ModbusTcpDriver instance</returns>
-    public static IPlcDriver CreateModbusTcp(string ipAddress, int port = 502, byte slaveId = 1)
+    public static IPlcDriver CreateModbusTcp(string ipAddress, int port = DefaultModbusTcpPort, byte slaveId = 1)
     {
         return new ModbusTcpDriver(new ModbusTcpSettings
         {
@@ -61,6 +76,7 @@ public static class PlcDriverFactory
         return new SiemensS7Driver(new SiemensS7Settings
         {
             IpAddress = ipAddress,
+            Port = DefaultSiemensS7Port,
             PlcType = plcType,
             Rack = rack,
             Slot = slot
@@ -88,6 +104,7 @@ public static class PlcDriverFactory
         return new AllenBradleyCipDriver(new AllenBradleyCipSettings
         {
             IpAddress = ipAddress,
+            Port = DefaultAllenBradleyCipPort,
             Slot = slot
         });
     }

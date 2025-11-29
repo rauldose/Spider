@@ -5,7 +5,7 @@ namespace Spider.Drivers.Communication.Interfaces;
 /// <summary>
 /// Common interface for all PLC communication drivers
 /// </summary>
-public interface IPlcDriver : IDisposable
+public interface IPlcDriver : IDisposable, IAsyncDisposable
 {
     /// <summary>
     /// Gets the name of the driver type
